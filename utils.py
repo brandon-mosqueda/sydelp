@@ -4,7 +4,6 @@ import numpy as np
 
 from numpy.typing import NDArray
 from typing import Union
-from math import inf
 
 NNumeric = Union[np.int_, np.float_]
 
