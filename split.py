@@ -11,11 +11,10 @@ class Split(TypedDict):
 def class_non_iid_split(X: NDArray[NNumeric],
                         y: NDArray[NNumeric],
                         n_splits: int,
-                        classes_per_split: int = 2) -> list[Split]:
-    N: int = y.shape[0]
+                        n_classes_per_split: int = 2) -> list[Split]:
     classes: NDArray[NNumeric] = np.unique(y)
     n_classes: int = len(classes)
-    n_splits_per_class: int = n_splits * classes_per_split // n_classes
+    n_splits_per_class: int = n_splits * n_classes_per_split // n_classes
 
     # For each class create a list with the required number splits introducing
     # some randomness in the inner-class indices selection
@@ -32,6 +31,7 @@ def class_non_iid_split(X: NDArray[NNumeric],
     ]
 
     i: int = 0
+    n_remaining_splits: int = n_splits_per_class * n_classes
     for _ in range(n_splits_per_class * n_classes):
         not_included_classes: NDArray[NNumeric] = np.random.permutation(
             np.delete(classes, splits_included_classes[i]))
@@ -40,11 +40,29 @@ def class_non_iid_split(X: NDArray[NNumeric],
             if classes_splits[cls]:
                 splits_included_classes[i].append(cls)
                 clients_samples[i].append(classes_splits[cls].pop())
+                n_remaining_splits -= 1
                 break
 
         i += 1
         if i == n_splits:
             i = 0
+
+    # Remove the one level of depth in classes_splits with the not assigned
+    # splits
+    remaining_splits: list[NDArray[np.int64]] = [
+        split for class_split in classes_splits for split in class_split
+    ]
+
+    i = 0
+    # Include the remaining splits in those that ended up with less than the
+    # required number of splits
+    for split in remaining_splits:
+        while len(clients_samples[i]) >= n_classes_per_split:
+            i += 1
+
+        # i should never go beyond n_splits because
+        # n_splits_per_class * n_classes < n_splits
+        clients_samples[i].append(split)
 
     # Initialize client data partitions
     client_data: list[Split] = []

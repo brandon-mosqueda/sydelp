@@ -95,3 +95,9 @@ def progress_bar(rounds: int) -> MyProgressBar:
     bar: MyProgressBar = MyProgressBar(widgets=widgets, max_value=rounds)
 
     return bar
+
+# Count the number of apperances
+def count(x: Union[NDArray, list, tuple]) -> dict:
+    np_counts: tuple[NDArray, NDArray] = np.unique(x, return_counts=True)
+
+    return {cls: num for cls, num in zip(np_counts[0], np_counts[1])}

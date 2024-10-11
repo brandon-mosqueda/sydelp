@@ -1,4 +1,5 @@
-__pycache__/*
+**/__pycache__
 R/
 test.*
 notes.md
+.vscode/*
