@@ -1,4 +1,4 @@
-from split import non_idd_split, Split
+from split import class_non_iid_split, Split
 from node import Node
 from keras import optimizers
 from keras import layers, models
@@ -74,7 +74,7 @@ def init_iris(nodes_num: int,
 
     global_model: models.Model = iris_model(learning_rate)
 
-    splits: list[Split] = non_idd_split(X_train, y_train, nodes_num)
+    splits: list[Split] = class_non_iid_split(X_train, y_train, nodes_num)
     nodes: list[Node] = init_nodes(splits=splits,
                                    model_fn=iris_model,
                                    learning_rate=learning_rate,
