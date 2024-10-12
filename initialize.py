@@ -46,7 +46,8 @@ def iris_model(learning_rate: float = 0.01) -> models.Model:
     model.compile(
         optimizer=optimizers.Adam(learning_rate=learning_rate), # type: ignore
         loss='sparse_categorical_crossentropy',
-        metrics=['accuracy'])
+        metrics=['accuracy']
+    )
 
     return model
 

@@ -6,6 +6,7 @@ from numpy.typing import NDArray
 from typing import Union
 
 NNumeric = Union[np.int_, np.float_]
+Weights = list[NDArray[NNumeric]]
 
 def print_array(x: NDArray[np.generic], n: int = 5, digits: int = 4) -> None:
     if np.issubdtype(x.dtype, np.number):

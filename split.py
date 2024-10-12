@@ -21,7 +21,8 @@ def class_non_iid_split(X: NDArray[NNumeric],
     classes_splits: list[list[NDArray[np.int64]]] = [
         np.array_split(
             np.random.permutation(np.where(y == cls)[0]),
-            n_splits_per_class)
+            n_splits_per_class
+        )
         for cls in classes
     ]
     # For each split we will keep track the classes that were already included
@@ -34,7 +35,8 @@ def class_non_iid_split(X: NDArray[NNumeric],
     n_remaining_splits: int = n_splits_per_class * n_classes
     for _ in range(n_splits_per_class * n_classes):
         not_included_classes: NDArray[NNumeric] = np.random.permutation(
-            np.delete(classes, splits_included_classes[i]))
+            np.delete(classes, splits_included_classes[i])
+        )
 
         for cls in not_included_classes:
             if classes_splits[cls]:
@@ -92,7 +94,8 @@ def dirichlet_split(X: NDArray[NNumeric],
         initial_indices: NDArray[np.int64] = np.random.choice(
             np.arange(len(y)),
             size=split_min_size * n_splits,
-            replace=False)
+            replace=False
+        )
 
         clients_samples = [
             [split] for split in np.array_split(initial_indices, n_splits)
@@ -112,11 +115,13 @@ def dirichlet_split(X: NDArray[NNumeric],
 
         # Draw proportions for each client using the Dirichlet distribution
         proportions: NDArray[np.float64] = np.random.dirichlet(
-            np.repeat(alpha, n_splits))
+            np.repeat(alpha, n_splits)
+        )
 
         # Determine how many samples from this class each client will get
         class_splits: NDArray[np.int64] = np.floor(
-            proportions * len(idx)).astype(int)
+            proportions * len(idx)
+        ).astype(int)
 
         # Ensure all samples are assigned by adjusting the split
         extra_samples: np.int64 = len(idx) - np.sum(class_splits)

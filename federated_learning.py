@@ -2,13 +2,13 @@ import numpy as np
 
 from pandas import DataFrame
 from numpy.typing import NDArray
-from utils import NNumeric
+from utils import NNumeric, Weights
 from collaborative_learning import CollaborativeLearning
 
 class FederatedLearning(CollaborativeLearning):
     @staticmethod
-    def fed_avg(weights) -> list[NDArray[NNumeric]]:
-        avg_weights: list[NDArray[NNumeric]] = []
+    def fed_avg(weights) -> Weights:
+        avg_weights: Weights = []
 
         for i in range(len(weights[0])):
             avg_weights.append(np.mean([w[i] for w in weights], axis=0))
@@ -16,9 +16,8 @@ class FederatedLearning(CollaborativeLearning):
         return avg_weights
 
     def aggregation(self) -> None:
-        weights: list[list[NDArray[NNumeric]]] = [node.get_weights()
-                                                  for node in self.nodes]
-        avg_weights: list[NDArray[NNumeric]] = self.fed_avg(weights)
+        weights: list[Weights] = [node.get_weights() for node in self.nodes]
+        avg_weights: Weights = self.fed_avg(weights)
 
         self.global_model.set_weights(avg_weights)
 
