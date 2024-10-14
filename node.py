@@ -5,6 +5,7 @@ from numpy.typing import NDArray
 from pandas import DataFrame
 from keras.src.models import Model as KerasModel
 
+
 class Node:
     x: NDArray[NNumeric]
     y: NDArray[NNumeric]

@@ -9,6 +9,7 @@ from utils import progress_bar, MyProgressBar, NNumeric
 from keras.src.models import Model as KerasModel
 from abc import ABC, abstractmethod
 
+
 class CollaborativeLearning(ABC):
     nodes: list[Node]
     global_model: KerasModel

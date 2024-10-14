@@ -4,9 +4,11 @@ from utils import NNumeric
 from numpy.typing import NDArray
 from typing import TypedDict, Union, Any
 
+
 class Split(TypedDict):
     X: NDArray[NNumeric]
     y: NDArray[NNumeric]
+
 
 def class_non_iid_split(X: NDArray[NNumeric],
                         y: NDArray[NNumeric],
@@ -79,6 +81,7 @@ def class_non_iid_split(X: NDArray[NNumeric],
 
     return client_data
 
+
 def dirichlet_split(X: NDArray[NNumeric],
                     y: NDArray[NNumeric],
                     n_splits: int,
@@ -106,7 +109,7 @@ def dirichlet_split(X: NDArray[NNumeric],
     # Partition the data for each class
     idx_by_class: dict[Any, NDArray[np.int64]] = {
         cls: np.where(np.logical_and(y == cls, is_index_available))[0]
-            for cls in classes
+        for cls in classes
     }
 
     for cls in classes:

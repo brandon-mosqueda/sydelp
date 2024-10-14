@@ -8,13 +8,15 @@ from sklearn.model_selection import train_test_split
 from typing import TypedDict, Callable
 from numpy.typing import NDArray
 from utils import NNumeric
-from keras.datasets.mnist import load_data as load_mnist # type: ignore
+from keras.datasets.mnist import load_data as load_mnist  # type: ignore
+
 
 class Initializer(TypedDict):
     nodes: list[Node]
     global_model: models.Model
     X_test: NDArray[NNumeric]
     y_test: NDArray[NNumeric]
+
 
 def init_nodes(splits: list[Split],
                model_fn: Callable,
@@ -35,6 +37,8 @@ def init_nodes(splits: list[Split],
     return nodes
 
 # Define a simple neural network model
+
+
 def iris_model(learning_rate: float = 0.01) -> models.Model:
     model: models.Model = models.Sequential([
         layers.Input(shape=(4, )),
@@ -44,12 +48,13 @@ def iris_model(learning_rate: float = 0.01) -> models.Model:
     ])
 
     model.compile(
-        optimizer=optimizers.Adam(learning_rate=learning_rate), # type: ignore
+        optimizer=optimizers.Adam(learning_rate=learning_rate),  # type: ignore
         loss='sparse_categorical_crossentropy',
         metrics=['accuracy']
     )
 
     return model
+
 
 def init_iris(nodes_num: int,
               testing_proportion: float = 0.2,
@@ -57,11 +62,14 @@ def init_iris(nodes_num: int,
               epochs: int = 10,
               batch_size: int = 32) -> Initializer:
     # Load and preprocess the data
-    X: NDArray[NNumeric]; y: NDArray[NNumeric]
-    X, y = load_iris(return_X_y=True) # type: ignore
+    X: NDArray[NNumeric]
+    y: NDArray[NNumeric]
+    X, y = load_iris(return_X_y=True)  # type: ignore
 
-    X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric];
-    y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]
+    X_train: NDArray[NNumeric]
+    X_test: NDArray[NNumeric]
+    y_train: NDArray[NNumeric]
+    y_test: NDArray[NNumeric]
 
     # Split the data into balanced training and testing datasets
     X_train, X_test, y_train, y_test = train_test_split(
@@ -89,6 +97,7 @@ def init_iris(nodes_num: int,
         'y_test': y_test
     }
 
+
 def mnist_model(learning_rate: float = 0.001) -> models.Model:
     model: models.Model = models.Sequential([
         layers.Input(shape=(784, )),
@@ -105,13 +114,16 @@ def mnist_model(learning_rate: float = 0.001) -> models.Model:
 
     return model
 
+
 def init_mnist(nodes_num: int,
                learning_rate: float = 0.001,
                epochs: int = 5,
                batch_size: int = 10) -> Initializer:
     # Load and preprocess the data
-    X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric]
-    y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]
+    X_train: NDArray[NNumeric]
+    X_test: NDArray[NNumeric]
+    y_train: NDArray[NNumeric]
+    y_test: NDArray[NNumeric]
     (X_train, y_train), (X_test, y_test) = load_mnist()
 
     X_train = X_train.reshape(60000, 784).astype("float32") / 255

@@ -8,6 +8,7 @@ from typing import Union
 NNumeric = Union[np.int_, np.float_]
 Weights = list[NDArray[NNumeric]]
 
+
 def print_array(x: NDArray[np.generic], n: int = 5, digits: int = 4) -> None:
     if np.issubdtype(x.dtype, np.number):
         x = x.round(digits)
@@ -20,6 +21,7 @@ def print_array(x: NDArray[np.generic], n: int = 5, digits: int = 4) -> None:
     if print_dots:
         print(', ...', end='')
     print(']')
+
 
 def summary(obj: object,
             max_depth: int = 100,
@@ -46,7 +48,7 @@ def summary(obj: object,
             print(f"{indent_str}$[...]")
     elif isinstance(obj, np.ndarray):
         if len(obj.shape) == 1:
-            print(f"Numpy of {len(obj)}:", end = ' ')
+            print(f"Numpy of {len(obj)}:", end=' ')
             print_array(obj, n=5, digits=digits)
         else:
             print(f"Numpy of {obj.shape}:")
@@ -75,6 +77,7 @@ def summary(obj: object,
         # Base case: primitive types or other objects
         print(f"{type(obj).__name__}: {repr(obj)}")
 
+
 class MyProgressBar(progressbar.ProgressBar):
     current: int = 0
 
@@ -86,6 +89,7 @@ class MyProgressBar(progressbar.ProgressBar):
 
         super().update(self.current)
 
+
 def progress_bar(rounds: int) -> MyProgressBar:
     widgets: list = [
         progressbar.Bar(marker='#', left='[', right=']'),
@@ -96,6 +100,7 @@ def progress_bar(rounds: int) -> MyProgressBar:
     bar: MyProgressBar = MyProgressBar(widgets=widgets, max_value=rounds)
 
     return bar
+
 
 # Count the number of apperances
 def count(x: Union[NDArray, list, tuple]) -> dict:
