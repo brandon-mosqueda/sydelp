@@ -2,7 +2,7 @@ import numpy as np
 
 from numpy.typing import NDArray
 from typing import Union
-from utils import NNumeric, Weights, bottom_indices, bottom_n
+from utils import Weights, bottom_indices, bottom_n
 
 
 def fed_avg(weights: list[Weights]) -> Weights:
