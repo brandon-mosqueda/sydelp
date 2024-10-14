@@ -5,7 +5,11 @@ import numpy as np
 from numpy.typing import NDArray
 from typing import Union
 
-NNumeric = Union[np.int_, np.float_]
+NNumeric = Union[
+    np.uint, np.uint8, np.uint16, np.uint32, np.uint64,
+    np.int8, np.int16, np.int32, np.int64,
+    np.float16, np.float32, np.float64, np.float128
+]
 Weights = list[NDArray[NNumeric]]
 
 
@@ -107,3 +111,35 @@ def count(x: Union[NDArray, list, tuple]) -> dict:
     np_counts: tuple[NDArray, NDArray] = np.unique(x, return_counts=True)
 
     return {cls: num for cls, num in zip(np_counts[0], np_counts[1])}
+
+
+def top_indices(x: NDArray[NNumeric], n: int) -> NDArray[np.int64]:
+    if n < 0 or n > x.shape[0]:
+        raise ValueError("n should be 0 <= n <= x.shape")
+
+    if n == 0 or x.shape[0] == 0:
+        return np.array([], dtype="int64")
+
+    n = min(n, x.shape[0])
+
+    return np.flip(np.argsort(x))[:n]
+
+
+def top_n(x: NDArray[NNumeric], n: int = 1) -> NDArray[NNumeric]:
+    return x[top_indices(x, n)]
+
+
+def bottom_indices(x: NDArray[NNumeric], n: int = 1) -> NDArray[np.int64]:
+    if n < 0 or n > x.shape[0]:
+        raise ValueError("n should be 0 <= n <= x.shape")
+
+    if n == 0 or x.shape[0] == 0:
+        return np.array([], dtype="int64")
+
+    n = min(n, x.shape[0])
+
+    return np.argsort(x)[:n]
+
+
+def bottom_n(x: NDArray[NNumeric], n: int = 1) -> NDArray[NNumeric]:
+    return x[bottom_indices(x, n)]
