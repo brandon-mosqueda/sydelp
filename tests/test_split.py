@@ -1,17 +1,17 @@
-import split
 import utils
-import unittest
 import random
 
 import numpy as np
 
+from split import *
+from unittest import TestCase
 from typing import Union
 from numpy.typing import NDArray
 from split import Split
 from utils import NNumeric
 from sklearn.datasets import load_iris, load_digits
 
-class TestSplit(unittest.TestCase):
+class TestSplit(TestCase):
     iris: Split
     digits: Split
     seed: int = 5445
@@ -39,10 +39,11 @@ class TestSplit(unittest.TestCase):
             self.assertIsInstance(split, dict, "Each split should be a dict")
             self.assertIn('X', split, "Each split should have 'X' key")
             self.assertIn('y', split, "Each split should have 'y' key")
-            self.assertEqual(split['X'].shape[0],
-                             split['y'].shape[0],
-                             "'X' and 'y' has to have the same length "
-                             + "in each split")
+            self.assertEqual(
+                split['X'].shape[0],
+                split['y'].shape[0],
+                "'X' and 'y' has to have the same length in each split"
+            )
 
         total_samples: int = sum([split['y'].shape[0] for split in splits])
         original_length: int = original_y.shape[0]
@@ -58,38 +59,45 @@ class TestSplit(unittest.TestCase):
             for key in counts:
                 splits_counts[key] += counts[key]
 
-        self.assertDictEqual(original_counts,
-                             splits_counts,
-                             "The original proportion of classes "
-                             + "should be preserved")
+        self.assertDictEqual(
+            original_counts,
+            splits_counts,
+            "The original proportion of classes should be preserved"
+        )
 
     def assert_class_non_iid_splits(self,
                                     splits: list[Split],
                                     n_classes_per_split: int):
         classes_per_split = np.array(
-            [len(np.unique(split['y'])) for split in splits])
+            [len(np.unique(split['y'])) for split in splits]
+        )
 
         result: NDArray[np.bool_] = np.logical_or(
             classes_per_split == n_classes_per_split,
-            classes_per_split == n_classes_per_split - 1)
+            classes_per_split == n_classes_per_split - 1
+        )
 
-        self.assertTrue(np.all(result),
-                        "Each non-iid split should have n_classes_per_split "
-                        + "or n_classes_per_split - 1 different classes")
+        self.assertTrue(
+            np.all(result),
+            "Each non-iid split should have n_classes_per_split "
+            + "or n_classes_per_split - 1 different classes"
+        )
 
     def assert_dirichlet_splits(self,
                                 splits: list[Split],
                                 split_min_size: Union[int, None]):
         if split_min_size is not None:
             splits_lengths: NDArray[np.int64] = np.array(
-                [split['y'].shape[0] for split in splits])
+                [split['y'].shape[0] for split in splits]
+            )
 
             self.assertTrue(
                 np.all(splits_lengths >= split_min_size),
-                "All splits should have at least split_min_size size")
+                "All splits should have at least split_min_size size"
+            )
 
     def test_class_non_iid(self):
-        splits: list[Split] = split.class_non_iid_split(
+        splits: list[Split] = class_non_iid_split(
             self.iris['X'],
             self.iris['y'],
             n_splits=15,
@@ -98,39 +106,41 @@ class TestSplit(unittest.TestCase):
         self.assert_splits(splits, self.iris['y'], 15)
         self.assert_class_non_iid_splits(splits, 2)
 
-        splits: list[Split] = split.class_non_iid_split(
+        splits: list[Split] = class_non_iid_split(
             self.iris['X'],
             self.iris['y'],
             n_splits=17,
-            n_classes_per_split=3)
+            n_classes_per_split=3
+        )
 
         self.assert_splits(splits, self.iris['y'], 17)
         self.assert_class_non_iid_splits(splits, 3)
 
-        splits: list[Split] = split.class_non_iid_split(
+        splits: list[Split] = class_non_iid_split(
             self.digits['X'],
             self.digits['y'],
             n_splits=33,
-            n_classes_per_split=4)
+            n_classes_per_split=4
+        )
 
         self.assert_splits(splits, self.digits['y'], 33)
         self.assert_class_non_iid_splits(splits, 4)
 
     def test_dirichlet(self):
-        splits: list[Split] = split.dirichlet_split(self.digits['X'],
-                                                    self.digits['y'],
-                                                    n_splits=50,
-                                                    alpha=0.5,
-                                                    split_min_size=1)
+        splits: list[Split] = dirichlet_split(self.digits['X'],
+                                              self.digits['y'],
+                                              n_splits=50,
+                                              alpha=0.5,
+                                              split_min_size=1)
 
         self.assert_splits(splits, self.digits['y'], 50)
         self.assert_dirichlet_splits(splits, 1)
 
-        splits: list[Split] = split.dirichlet_split(self.iris['X'],
-                                                    self.iris['y'],
-                                                    n_splits=12,
-                                                    alpha=0.5,
-                                                    split_min_size=2)
+        splits: list[Split] = dirichlet_split(self.iris['X'],
+                                              self.iris['y'],
+                                              n_splits=12,
+                                              alpha=0.5,
+                                              split_min_size=2)
 
         self.assert_splits(splits, self.iris['y'], 12)
         self.assert_dirichlet_splits(splits, 2)
