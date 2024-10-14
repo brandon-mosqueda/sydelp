@@ -7,7 +7,7 @@ from collaborative_learning import CollaborativeLearning
 
 class FederatedLearning(CollaborativeLearning):
     @staticmethod
-    def fed_avg(weights) -> Weights:
+    def fed_avg(weights: list[Weights]) -> Weights:
         avg_weights: Weights = []
 
         for i in range(len(weights[0])):

@@ -5,10 +5,10 @@ from keras import layers, models
 from sklearn.datasets import load_iris
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from sklearn.utils._bunch import Bunch
 from typing import TypedDict, Callable
 from numpy.typing import NDArray
 from utils import NNumeric
+from keras.datasets.mnist import load_data as load_mnist # type: ignore
 
 class Initializer(TypedDict):
     nodes: list[Node]
@@ -78,6 +78,50 @@ def init_iris(nodes_num: int,
     splits: list[Split] = class_non_iid_split(X_train, y_train, nodes_num)
     nodes: list[Node] = init_nodes(splits=splits,
                                    model_fn=iris_model,
+                                   learning_rate=learning_rate,
+                                   epochs=epochs,
+                                   batch_size=batch_size)
+
+    return {
+        'nodes': nodes,
+        'global_model': global_model,
+        'X_test': X_test,
+        'y_test': y_test
+    }
+
+def mnist_model(learning_rate: float = 0.001) -> models.Model:
+    model: models.Model = models.Sequential([
+        layers.Input(shape=(784, )),
+        layers.Dense(200, activation='relu'),
+        layers.Dense(200, activation='relu'),
+        layers.Dense(10, activation='softmax')
+    ])
+
+    model.compile(
+        optimizer=optimizers.Adam(learning_rate=learning_rate),  # type: ignore
+        loss='sparse_categorical_crossentropy',
+        metrics=['accuracy']
+    )
+
+    return model
+
+def init_mnist(nodes_num: int,
+               learning_rate: float = 0.001,
+               epochs: int = 5,
+               batch_size: int = 10) -> Initializer:
+    # Load and preprocess the data
+    X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric]
+    y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]
+    (X_train, y_train), (X_test, y_test) = load_mnist()
+
+    X_train = X_train.reshape(60000, 784).astype("float32") / 255
+    X_test = X_test.reshape(10000, 784).astype("float32") / 255
+
+    global_model: models.Model = mnist_model(learning_rate)
+
+    splits: list[Split] = class_non_iid_split(X_train, y_train, nodes_num)
+    nodes: list[Node] = init_nodes(splits=splits,
+                                   model_fn=mnist_model,
                                    learning_rate=learning_rate,
                                    epochs=epochs,
                                    batch_size=batch_size)

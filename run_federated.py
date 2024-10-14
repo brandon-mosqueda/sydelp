@@ -5,7 +5,7 @@ import initialize as init
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-initializer = init.init_iris(nodes_num=10)
+initializer = init.init_mnist(nodes_num=100)
 
 # Create a FederatedLearning instance
 federated_learning = fl.FederatedLearning(
@@ -19,4 +19,5 @@ federated_learning = fl.FederatedLearning(
 federated_learning.start()
 
 federated_learning.metrics
-federated_learning.execution_time
+
+print("Total running time: %.4f minutes" % federated_learning.execution_time)
