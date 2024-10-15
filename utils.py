@@ -143,3 +143,14 @@ def bottom_indices(x: NDArray[NNumeric], n: int = 1) -> NDArray[np.int64]:
 
 def bottom_n(x: NDArray[NNumeric], n: int = 1) -> NDArray[NNumeric]:
     return x[bottom_indices(x, n)]
+
+
+def elapsed_time(start: float, end: float, units: str = "mins") -> float:
+    elapsed: float = end - start
+
+    if units == "mins":
+        elapsed /= 60
+    elif units == "hours":
+        elapsed /= 3600
+
+    return elapsed

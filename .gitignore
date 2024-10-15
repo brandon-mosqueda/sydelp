@@ -3,3 +3,4 @@ R/
 test.*
 notes.md
 .vscode/*
+results/*

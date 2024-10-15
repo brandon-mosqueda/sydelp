@@ -1,5 +1,9 @@
+import numpy as np
+
+from pandas import DataFrame, concat
+from time import time
 from numpy.typing import NDArray
-from utils import NNumeric, Weights
+from utils import NNumeric, Weights, elapsed_time
 from collaborative_learning import CollaborativeLearning
 from aggregation import fed_avg
 
@@ -14,11 +18,31 @@ class FederatedLearning(CollaborativeLearning):
         for node in self.nodes:
             node.set_weights(avg_weights)
 
-    def evaluate(self) -> dict:
+    def round_metrics(self, round: int, start_time: float) -> dict:
         accuracy: NDArray[NNumeric]
-        _, accuracy = self.global_model.evaluate(self.x_testing,
-                                                 self.y_testing,
-                                                 verbose=0)
-        metrics = {'accuracy': accuracy}
+        loss, accuracy = self.global_model.evaluate(self.x_testing,
+                                                    self.y_testing,
+                                                    verbose=0)
+
+        metrics = {
+            'round': round,
+            'time': elapsed_time(start_time, time()),
+            'accuracy': accuracy,
+            'loss': loss
+        }
 
         return metrics
+
+    def round_predictions(self, round: int) -> DataFrame:
+        probs: DataFrame = DataFrame(self.global_model.predict(
+            self.x_testing,
+            verbose=0
+        ))
+
+        data: DataFrame = DataFrame({
+            "round": round,
+            "observed": self.y_testing,
+            "predicted": np.argmax(probs, axis=1)
+        })
+
+        return concat([data, probs], axis=1)
