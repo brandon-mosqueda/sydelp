@@ -1,5 +1,6 @@
 import numpy as np
 
+from typing import Callable
 from pandas import DataFrame, concat
 from time import time
 from numpy.typing import NDArray
@@ -7,11 +8,28 @@ from utils import NNumeric, Weights, elapsed_time
 from collaborative_learning import CollaborativeLearning
 from aggregation import fed_avg
 
+AggFunct = Callable[[list[Weights]], Weights]
 
 class FederatedLearning(CollaborativeLearning):
+    aggregation_function: AggFunct
+    aggregation_params: dict
+
+    def __init__(self,
+                 aggregation_function: AggFunct = fed_avg,
+                 aggregation_params: dict = {},
+                 *args,
+                 **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self.aggregation_function = aggregation_function
+        self.aggregation_params = aggregation_params
+
     def aggregation(self) -> None:
         weights: list[Weights] = [node.get_weights() for node in self.nodes]
-        avg_weights: Weights = fed_avg(weights)
+        avg_weights: Weights = self.aggregation_function(
+            weights,
+            **self.aggregation_params
+        )
 
         self.global_model.set_weights(avg_weights)
 
