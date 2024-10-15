@@ -6,6 +6,9 @@ from utils import Weights, bottom_indices, bottom_n
 
 
 def fed_avg(weights: list[Weights]) -> Weights:
+    if not weights:
+        return []
+
     avg_weights: Weights = []
 
     for i in range(len(weights[0])):
@@ -35,11 +38,14 @@ def weights_distance_matrix(weights: list[Weights]) -> NDArray[np.float128]:
 
 
 def krum(weights: list[Weights], m: Union[float, int] = 0.3) -> Weights:
+    if len(weights) < 3:
+        return fed_avg(weights)
+
     if m < 1:
         m = len(weights) * m
 
-    m = int(m)
     n: int = len(weights)
+    m = min(int(m), n - 2)
     n_models: int = n - m - 2
 
     distances: NDArray[np.float128] = weights_distance_matrix(weights)
