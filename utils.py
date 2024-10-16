@@ -3,7 +3,7 @@ import progressbar
 import numpy as np
 
 from numpy.typing import NDArray
-from typing import Union
+from typing import Union, Sequence
 
 NNumeric = Union[
     np.uint, np.uint8, np.uint16, np.uint32, np.uint64,
@@ -154,3 +154,12 @@ def elapsed_time(start: float, end: float, units: str = "mins") -> float:
         elapsed /= 3600
 
     return elapsed
+
+
+def remove_indices(x: list, indices: list) -> list:
+    indices_set: set = set(indices)
+
+    return [
+        item for i, item in enumerate(x)
+        if i not in indices_set
+    ]

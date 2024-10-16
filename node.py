@@ -1,6 +1,6 @@
 import numpy as np
 
-from utils import NNumeric
+from utils import NNumeric, Weights
 from numpy.typing import NDArray
 from pandas import DataFrame
 from keras.src.models import Model as KerasModel
@@ -28,10 +28,10 @@ class Node:
 
         self.rows_num = x.shape[0]
 
-    def set_weights(self, weights: list[NDArray[NNumeric]]) -> None:
+    def set_weights(self, weights: Weights) -> None:
         self.model.set_weights(weights)
 
-    def get_weights(self) -> list[NDArray[NNumeric]]:
+    def get_weights(self) -> Weights:
         return self.model.get_weights()
 
     def train(self) -> None:

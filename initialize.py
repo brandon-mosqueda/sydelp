@@ -22,16 +22,19 @@ def init_nodes(splits: list[Split],
                model_fn: Callable,
                learning_rate: float = 0.01,
                epochs: int = 10,
-               batch_size: int = 32) -> list[Node]:
+               batch_size: int = 32,
+               node_class: Callable[..., Node] = Node,
+               **kwargs) -> list[Node]:
     nodes: list[Node] = []
 
     for split in splits:
         model: models.Model = model_fn(learning_rate)
-        node: Node = Node(x=split['X'],
-                          y=split['y'],
-                          model=model,
-                          epochs=epochs,
-                          batch_size=batch_size)
+        node: Node = node_class(x=split['X'],
+                                y=split['y'],
+                                model=model,
+                                epochs=epochs,
+                                batch_size=batch_size,
+                                **kwargs)
         nodes.append(node)
 
     return nodes
@@ -56,20 +59,13 @@ def iris_model(learning_rate: float = 0.01) -> models.Model:
     return model
 
 
-def init_iris(nodes_num: int,
-              testing_proportion: float = 0.2,
-              learning_rate: float = 0.01,
-              epochs: int = 10,
-              batch_size: int = 32) -> Initializer:
+def iris_data(testing_proportion: float = 0.2) -> list[NDArray[NNumeric]]:
     # Load and preprocess the data
-    X: NDArray[NNumeric]
-    y: NDArray[NNumeric]
+    X: NDArray[NNumeric]; y: NDArray[NNumeric]
     X, y = load_iris(return_X_y=True)  # type: ignore
 
-    X_train: NDArray[NNumeric]
-    X_test: NDArray[NNumeric]
-    y_train: NDArray[NNumeric]
-    y_test: NDArray[NNumeric]
+    X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric]
+    y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]
 
     # Split the data into balanced training and testing datasets
     X_train, X_test, y_train, y_test = train_test_split(
@@ -80,6 +76,19 @@ def init_iris(nodes_num: int,
     scaler: StandardScaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
+
+    return [X_train, X_test, y_train, y_test]
+
+def init_iris(nodes_num: int,
+              testing_proportion: float = 0.2,
+              learning_rate: float = 0.01,
+              epochs: int = 10,
+              batch_size: int = 32) -> Initializer:
+    X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric]
+    y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]
+
+    # Split the data into balanced training and testing datasets
+    X_train, X_test, y_train, y_test = iris_data(testing_proportion)
 
     global_model: models.Model = iris_model(learning_rate)
 
