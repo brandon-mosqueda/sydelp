@@ -7,13 +7,14 @@ import initialize as init
 import aggregation as agg
 
 from random_malicious_node import RandomMaliciousNode
+from label_flipping_malicious_node import LabelFlippingMaliciousNode
 from keras import models
 from numpy.typing import NDArray
 from utils import NNumeric
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-n_rounds: int = 10
+n_rounds: int = 5
 n_nodes: int = 15
 n_malicious: int = 5
 learning_rate: float = 0.001
@@ -22,6 +23,8 @@ mean: float = 0
 sd: float = 20
 epochs: int = 10
 batch_size: int = 10
+target_label_1: int = 0
+target_label_2: int = 2
 
 X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric]
 y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]
@@ -33,19 +36,23 @@ splits: list[split.Split] = split.class_non_iid_split(X_train,
                                                       y_train,
                                                       n_nodes)
 
-malicious_nodes: list[node.Node] = init.init_nodes(
+malicious_nodes: list[LabelFlippingMaliciousNode] = init.init_nodes(
+# malicious_nodes: list[RandomMaliciousNode] = init.init_nodes(
     splits[:n_malicious],
     model_fn=init.iris_model,
     learning_rate=learning_rate,
     epochs=epochs,
     batch_size=batch_size,
-    node_class=RandomMaliciousNode,
-    mean=mean,
-    sd=sd
+    node_class=LabelFlippingMaliciousNode,
+    target_label_1=target_label_1,
+    target_label_2=target_label_2,
+    # node_class=RandomMaliciousNode,
+    # mean=mean,
+    # sd=sd,
 )
 
-# for node_i in malicious_nodes:
-#     node_i.attacking = False
+for node_i in malicious_nodes:
+    node_i.attacking = False
 
 nodes: list[node.Node] = init.init_nodes(
     splits[n_malicious:],

@@ -5,7 +5,7 @@ from keras import layers, models
 from sklearn.datasets import load_iris
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from typing import TypedDict, Callable
+from typing import TypedDict, Callable, TypeVar, Generic
 from numpy.typing import NDArray
 from utils import NNumeric
 from keras.datasets.mnist import load_data as load_mnist  # type: ignore
@@ -18,28 +18,28 @@ class Initializer(TypedDict):
     y_test: NDArray[NNumeric]
 
 
+AnyNode = TypeVar('AnyNode', bound='Node')
+
 def init_nodes(splits: list[Split],
                model_fn: Callable,
                learning_rate: float = 0.01,
                epochs: int = 10,
                batch_size: int = 32,
-               node_class: Callable[..., Node] = Node,
-               **kwargs) -> list[Node]:
-    nodes: list[Node] = []
+               node_class: Callable[..., AnyNode] = Node,
+               **kwargs) -> list[AnyNode]:
+    nodes: list[AnyNode] = []
 
     for split in splits:
         model: models.Model = model_fn(learning_rate)
-        node: Node = node_class(x=split['X'],
-                                y=split['y'],
-                                model=model,
-                                epochs=epochs,
-                                batch_size=batch_size,
-                                **kwargs)
+        node: AnyNode = node_class(x=split['X'],
+                                   y=split['y'],
+                                   model=model,
+                                   epochs=epochs,
+                                   batch_size=batch_size,
+                                   **kwargs)
         nodes.append(node)
 
     return nodes
-
-# Define a simple neural network model
 
 
 def iris_model(learning_rate: float = 0.01) -> models.Model:
