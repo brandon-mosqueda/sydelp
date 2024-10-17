@@ -1,9 +1,12 @@
 from node import Node
 from utils import Weights
-from attack import random_gaussian_weights
+from attack_utils import random_gaussian_weights
 
 
+# This attacks consist on skipping the train phase and send random gaussian
+# vectors for aggregation. We need the mean and the standard deviation.
 class RandomMaliciousNode(Node):
+    attacking: bool
     mean: float
     sd: float
 
