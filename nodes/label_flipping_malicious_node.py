@@ -1,10 +1,9 @@
-from node import Node
+from nodes.malicious_node import MaliciousNode
 from attack_utils import flip_labels
 
 
 # When attacking the model is normally trained but using the flipped labels
-class LabelFlippingMaliciousNode(Node):
-    attacking: bool
+class LabelFlippingMaliciousNode(MaliciousNode):
     has_real_labels: bool
     target_label_1: int
     target_label_2: int
@@ -12,11 +11,9 @@ class LabelFlippingMaliciousNode(Node):
     def __init__(self,
                  target_label_1: int,
                  target_label_2: int,
-                 attacking: bool = True,
                  *args,
                  **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.attacking = attacking
         self.target_label_1 = target_label_1
         self.target_label_2 = target_label_2
         self.has_real_labels = True

@@ -1,23 +1,20 @@
-from node import Node
+from nodes.malicious_node import MaliciousNode
 from utils import Weights
 from attack_utils import random_gaussian_weights
 
 
 # This attacks consist on skipping the train phase and send random gaussian
 # vectors for aggregation. We need the mean and the standard deviation.
-class RandomMaliciousNode(Node):
-    attacking: bool
+class RandomMaliciousNode(MaliciousNode):
     mean: float
     sd: float
 
     def __init__(self,
                  mean: float = 0,
                  sd: float = 10,
-                 attacking: bool = True,
                  *args,
                  **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.attacking = attacking
         self.mean = mean
         self.sd = sd
 

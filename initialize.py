@@ -1,5 +1,5 @@
 from split import class_non_iid_split, Split
-from node import Node
+from nodes.node import Node
 from keras import optimizers
 from keras import layers, models
 from sklearn.datasets import load_iris

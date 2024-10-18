@@ -1,13 +1,13 @@
 import os
 import split
-import node
+import nodes.node as node
 
 import federated_learning as fl
 import initialize as init
 import aggregation as agg
 
-from random_malicious_node import RandomMaliciousNode
-from label_flipping_malicious_node import LabelFlippingMaliciousNode
+from nodes.random_malicious_node import RandomMaliciousNode
+from nodes.label_flipping_malicious_node import LabelFlippingMaliciousNode
 from keras import models
 from numpy.typing import NDArray
 from utils import NNumeric

@@ -13,6 +13,7 @@ class Node:
     epochs: int
     batch_size: int
     rows_num: int
+    is_malicious: bool = False
 
     def __init__(self,
                  x: NDArray[NNumeric],
