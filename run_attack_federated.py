@@ -6,8 +6,8 @@ import federated_learning as fl
 import initialize as init
 import aggregation as agg
 
-from nodes.random_malicious_node import RandomMaliciousNode
-from nodes.label_flipping_malicious_node import LabelFlippingMaliciousNode
+from nodes.random_node import RandomNode
+from nodes.targeted_label_flipping_node import TargetedLabelFlippingNode
 from keras import models
 from numpy.typing import NDArray
 from utils import NNumeric
@@ -36,14 +36,14 @@ splits: list[split.Split] = split.class_non_iid_split(X_train,
                                                       y_train,
                                                       n_nodes)
 
-malicious_nodes: list[LabelFlippingMaliciousNode] = init.init_nodes(
+malicious_nodes: list[TargetedLabelFlippingNode] = init.init_nodes(
 # malicious_nodes: list[RandomMaliciousNode] = init.init_nodes(
     splits[:n_malicious],
     model_fn=init.iris_model,
     learning_rate=learning_rate,
     epochs=epochs,
     batch_size=batch_size,
-    node_class=LabelFlippingMaliciousNode,
+    node_class=TargetedLabelFlippingNode,
     target_label_1=target_label_1,
     target_label_2=target_label_2,
     # node_class=RandomMaliciousNode,

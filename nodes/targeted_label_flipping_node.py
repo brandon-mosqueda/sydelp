@@ -3,7 +3,7 @@ from attack_utils import flip_labels
 
 
 # When attacking the model is normally trained but using the flipped labels
-class LabelFlippingMaliciousNode(MaliciousNode):
+class TargetedLabelFlippingNode(MaliciousNode):
     has_real_labels: bool
     target_label_1: int
     target_label_2: int
