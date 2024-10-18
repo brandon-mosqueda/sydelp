@@ -79,6 +79,7 @@ def iris_data(testing_proportion: float = 0.2) -> list[NDArray[NNumeric]]:
 
     return [X_train, X_test, y_train, y_test]
 
+
 def init_iris(nodes_num: int,
               testing_proportion: float = 0.2,
               learning_rate: float = 0.01,
@@ -124,19 +125,26 @@ def mnist_model(learning_rate: float = 0.001) -> models.Model:
     return model
 
 
+def mnist_data() -> list[NDArray[NNumeric]]:
+    # Load and preprocess the data
+    X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric]
+    y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]
+    (X_train, y_train), (X_test, y_test) = load_mnist()
+
+    X_train = X_train.reshape(60000, 784).astype("float32") / 255
+    X_test = X_test.reshape(10000, 784).astype("float32") / 255
+
+    return [X_train, X_test, y_train, y_test]
+
+
 def init_mnist(nodes_num: int,
                learning_rate: float = 0.001,
                epochs: int = 5,
                batch_size: int = 10) -> Initializer:
     # Load and preprocess the data
-    X_train: NDArray[NNumeric]
-    X_test: NDArray[NNumeric]
-    y_train: NDArray[NNumeric]
-    y_test: NDArray[NNumeric]
-    (X_train, y_train), (X_test, y_test) = load_mnist()
-
-    X_train = X_train.reshape(60000, 784).astype("float32") / 255
-    X_test = X_test.reshape(10000, 784).astype("float32") / 255
+    X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric]
+    y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]
+    X_train, y_train, X_test, y_test = mnist_data()
 
     global_model: models.Model = mnist_model(learning_rate)
 
