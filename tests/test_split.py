@@ -1,14 +1,14 @@
-import utils
+import utils.utils as utils
 import random
 
 import numpy as np
 
-from split import *
+from utils.split import *
 from unittest import TestCase
 from typing import Union
 from numpy.typing import NDArray
-from split import Split
-from utils import NNumeric
+from utils.split import Split
+from utils.utils import NNumeric
 from sklearn.datasets import load_iris, load_digits
 
 class TestSplit(TestCase):

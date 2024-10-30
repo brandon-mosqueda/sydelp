@@ -1,6 +1,6 @@
 import numpy as np
 
-from utils import NNumeric, Weights
+from utils.utils import NNumeric, Weights
 from numpy.typing import NDArray
 from pandas import DataFrame
 from keras.src.models import Model as KerasModel

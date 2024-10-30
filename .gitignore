@@ -4,3 +4,5 @@ test.*
 notes.md
 .vscode/*
 results/*
+*.code-workspace
+trash/

@@ -1,8 +1,8 @@
 import os
 
-import federated_learning as fl
-import initialize as init
-import aggregation as agg
+import learning.federated as fl
+import utils.initialize as init
+import utils.aggregation as agg
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
@@ -27,4 +27,4 @@ federated_learning.predictions
 
 print("Total running time: %.4f minutes" % federated_learning.execution_time)
 
-federated_learning.save('results/federated_learning', all=True)
+federated_learning.save('trash/federated_learning', all=True)

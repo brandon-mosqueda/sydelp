@@ -1,6 +1,6 @@
 import numpy as np
 
-from utils import NNumeric
+from utils.utils import NNumeric
 from numpy.typing import NDArray
 from typing import TypedDict, Union, Any
 

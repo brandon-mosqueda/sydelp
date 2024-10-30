@@ -1,5 +1,5 @@
 from nodes.malicious_node import MaliciousNode
-from attack_utils import flip_labels
+from utils.attack import flip_labels
 
 
 # When attacking the model is normally trained but using the flipped labels

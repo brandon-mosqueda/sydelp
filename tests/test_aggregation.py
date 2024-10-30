@@ -1,6 +1,6 @@
 import numpy as np
 
-from aggregation import *
+from utils.aggregation import *
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 from unittest import TestCase
 

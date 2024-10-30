@@ -1,4 +1,4 @@
-from utils import Weights
+from utils.utils import Weights
 from nodes.malicious_node import MaliciousNode
 
 

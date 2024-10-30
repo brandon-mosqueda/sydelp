@@ -2,7 +2,7 @@ import numpy as np
 
 from typing import Union
 from numpy.typing import NDArray
-from utils import Weights, NNumeric
+from utils.utils import Weights, NNumeric
 
 
 def random_gaussian_weights(reference: Weights,

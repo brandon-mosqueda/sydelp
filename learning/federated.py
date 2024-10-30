@@ -4,9 +4,9 @@ from typing import Callable
 from pandas import DataFrame, concat
 from time import time
 from numpy.typing import NDArray
-from utils import NNumeric, Weights, elapsed_time
-from collaborative_learning import CollaborativeLearning
-from aggregation import fed_avg
+from utils.utils import NNumeric, Weights, elapsed_time
+from learning.collaborative import CollaborativeLearning
+from utils.aggregation import fed_avg
 
 AggFunct = Callable[[list[Weights]], Weights]
 

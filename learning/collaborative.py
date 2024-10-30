@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 import os
 
@@ -6,7 +5,7 @@ from numpy.typing import NDArray
 from pandas import DataFrame
 from nodes.node import Node
 from time import time
-from utils import progress_bar, MyProgressBar, NNumeric, elapsed_time
+from utils.utils import progress_bar, MyProgressBar, NNumeric, elapsed_time
 from keras.src.models import Model as KerasModel
 from abc import ABC, abstractmethod
 

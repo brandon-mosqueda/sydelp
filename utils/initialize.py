@@ -1,4 +1,4 @@
-from split import class_non_iid_split, Split
+from utils.split import class_non_iid_split, Split
 from nodes.node import Node
 from keras import optimizers
 from keras import layers, models
@@ -7,7 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from typing import TypedDict, Callable, TypeVar, Generic
 from numpy.typing import NDArray
-from utils import NNumeric
+from utils.utils import NNumeric
 from keras.datasets.mnist import load_data as load_mnist  # type: ignore
 
 

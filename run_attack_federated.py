@@ -1,16 +1,16 @@
 import os
-import split
+import utils.split as split
 import nodes.node as node
 
-import federated_learning as fl
-import initialize as init
-import aggregation as agg
+import learning.federated as fl
+import utils.initialize as init
+import utils.aggregation as agg
 
 from nodes.random_node import RandomNode
 from nodes.targeted_label_flipping_node import TargetedLabelFlippingNode
 from keras import models
 from numpy.typing import NDArray
-from utils import NNumeric
+from utils.utils import NNumeric
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 

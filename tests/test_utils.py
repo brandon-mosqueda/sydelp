@@ -1,5 +1,5 @@
 import unittest
-from utils import *
+from utils.utils import *
 
 import numpy as np
 from numpy.testing import assert_array_equal

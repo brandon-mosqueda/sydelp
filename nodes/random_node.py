@@ -1,6 +1,6 @@
 from nodes.malicious_node import MaliciousNode
-from utils import Weights
-from attack_utils import random_gaussian_weights
+from utils.utils import Weights
+from utils.attack import random_gaussian_weights
 
 
 # This attacks consist on skipping the train phase and send random gaussian
