@@ -1,3 +1,14 @@
+import pandas as pd
+import requests as rq
+
+from tensorflow.keras.models import Sequential # type: ignore
+from tensorflow.keras.preprocessing.text import Tokenizer # type: ignore
+from tensorflow.keras.preprocessing.sequence import pad_sequences # type: ignore
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from os.path import isfile
+from zipfile import ZipFile
+from io import BytesIO
 from utils.split import class_non_iid_split, Split
 from nodes.node import Node
 from keras import optimizers
@@ -161,3 +172,81 @@ def init_mnist(nodes_num: int,
         'X_test': X_test,
         'y_test': y_test
     }
+
+
+def spam_model(learning_rate: float = 0.01,
+               vocabulary_size: int = 10000,
+               embedding_dim: int = 128,
+               max_sequence_length: int = 50) -> models.Model:
+    model = Sequential([
+        layers.Embedding(input_dim=vocabulary_size,
+                         output_dim=embedding_dim,
+                         input_length=max_sequence_length),
+        layers.LSTM(64),
+        layers.Dense(2, activation='softmax')
+    ])
+
+    # Compile the model
+    model.compile(
+        optimizer=optimizers.Adam(learning_rate=learning_rate),  # type: ignore
+        loss='sparse_categorical_crossentropy',
+        metrics=['accuracy']
+    )
+
+    return model
+
+
+def spam_data(testing_proportion: float = 0.2,
+              vocabulary_size: int = 10000,
+              max_sequence_length: int = 50) -> list[NDArray[NNumeric]]:
+    file_path: str = "data/sms_spam_collection/SMSSpamCollection"
+
+    if not isfile(file_path):
+        url: str = (
+            "https://archive.ics.uci.edu/ml/machine-learning-databases/"
+            "00228/smsspamcollection.zip"
+        )
+        response = rq.get(url)
+        if response.status_code == 200:
+            with ZipFile(BytesIO(response.content)) as zip_ref:
+                zip_ref.extractall("data/sms_spam_collection")
+        else:
+            raise ConnectionError("Failed to download file. Status code: %s" %
+                                  response.status_code)
+
+    Data: pd.DataFrame = pd.read_csv(file_path,
+                                     sep='\t',
+                                     header=None,
+                                     names=['label', 'text'],
+                                     encoding='latin-1')
+    Data['label'] = LabelEncoder().fit_transform(Data['label'])
+
+    X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric]
+    y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        Data['text'],
+        Data['label'].to_numpy(),
+        stratify=Data['label'],
+        test_size=testing_proportion
+    )
+
+    tokenizer = Tokenizer(num_words=vocabulary_size, oov_token="<OOV>")
+    tokenizer.fit_on_texts(X_train)
+    X_train_seq = tokenizer.texts_to_sequences(X_train)
+    X_test_seq = tokenizer.texts_to_sequences(X_test)
+
+    X_train_padded: NDArray[NNumeric] = pad_sequences(
+        X_train_seq,
+        maxlen=max_sequence_length,
+        padding='post',
+        truncating='post'
+    )
+    X_test_padded: NDArray[NNumeric] = pad_sequences(
+        X_test_seq,
+        maxlen=max_sequence_length,
+        padding='post',
+        truncating='post'
+    )
+
+    return [X_train_padded, X_test_padded, y_train, y_test]

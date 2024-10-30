@@ -144,3 +144,15 @@ class TestSplit(TestCase):
 
         self.assert_splits(splits, self.iris['y'], 12)
         self.assert_dirichlet_splits(splits, 2)
+
+        # Binary case
+        binary_y = self.iris['y']
+        binary_y[binary_y == 2] = 1
+        splits: list[Split] = dirichlet_split(self.iris['X'],
+                                              binary_y,
+                                              n_splits=12,
+                                              alpha=0.5,
+                                              split_min_size=2)
+
+        self.assert_splits(splits, binary_y, 12)
+        self.assert_dirichlet_splits(splits, 2)

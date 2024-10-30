@@ -6,3 +6,5 @@ notes.md
 results/*
 *.code-workspace
 trash/
+data/
+test2.py
