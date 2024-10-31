@@ -51,3 +51,13 @@ class TestUtils(TestCase):
         x = np.array([1.1, 5.3, 0.6, 9.69, 1.12])
         assert_array_equal(bottom_n(x, 1), [0.6])
         assert_array_equal(bottom_n(x, 5), [0.6, 1.1, 1.12, 5.3, 9.69])
+
+    def test_remove_indices(self):
+        self.assertEqual(remove_indices([], []), [])
+        self.assertEqual(remove_indices([], [1]), [])
+        self.assertEqual(remove_indices([1], [1]), [1])
+
+        self.assertEqual(remove_indices([1], [0]), [])
+        self.assertEqual(remove_indices([1, 2, 3], [0, 2]), [2])
+        self.assertEqual(remove_indices(['a', 'b', 'c'], [2]), ['a', 'b'])
+        self.assertEqual(remove_indices(['a', 'b', 'c'], [2, 5]), ['a', 'b'])

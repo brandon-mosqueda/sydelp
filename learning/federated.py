@@ -4,17 +4,26 @@ import numpy as np
 import pandas as pd
 import utils.utils as utils
 
-from typing import Callable
-from numpy.typing import NDArray
+from typing import Callable, TypedDict
+from numpy.typing import NDArray, ArrayLike
 from pandas import DataFrame, concat
 from nodes.node import Node
 from time import time
-from utils.utils import MyProgressBar, NNumeric, Weights
+from utils.utils import MyProgressBar, NNumeric, Weights, Float
 from keras.src.models import Model as KerasModel
 from utils.aggregation import fed_avg
+from sklearn.metrics import accuracy_score
 
 
-AggFunct = Callable[[list[Weights]], Weights]
+class AggParams(TypedDict):
+    function: Callable[[list[Weights]], Weights]
+    params: dict
+
+
+class MetricParams(TypedDict):
+    function: Callable[[ArrayLike, ArrayLike], Float]
+    params: dict
+
 
 class FederatedLearning:
     nodes: list[Node]
@@ -27,8 +36,9 @@ class FederatedLearning:
     attack_metrics: DataFrame
     predictions: DataFrame
 
-    aggregation_function: AggFunct
-    aggregation_params: dict
+    aggregation_params: AggParams
+    metrics_params: dict[str, MetricParams]
+    attack_metrics_params: dict[str, MetricParams]
 
     def __init__(self,
                  rounds: int,
@@ -36,22 +46,27 @@ class FederatedLearning:
                  global_model: type,
                  x_testing: NDArray[NNumeric],
                  y_testing: NDArray[NNumeric],
-                 aggregation_function: AggFunct = fed_avg,
-                 aggregation_params: dict = {}) -> None:
+                 aggregation_params: AggParams = {
+                     'function': fed_avg, 'params': {}},
+                 metrics_params: dict[str, MetricParams] = {
+                     'accuracy': {'function': accuracy_score, 'params': {}}
+                 },
+                 attack_metrics_params: dict[str, MetricParams] = {}) -> None:
         self.nodes = nodes
         self.x_testing = x_testing
         self.y_testing = y_testing
         self.global_model = global_model
         self.rounds = rounds
 
-        self.aggregation_function = aggregation_function
         self.aggregation_params = aggregation_params
+        self.metrics_params = metrics_params
+        self.attack_metrics_params = attack_metrics_params
 
     def aggregation(self) -> None:
         weights: list[Weights] = [node.get_weights() for node in self.nodes]
-        avg_weights: Weights = self.aggregation_function(
+        avg_weights: Weights = self.aggregation_params['function'](
             weights,
-            **self.aggregation_params
+            **self.aggregation_params['params']
         )
 
         self.global_model.set_weights(avg_weights)
@@ -59,37 +74,48 @@ class FederatedLearning:
         for node in self.nodes:
             node.set_weights(avg_weights)
 
-    def round_metrics(self, round: int, start_time: float) -> dict:
-        accuracy: NDArray[NNumeric]
-        loss, accuracy = self.global_model.evaluate(self.x_testing,
-                                                    self.y_testing,
-                                                    verbose=0)
-
-        metrics = {
-            'round': round,
-            'time': utils.elapsed_time(start_time, time()),
-            'accuracy': accuracy,
-            'loss': loss
-        }
-
-        return metrics
-
-    def round_predictions(self, round: int) -> DataFrame:
-        probs: DataFrame = DataFrame(self.global_model.predict(
+    def round_predictions(self) -> DataFrame:
+        preds: DataFrame = DataFrame(self.global_model.predict(
             self.x_testing,
             verbose=0
         ))
 
-        data: DataFrame = DataFrame({
-            "round": round,
-            "observed": self.y_testing,
-            "predicted": np.argmax(probs, axis=1)
-        })
+        # For binary classification
+        if preds.shape[1] == 1:
+            preds = pd.concat([1 - preds[0], preds], axis=1)
 
-        return concat([data, probs], axis=1)
+        preds['predicted'] = np.argmax(preds, axis=1)
+        preds['observed'] = self.y_testing
 
-    def round_attack_metrics(self, round: int, start_time: float) -> dict:
-        return {}
+        return preds
+
+    def round_metrics(self, predictions: DataFrame) -> dict[str, Float]:
+        loss: float = self.global_model.evaluate(self.x_testing,
+                                                 self.y_testing,
+                                                 verbose=0)
+
+        round_metrics = {
+            metric: self.metrics_params[metric]['function'](
+                predictions['observed'],
+                predictions['predicted'],
+                **self.metrics_params[metric]['params']
+            ) for metric in self.metrics_params
+        }
+
+        round_metrics['loss'] = loss
+
+        return round_metrics
+
+    def round_attack_metrics(self, predictions: DataFrame) -> dict[str, Float]:
+        round_metrics = {
+            metric: self.attack_metrics_params[metric]['function'](
+                predictions['observed'],
+                predictions['predicted'],
+                **self.attack_metrics_params[metric]['params']
+            ) for metric in self.attack_metrics_params
+        }
+
+        return round_metrics
 
     def start(self) -> DataFrame:
         start: float = time()
@@ -109,9 +135,20 @@ class FederatedLearning:
             bar.finish()
             self.aggregation()
 
-            metrics_i: dict = self.round_metrics(i + 1, start)
-            attack_metrics_i: dict = self.round_attack_metrics(i + 1, start)
-            predictions_i: DataFrame = self.round_predictions(i + 1)
+            predictions_i: DataFrame = self.round_predictions()
+            predictions_i['round'] = i
+
+            metrics_i: dict[str, Float] = self.round_metrics(predictions_i)
+            metrics_i['round'] = i
+            metrics_i['time'] = utils.elapsed_time(start, time())
+
+            if self.attack_metrics_params:
+                attack_metrics_i: dict[str, Float] = self.round_attack_metrics(
+                    predictions_i)
+                attack_metrics_i['round'] = i
+                attack_metrics_i['time'] = metrics_i['time']
+            else:
+                attack_metrics_i = {}
 
             metrics.append(metrics_i)
             attack_metrics.append(attack_metrics_i)

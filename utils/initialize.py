@@ -63,8 +63,7 @@ def iris_model(learning_rate: float = 0.01) -> models.Model:
 
     model.compile(
         optimizer=optimizers.Adam(learning_rate=learning_rate),  # type: ignore
-        loss='sparse_categorical_crossentropy',
-        metrics=['accuracy']
+        loss='sparse_categorical_crossentropy'
     )
 
     return model
@@ -119,18 +118,19 @@ def init_iris(nodes_num: int,
     }
 
 
-def mnist_model(learning_rate: float = 0.001) -> models.Model:
+def mnist_model(learning_rate: float = 0.001,
+                dense_units: int = 100,
+                metrics: list = []) -> models.Model:
     model: models.Model = models.Sequential([
         layers.Input(shape=(784, )),
-        layers.Dense(200, activation='relu'),
-        layers.Dense(200, activation='relu'),
+        layers.Dense(dense_units, activation='relu'),
         layers.Dense(10, activation='softmax')
     ])
 
     model.compile(
         optimizer=optimizers.Adam(learning_rate=learning_rate),  # type: ignore
         loss='sparse_categorical_crossentropy',
-        metrics=['accuracy']
+        metrics=metrics
     )
 
     return model
@@ -187,9 +187,8 @@ def spam_model(learning_rate: float = 0.01,
 
     # Compile the model
     model.compile(
-        optimizer=optimizers.Adam(learning_rate=learning_rate),
-        loss='binary_crossentropy',
-        metrics=['accuracy']
+        optimizer=optimizers.Adam(learning_rate=learning_rate),  # type: ignore
+        loss='binary_crossentropy'
     )
 
     return model
