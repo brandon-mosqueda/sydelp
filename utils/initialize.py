@@ -175,21 +175,20 @@ def init_mnist(nodes_num: int,
 
 
 def spam_model(learning_rate: float = 0.01,
-               vocabulary_size: int = 10000,
-               embedding_dim: int = 128,
-               max_sequence_length: int = 50) -> models.Model:
+               vocabulary_size: int = 1000,
+               embedding_dim: int = 64,
+               lstm_units: int = 32) -> models.Model:
     model = Sequential([
         layers.Embedding(input_dim=vocabulary_size,
-                         output_dim=embedding_dim,
-                         input_length=max_sequence_length),
-        layers.LSTM(64),
-        layers.Dense(2, activation='softmax')
+                         output_dim=embedding_dim),
+        layers.LSTM(lstm_units),
+        layers.Dense(1, activation='sigmoid')
     ])
 
     # Compile the model
     model.compile(
-        optimizer=optimizers.Adam(learning_rate=learning_rate),  # type: ignore
-        loss='sparse_categorical_crossentropy',
+        optimizer=optimizers.Adam(learning_rate=learning_rate),
+        loss='binary_crossentropy',
         metrics=['accuracy']
     )
 
@@ -197,7 +196,7 @@ def spam_model(learning_rate: float = 0.01,
 
 
 def spam_data(testing_proportion: float = 0.2,
-              vocabulary_size: int = 10000,
+              vocabulary_size: int = 1000,
               max_sequence_length: int = 50) -> list[NDArray[NNumeric]]:
     file_path: str = "data/sms_spam_collection/SMSSpamCollection"
 
