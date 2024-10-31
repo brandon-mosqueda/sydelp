@@ -9,14 +9,14 @@ from sklearn.preprocessing import LabelEncoder
 from os.path import isfile
 from zipfile import ZipFile
 from io import BytesIO
-from utils.split import class_non_iid_split, Split
+from utils.split import class_non_iid_split, Split, dirichlet_split
 from nodes.node import Node
 from keras import optimizers
 from keras import layers, models
 from sklearn.datasets import load_iris
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from typing import TypedDict, Callable, TypeVar, Generic
+from typing import TypedDict, Callable, TypeVar, Union
 from numpy.typing import NDArray
 from utils.utils import NNumeric
 from keras.datasets.mnist import load_data as load_mnist  # type: ignore
@@ -150,16 +150,25 @@ def mnist_data() -> list[NDArray[NNumeric]]:
 
 def init_mnist(nodes_num: int,
                learning_rate: float = 0.001,
+               dense_units: int = 100,
                epochs: int = 5,
-               batch_size: int = 10) -> Initializer:
+               batch_size: int = 16,
+               alpha: float = 0.1,
+               split_min_size: Union[int, None] = 16) -> Initializer:
     # Load and preprocess the data
     X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric]
     y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]
-    X_train, y_train, X_test, y_test = mnist_data()
+    X_train, X_test, y_train, y_test = mnist_data()
 
-    global_model: models.Model = mnist_model(learning_rate)
+    global_model: models.Model = mnist_model(learning_rate, dense_units)
 
-    splits: list[Split] = class_non_iid_split(X_train, y_train, nodes_num)
+    splits: list[Split] = dirichlet_split(
+        X_train,
+        y_train,
+        n_splits=nodes_num,
+        alpha=alpha,
+        split_min_size=split_min_size
+    )
     nodes: list[Node] = init_nodes(splits=splits,
                                    model_fn=mnist_model,
                                    learning_rate=learning_rate,

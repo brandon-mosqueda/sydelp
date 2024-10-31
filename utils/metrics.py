@@ -1,6 +1,6 @@
 import numpy as np
 
-from sklearn.metrics import recall_score
+from sklearn.metrics import recall_score, f1_score as _f1_score
 from numpy.typing import NDArray, ArrayLike
 from utils.utils import NNumeric, Float, Int
 
@@ -40,3 +40,7 @@ def label_recall(y_true: NDArray[NNumeric],
     ))
 
     return recalls[label]
+
+
+def f1_score(y_true: NDArray[NNumeric], y_pred: NDArray[NNumeric]) -> Float:
+    return float(_f1_score(y_true, y_pred, zero_division=0))
