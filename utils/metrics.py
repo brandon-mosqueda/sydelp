@@ -1,0 +1,42 @@
+import numpy as np
+
+from sklearn.metrics import recall_score
+from numpy.typing import NDArray, ArrayLike
+from utils.utils import NNumeric, Float, Int
+
+
+def label_flipping_success_rate(y_true: NDArray[NNumeric],
+                                y_pred: NDArray[NNumeric],
+                                source: Int,
+                                target: Int) -> Float:
+    if y_true.size != y_pred.size:
+        raise ValueError('y_true and y_pred must have the same length')
+
+    source_indices: NDArray[np.int64] = np.where(y_true == source)[0]
+
+    if not y_true.size or not source_indices.size:
+        return 0
+
+    success_rate: int = np.sum(y_pred[source_indices] == target)
+
+    return success_rate / len(source_indices)
+
+
+def label_recall(y_true: NDArray[NNumeric],
+                 y_pred: NDArray[NNumeric],
+                 label: Int) -> Float:
+    if y_true.size != y_pred.size:
+        raise ValueError('y_true and y_pred must have the same length')
+
+    if not y_true.size:
+        return 0
+
+    recalls: NDArray = np.array(recall_score(
+        y_true,
+        y_pred,
+        average=None,
+        labels=np.arange(label + 1),
+        zero_division=0
+    ))
+
+    return recalls[label]

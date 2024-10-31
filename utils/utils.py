@@ -11,6 +11,9 @@ NNumeric = Union[
     np.float16, np.float32, np.float64, np.float128
 ]
 
+Int = Union[np.uint, np.uint8, np.uint16, np.uint32, np.uint64,
+            np.int8, np.int16, np.int32, np.int64, int]
+
 Float = Union[float, np.float16, np.float32, np.float64, np.float128]
 
 Weights = list[NDArray[NNumeric]]
