@@ -1,9 +1,13 @@
 import progressbar
 
 import numpy as np
+import keras.optimizers as optimizers  # type: ignore
 
+from json import load as load_json
+from keras import models
+from keras.src.models import Model as KerasModel
 from numpy.typing import NDArray
-from typing import Union, Sequence
+from typing import Union
 
 NNumeric = Union[
     np.uint, np.uint8, np.uint16, np.uint32, np.uint64,
@@ -169,3 +173,26 @@ def remove_indices(x: list, indices: list) -> list:
         item for i, item in enumerate(x)
         if i not in indices_set
     ]
+
+
+def replicate_model(model: KerasModel,
+                    n: int = 5,
+                    same_weights: bool = True,
+                    compiled: bool = True) -> list[KerasModel]:
+    model_list: list[KerasModel] = [models.clone_model(model) for _ in range(n)]
+
+    if same_weights:
+        [mod.set_weights(model.get_weights()) for mod in model_list]
+
+    if compiled:
+        for mod in model_list:
+            mod.compile(optimizer=optimizers.deserialize(
+                            optimizers.serialize(model.optimizer)),
+                        loss=model.loss)
+
+    return model_list
+
+
+def read_json(file: str) -> dict:
+    with open(file) as json_file:
+        return load_json(json_file)

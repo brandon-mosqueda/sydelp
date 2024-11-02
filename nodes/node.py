@@ -1,8 +1,5 @@
-import numpy as np
-
 from utils.utils import NNumeric, Weights
 from numpy.typing import NDArray
-from pandas import DataFrame
 from keras.src.models import Model as KerasModel
 
 
@@ -41,9 +38,3 @@ class Node:
                        epochs=self.epochs,
                        batch_size=self.batch_size,
                        verbose=0)
-
-    def predict(self, x) -> DataFrame:
-        predictions: DataFrame = DataFrame(self.model.predict(x, verbose=0))
-        predictions["predicted"] = np.argmax(predictions, axis=1)
-
-        return predictions

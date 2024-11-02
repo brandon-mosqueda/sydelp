@@ -1,7 +1,6 @@
 import pandas as pd
 import requests as rq
 
-from tensorflow.keras.models import Sequential # type: ignore
 from tensorflow.keras.preprocessing.text import Tokenizer # type: ignore
 from tensorflow.keras.preprocessing.sequence import pad_sequences # type: ignore
 from sklearn.model_selection import train_test_split
@@ -33,15 +32,17 @@ AnyNode = TypeVar('AnyNode', bound='Node')
 
 def init_nodes(splits: list[Split],
                model_fn: Callable,
-               learning_rate: float = 0.01,
                epochs: int = 10,
                batch_size: int = 32,
                node_class: Callable[..., AnyNode] = Node,
+               model_args: dict = {
+                   'learning_rate': 0.01
+                },
                **kwargs) -> list[AnyNode]:
     nodes: list[AnyNode] = []
 
     for split in splits:
-        model: models.Model = model_fn(learning_rate)
+        model: models.Model = model_fn(**model_args)
         node: AnyNode = node_class(x=split['X'],
                                    y=split['y'],
                                    model=model,
@@ -183,21 +184,26 @@ def init_mnist(nodes_num: int,
     }
 
 
-def spam_model(learning_rate: float = 0.01,
+def spam_model(learning_rate: float = 0.001,
                vocabulary_size: int = 1000,
+               sequence_length: int = 50,
                embedding_dim: int = 64,
-               lstm_units: int = 32) -> models.Model:
-    model = Sequential([
+               lstm_units: int = 32,
+               metrics: list = []) -> models.Model:
+    model: models.Model = models.Sequential([
+        # The sequence length is the same as the number of columns in the input
+        # matrix after tokenization
+        layers.Input(shape=(sequence_length,)),
         layers.Embedding(input_dim=vocabulary_size,
                          output_dim=embedding_dim),
         layers.LSTM(lstm_units),
         layers.Dense(1, activation='sigmoid')
     ])
 
-    # Compile the model
     model.compile(
         optimizer=optimizers.Adam(learning_rate=learning_rate),  # type: ignore
-        loss='binary_crossentropy'
+        loss='binary_crossentropy',
+        metrics=metrics
     )
 
     return model

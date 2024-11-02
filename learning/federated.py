@@ -43,7 +43,7 @@ class FederatedLearning:
     def __init__(self,
                  rounds: int,
                  nodes: list[Node],
-                 global_model: type,
+                 global_model: KerasModel,
                  x_testing: NDArray[NNumeric],
                  y_testing: NDArray[NNumeric],
                  aggregation_params: AggParams = {
@@ -168,6 +168,8 @@ class FederatedLearning:
 
         self.metrics.to_csv(os.path.join(dir, "metrics.csv"),
                             index=False)
+        self.attack_metrics.to_csv(os.path.join(dir, "attack_metrics.csv"),
+                                   index=False)
         self.predictions.to_csv(os.path.join(dir, "predictions.csv"),
                                 index=False)
 

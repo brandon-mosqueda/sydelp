@@ -42,5 +42,5 @@ def label_recall(y_true: NDArray[NNumeric],
     return recalls[label]
 
 
-def f1_score(y_true: NDArray[NNumeric], y_pred: NDArray[NNumeric]) -> Float:
+def f1_score(y_true: ArrayLike, y_pred: ArrayLike) -> Float:
     return float(_f1_score(y_true, y_pred, zero_division=0))
