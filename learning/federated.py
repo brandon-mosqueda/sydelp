@@ -83,6 +83,7 @@ class FederatedLearning:
         # For binary classification
         if preds.shape[1] == 1:
             preds = pd.concat([1 - preds[0], preds], axis=1)
+            preds.columns = [0, 1]
 
         preds['predicted'] = np.argmax(preds, axis=1)
         preds['observed'] = self.y_testing
@@ -139,12 +140,14 @@ class FederatedLearning:
             predictions_i['round'] = i
 
             metrics_i: dict[str, Float] = self.round_metrics(predictions_i)
+            print("\t- Metrics:", metrics_i)
             metrics_i['round'] = i
             metrics_i['time'] = utils.elapsed_time(start, time())
 
             if self.attack_metrics_params:
                 attack_metrics_i: dict[str, Float] = self.round_attack_metrics(
                     predictions_i)
+                print("\t- Attack metrics:", attack_metrics_i)
                 attack_metrics_i['round'] = i
                 attack_metrics_i['time'] = metrics_i['time']
             else:
@@ -163,13 +166,22 @@ class FederatedLearning:
 
         return self.metrics
 
-    def save(self, dir: str, all: bool = False) -> None:
+    def save(self, dir: str, all: bool = False, metadata: dict = {}) -> None:
         os.makedirs(dir, exist_ok=True)
 
-        self.metrics.to_csv(os.path.join(dir, "metrics.csv"),
-                            index=False)
-        self.attack_metrics.to_csv(os.path.join(dir, "attack_metrics.csv"),
-                                   index=False)
+        for key in metadata:
+            self.metrics[key] = metadata[key]
+            self.attack_metrics[key] = metadata[key]
+            self.predictions[key] = metadata[key]
+
+        if self.metrics_params:
+            self.metrics.to_csv(os.path.join(dir, "metrics.csv"),
+                                index=False)
+
+        if self.attack_metrics_params:
+            self.attack_metrics.to_csv(os.path.join(dir, "attack_metrics.csv"),
+                                    index=False)
+
         self.predictions.to_csv(os.path.join(dir, "predictions.csv"),
                                 index=False)
 

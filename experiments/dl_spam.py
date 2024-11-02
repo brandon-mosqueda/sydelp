@@ -1,6 +1,7 @@
-import os
+import sys
+sys.path.append("/home/bmosqueda/doctorado/experiments/decentralized_learning")
 
-os.chdir("/home/bmosqueda/doctorado/experiments/decentralized_learning")
+import os
 
 import utils.initialize as init
 import utils.utils as utils
@@ -37,25 +38,22 @@ splits: list[Split] = dirichlet_split(
 global_model: KerasModel = init.spam_model(
     learning_rate = params['learning_rate'],
     vocabulary_size = params['vocabulary_size'],
+    sequence_length=params['max_sequence_length'],
     embedding_dim = params['embedding_dim'],
-    lstm_units = params['lstm_units'],
-    sequence_length=params['max_sequence_length']
+    lstm_units = params['lstm_units']
 )
 
 models: list[KerasModel] = utils.replicate_model(global_model,
-                                                 n=params['nodes_num'],
-                                                 same_weights=True)
-
+                                                 n=params['nodes_num'])
 
 nodes: list[Node] = []
 
 for i, split in enumerate(splits):
-    node: Node = Node(x=split['X'],
+    nodes.append(Node(x=split['X'],
                       y=split['y'],
                       model=models[i],
                       epochs=params['local_epochs_num'],
-                      batch_size=params['batch_size'])
-    nodes.append(node)
+                      batch_size=params['batch_size']))
 
 # Create a FederatedLearning instance
 federated_learning = FederatedLearning(
@@ -72,10 +70,14 @@ federated_learning = FederatedLearning(
 
 federated_learning.start()
 
-federated_learning.metrics
-federated_learning.attack_metrics
-federated_learning.predictions
-
 print("Total running time: %.4f minutes" % federated_learning.execution_time)
 
-federated_learning.save('trash/federated_learning', all=True)
+results_dir: str = os.path.join(
+    params['results_dir'], "DL", "spam", "no_attack")
+
+metadata = {
+    'Protocol': 'DL',
+    'Dataset': 'SMS Spam',
+    'Attack': 'No attack'
+}
+federated_learning.save(results_dir, all=True, metadata=metadata)
