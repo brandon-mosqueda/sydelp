@@ -1,7 +1,8 @@
 import sys
-sys.path.append("/home/bmosqueda/doctorado/experiments/decentralized_learning")
-
 import os
+
+os.chdir("/home/bmosqueda/doctorado/experiments/decentralized_learning")
+sys.path.append("/home/bmosqueda/doctorado/experiments/decentralized_learning")
 
 import utils.initialize as init
 import utils.utils as utils
@@ -17,7 +18,7 @@ from keras.src.models import Model as KerasModel
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-params: dict = utils.read_json('experiments/dl_spam.json')
+params: dict = utils.read_json('params/01.dl_spam.json')
 
 X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric]
 y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]
