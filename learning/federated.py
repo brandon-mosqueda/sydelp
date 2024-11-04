@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import utils.utils as utils
 
-from typing import Callable, TypedDict
+from typing import Callable, TypedDict, Protocol
 from numpy.typing import NDArray, ArrayLike
 from pandas import DataFrame, concat
 from nodes.node import Node
@@ -20,8 +20,13 @@ class AggParams(TypedDict):
     params: dict
 
 
+class MetricFunction(Protocol):
+    def __call__(self, y_true: ArrayLike, y_pred: ArrayLike,
+                 *args, **kwargs) -> Float: ...
+
+
 class MetricParams(TypedDict):
-    function: Callable[[ArrayLike, ArrayLike], Float]
+    function: MetricFunction
     params: dict
 
 
@@ -47,7 +52,8 @@ class FederatedLearning:
                  x_testing: NDArray[NNumeric],
                  y_testing: NDArray[NNumeric],
                  aggregation_params: AggParams = {
-                     'function': fed_avg, 'params': {}},
+                     'function': fed_avg, 'params': {}
+                 },
                  metrics_params: dict[str, MetricParams] = {
                      'accuracy': {'function': accuracy_score, 'params': {}}
                  },

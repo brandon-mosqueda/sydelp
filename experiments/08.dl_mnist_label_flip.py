@@ -8,17 +8,18 @@ import utils.initialize as init
 import utils.utils as utils
 
 from nodes.node import Node
-from nodes.random_node import RandomNode
+from nodes.targeted_label_flipping_node import TargetedLabelFlippingNode
 from numpy.typing import NDArray
 from utils.utils import NNumeric
 from utils.split import dirichlet_split, Split
 from learning.federated import FederatedLearning
+from utils.metrics import label_flipping_success_rate, label_recall
 from sklearn.metrics import accuracy_score
 from keras.src.models import Model as KerasModel
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-params: dict = utils.read_json('params/07.dl_mnist_random.json')
+params: dict = utils.read_json('params/08.dl_mnist_label_flip.json')
 
 X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric]
 y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]
@@ -44,13 +45,15 @@ nodes: list[Node] = []
 
 for i in range(params['nodes_num']):
     if i < params['malicious_num']:
-        nodes.append(RandomNode(mean=params['attack_mean'],
-                                sd=params['attack_sd'],
-                                x=splits[i]['X'],
-                                y=splits[i]['y'],
-                                model=models[i],
-                                epochs=params['local_epochs_num'],
-                                batch_size=params['batch_size']))
+        nodes.append(TargetedLabelFlippingNode(
+            source=params['source_label'],
+            target=params['target_label'],
+            x=splits[i]['X'],
+            y=splits[i]['y'],
+            model=models[i],
+            epochs=params['local_epochs_num'],
+            batch_size=params['batch_size']
+        ))
     else:
         nodes.append(Node(x=splits[i]['X'],
                           y=splits[i]['y'],
@@ -65,7 +68,20 @@ federated_learning = FederatedLearning(
     global_model=global_model,
     x_testing=X_test,
     y_testing=y_test,
-    metrics_params={'accuracy': {'function': accuracy_score, 'params': {}}}
+    metrics_params={'accuracy': {'function': accuracy_score, 'params': {}}},
+    attack_metrics_params={
+        'attack_success_rate': {
+            'function': label_flipping_success_rate,
+            'params': {
+                'source': params['source_label'],
+                'target': params['target_label']
+            }
+        },
+        'label_recall': {
+            'function': label_recall,
+            'params': {'label': params['source_label']}
+        }
+    }
 )
 
 federated_learning.start()
@@ -73,11 +89,11 @@ federated_learning.start()
 print("Total running time: %.4f minutes" % federated_learning.execution_time)
 
 results_dir: str = os.path.join(
-    params['results_dir'], "DL", "mnist", "random")
+    params['results_dir'], "DL", "mnist", "label_flipping")
 
 metadata = {
     'Protocol': 'DL',
     'Dataset': 'MNIST',
-    'Attack': 'Random'
+    'Attack': 'Label flipping'
 }
 federated_learning.save(results_dir, all=True, metadata=metadata)
