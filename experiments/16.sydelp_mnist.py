@@ -13,7 +13,6 @@ from utils.utils import NNumeric
 from utils.split import dirichlet_split, Split
 from utils.aggregation import krum
 from learning.federated import FederatedLearning
-from utils.metrics import f1_score
 from sklearn.metrics import accuracy_score
 from keras.src.models import Model as KerasModel
 

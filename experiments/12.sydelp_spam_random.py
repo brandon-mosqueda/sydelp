@@ -12,17 +12,23 @@ from nodes.random_node import RandomNode
 from numpy.typing import NDArray
 from utils.utils import NNumeric
 from utils.split import dirichlet_split, Split
+from utils.aggregation import krum
 from learning.federated import FederatedLearning
+from utils.metrics import f1_score
 from sklearn.metrics import accuracy_score
 from keras.src.models import Model as KerasModel
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-params: dict = utils.read_json('params/07.dl_mnist_random.test.json')
+params: dict = utils.read_json('params/12.sydelp_spam_random.json')
 
 X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric]
 y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]
-X_train, X_test, y_train, y_test = init.mnist_data()
+X_train, X_test, y_train, y_test = init.spam_data(
+    testing_proportion=params['testing_proportion'],
+    vocabulary_size=params['vocabulary_size'],
+    max_sequence_length=params['max_sequence_length'],
+)
 
 splits: list[Split] = dirichlet_split(
     X_train,
@@ -32,15 +38,19 @@ splits: list[Split] = dirichlet_split(
     split_min_size=params['split_min_size'],
 )
 
-global_model: KerasModel = init.mnist_model(
+global_model: KerasModel = init.spam_model(
     learning_rate = params['learning_rate'],
-    dense_units = params['dense_units']
+    vocabulary_size = params['vocabulary_size'],
+    sequence_length=params['max_sequence_length'],
+    embedding_dim = params['embedding_dim'],
+    lstm_units = params['lstm_units']
 )
 
 models: list[KerasModel] = utils.replicate_model(global_model,
                                                  n=params['nodes_num'])
 
 nodes: list[Node] = []
+
 
 for i in range(params['nodes_num']):
     if i < params['malicious_num']:
@@ -58,6 +68,7 @@ for i in range(params['nodes_num']):
                           epochs=params['local_epochs_num'],
                           batch_size=params['batch_size']))
 
+
 # Create a FederatedLearning instance
 federated_learning = FederatedLearning(
     rounds=params['iterations_num'],
@@ -65,7 +76,14 @@ federated_learning = FederatedLearning(
     global_model=global_model,
     x_testing=X_test,
     y_testing=y_test,
-    metrics_params={'accuracy': {'function': accuracy_score, 'params': {}}}
+    aggregation_params={
+        'function': krum,
+        'params': {'m': params['expected_malicious_num']}
+    },
+    metrics_params={
+        'accuracy': {'function': accuracy_score, 'params': {}},
+        'f1_score': {'function': f1_score, 'params': {}}
+    }
 )
 
 federated_learning.start()
@@ -73,11 +91,11 @@ federated_learning.start()
 print("Total running time: %.4f minutes" % federated_learning.execution_time)
 
 results_dir: str = os.path.join(
-    params['results_dir'], "DL", "mnist", "random")
+    params['results_dir'], "sydelp", "spam", "random")
 
 metadata = {
-    'Protocol': 'DL',
-    'Dataset': 'MNIST',
+    'Protocol': 'SyDeLP',
+    'Dataset': 'SMS Spam',
     'Attack': 'Random'
 }
 federated_learning.save(results_dir, all=True, metadata=metadata)

@@ -12,13 +12,14 @@ from nodes.random_node import RandomNode
 from numpy.typing import NDArray
 from utils.utils import NNumeric
 from utils.split import dirichlet_split, Split
+from utils.aggregation import krum
 from learning.federated import FederatedLearning
 from sklearn.metrics import accuracy_score
 from keras.src.models import Model as KerasModel
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-params: dict = utils.read_json('params/07.dl_mnist_random.test.json')
+params: dict = utils.read_json('params/17.sydelp_mnist_random.json')
 
 X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric]
 y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]
@@ -34,7 +35,7 @@ splits: list[Split] = dirichlet_split(
 
 global_model: KerasModel = init.mnist_model(
     learning_rate = params['learning_rate'],
-    dense_units = params['dense_units']
+    dense_units = params['dense_units'],
 )
 
 models: list[KerasModel] = utils.replicate_model(global_model,
@@ -65,6 +66,10 @@ federated_learning = FederatedLearning(
     global_model=global_model,
     x_testing=X_test,
     y_testing=y_test,
+    aggregation_params={
+        'function': krum,
+        'params': {'m': params['expected_malicious_num']}
+    },
     metrics_params={'accuracy': {'function': accuracy_score, 'params': {}}}
 )
 
@@ -73,10 +78,10 @@ federated_learning.start()
 print("Total running time: %.4f minutes" % federated_learning.execution_time)
 
 results_dir: str = os.path.join(
-    params['results_dir'], "DL", "mnist", "random")
+    params['results_dir'], "sydelp", "mnist", "random")
 
 metadata = {
-    'Protocol': 'DL',
+    'Protocol': 'SyDeLP',
     'Dataset': 'MNIST',
     'Attack': 'Random'
 }
