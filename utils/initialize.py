@@ -17,8 +17,13 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from typing import TypedDict, Callable, TypeVar, Union
 from numpy.typing import NDArray
-from utils.utils import NNumeric
+from utils.utils import NNumeric, as_name
 from keras.datasets.mnist import load_data as load_mnist  # type: ignore
+from keras.src.models import Model as KerasModel
+from learning.federated import AggParams, MetricParams
+from utils.aggregation import fed_avg, krum
+from utils.metrics import f1_score, label_flipping_success_rate, label_recall
+from sklearn.metrics import accuracy_score
 
 
 class Initializer(TypedDict):
@@ -263,3 +268,73 @@ def spam_data(testing_proportion: float = 0.2,
     )
 
     return [X_train_padded, X_test_padded, y_train, y_test]
+
+
+def get_dataset(params: dict) -> list[NDArray[NNumeric]]:
+    if as_name(params['dataset']) == "mnist":
+        return mnist_data()
+    elif as_name(params['dataset']) == "sms_spam":
+        return spam_data(
+            testing_proportion=params['testing_proportion'],
+            vocabulary_size=params['vocabulary_size'],
+            max_sequence_length=params['max_sequence_length'],
+        )
+    else:
+        raise ValueError(f"{params['dataset']} is not a valid dataset")
+
+
+def get_model_by_dataset(params: dict) -> KerasModel:
+    if as_name(params['dataset']) == "mnist":
+        return mnist_model(
+            learning_rate=params['learning_rate'],
+            dense_units=params['dense_units'],
+        )
+    elif as_name(params['dataset']) == "sms_spam":
+        return spam_model(
+            learning_rate=params['learning_rate'],
+            vocabulary_size=params['vocabulary_size'],
+            sequence_length=params['max_sequence_length'],
+            embedding_dim=params['embedding_dim'],
+            lstm_units=params['lstm_units'],
+        )
+    else:
+        raise ValueError(f"{params['dataset']} is not a valid dataset")
+
+
+def get_aggregation_by_protocol(params: dict) -> AggParams:
+    if as_name(params['protocol']) in ["dl", "baseline"]:
+        return {'function': fed_avg, 'params': {}}
+    elif as_name(params['protocol']) == "sydelp":
+        return {
+            'function': krum,
+            'params': {'m': params['expected_malicious_num']}
+        }
+    else:
+        raise ValueError(f"{params['protocol']} is not a valid protocol")
+
+
+def get_metrics(params: dict) -> dict[str, MetricParams]:
+    metrics: dict[str, MetricParams] = {}
+
+    for metric in params['metrics']:
+        if metric == 'accuracy':
+            metrics['accuracy'] = {'function': accuracy_score, 'params': {}}
+        elif metric == 'f1_score':
+            metrics['f1_score'] = {'function': f1_score, 'params': {}}
+        elif metric == 'attack_success_rate':
+            metrics['attack_success_rate'] = {
+                'function': label_flipping_success_rate,
+                'params': {
+                    'source': params['source_label'],
+                    'target': params['target_label']
+                }
+            }
+        elif metric == 'label_recall':
+            metrics['label_recall'] = {
+                'function': label_recall,
+                'params': {'label': params['source_label']}
+            }
+        else:
+            raise ValueError(f'metric "{metric}" not recognized')
+
+    return metrics

@@ -7,7 +7,7 @@ from json import load as load_json
 from keras import models
 from keras.src.models import Model as KerasModel
 from numpy.typing import NDArray
-from typing import Union
+from typing import Union, Any
 
 NNumeric = Union[
     np.uint, np.uint8, np.uint16, np.uint32, np.uint64,
@@ -196,3 +196,7 @@ def replicate_model(model: KerasModel,
 def read_json(file: str) -> dict:
     with open(file) as json_file:
         return load_json(json_file)
+
+
+def as_name(x: Any):
+    return str(x).lower().replace(' ', '_')
