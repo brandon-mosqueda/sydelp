@@ -10,6 +10,7 @@ from numpy.typing import NDArray
 from utils.split import Split
 from utils.utils import NNumeric
 from sklearn.datasets import load_iris, load_digits
+from numpy.testing import assert_array_equal
 
 class TestSplit(TestCase):
     iris: Split
@@ -96,6 +97,13 @@ class TestSplit(TestCase):
                 "All splits should have at least split_min_size size"
             )
 
+    def assert_same_splits(self, x: list[Split], y: list[Split]):
+        self.assertEqual(len(x), len(y), "Splits have to have the same length")
+
+        for s, ss in zip(x, y):
+            assert_array_equal(s['X'], ss['X'])
+            assert_array_equal(s['y'], ss['y'])
+
     def test_class_non_iid(self):
         splits: list[Split] = class_non_iid_split(
             self.iris['X'],
@@ -125,6 +133,32 @@ class TestSplit(TestCase):
 
         self.assert_splits(splits, self.digits['y'], 33)
         self.assert_class_non_iid_splits(splits, 4)
+
+        # With seeds
+        splits: list[Split] = class_non_iid_split(
+            self.digits['X'],
+            self.digits['y'],
+            n_splits=10,
+            n_classes_per_split=4,
+            seed=5
+        )
+        splits2: list[Split] = class_non_iid_split(
+            self.digits['X'],
+            self.digits['y'],
+            n_splits=10,
+            n_classes_per_split=4,
+            seed=5
+        )
+        splits3: list[Split] = class_non_iid_split(
+            self.digits['X'],
+            self.digits['y'],
+            n_splits=10,
+            n_classes_per_split=4,
+            seed=5
+        )
+
+        self.assert_same_splits(splits, splits2)
+        self.assert_same_splits(splits, splits3)
 
     def test_dirichlet(self):
         splits: list[Split] = dirichlet_split(self.digits['X'],
@@ -156,3 +190,25 @@ class TestSplit(TestCase):
 
         self.assert_splits(splits, binary_y, 12)
         self.assert_dirichlet_splits(splits, 2)
+
+        splits: list[Split] = dirichlet_split(self.iris['X'],
+                                              self.iris['y'],
+                                              n_splits=12,
+                                              alpha=0.5,
+                                              split_min_size=2,
+                                              seed=544)
+        splits2: list[Split] = dirichlet_split(self.iris['X'],
+                                               self.iris['y'],
+                                               n_splits=12,
+                                               alpha=0.5,
+                                               split_min_size=2,
+                                               seed=544)
+        splits3: list[Split] = dirichlet_split(self.iris['X'],
+                                               self.iris['y'],
+                                               n_splits=12,
+                                               alpha=0.5,
+                                               split_min_size=2,
+                                               seed=544)
+
+        self.assert_same_splits(splits, splits2)
+        self.assert_same_splits(splits, splits3)

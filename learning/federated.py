@@ -38,12 +38,10 @@ class FederatedLearning:
     rounds: int
     execution_time: float = 0
     metrics: DataFrame
-    attack_metrics: DataFrame
     predictions: DataFrame
 
     aggregation_params: AggParams
     metrics_params: dict[str, MetricParams]
-    attack_metrics_params: dict[str, MetricParams]
 
     def __init__(self,
                  rounds: int,
@@ -56,8 +54,7 @@ class FederatedLearning:
                  },
                  metrics_params: dict[str, MetricParams] = {
                      'accuracy': {'function': accuracy_score, 'params': {}}
-                 },
-                 attack_metrics_params: dict[str, MetricParams] = {}) -> None:
+                 }) -> None:
         self.nodes = nodes
         self.x_testing = x_testing
         self.y_testing = y_testing
@@ -66,7 +63,6 @@ class FederatedLearning:
 
         self.aggregation_params = aggregation_params
         self.metrics_params = metrics_params
-        self.attack_metrics_params = attack_metrics_params
 
     def aggregation(self) -> None:
         weights: list[Weights] = [node.get_weights() for node in self.nodes]
@@ -113,21 +109,9 @@ class FederatedLearning:
 
         return round_metrics
 
-    def round_attack_metrics(self, predictions: DataFrame) -> dict[str, Float]:
-        round_metrics = {
-            metric: self.attack_metrics_params[metric]['function'](
-                predictions['observed'],
-                predictions['predicted'],
-                **self.attack_metrics_params[metric]['params']
-            ) for metric in self.attack_metrics_params
-        }
-
-        return round_metrics
-
     def start(self) -> DataFrame:
         start: float = time()
         metrics: list[dict] = []
-        attack_metrics: list[dict] = []
         predictions: list[DataFrame] = []
 
         for i in range(self.rounds):
@@ -150,20 +134,9 @@ class FederatedLearning:
             metrics_i['round'] = i
             metrics_i['time'] = utils.elapsed_time(start, time())
 
-            if self.attack_metrics_params:
-                attack_metrics_i: dict[str, Float] = self.round_attack_metrics(
-                    predictions_i)
-                print("\t- Attack metrics:", attack_metrics_i)
-                attack_metrics_i['round'] = i
-                attack_metrics_i['time'] = metrics_i['time']
-            else:
-                attack_metrics_i = {}
-
             metrics.append(metrics_i)
-            attack_metrics.append(attack_metrics_i)
             predictions.append(predictions_i)
 
-        self.attack_metrics = pd.DataFrame(attack_metrics)
         self.metrics = pd.DataFrame(metrics)
         self.predictions = pd.concat(predictions)
 
@@ -177,16 +150,9 @@ class FederatedLearning:
 
         for key in metadata:
             self.metrics[key] = metadata[key]
-            self.attack_metrics[key] = metadata[key]
             self.predictions[key] = metadata[key]
 
-        if self.metrics_params:
-            self.metrics.to_csv(os.path.join(dir, "metrics.csv"),
-                                index=False)
-
-        if self.attack_metrics_params:
-            self.attack_metrics.to_csv(os.path.join(dir, "attack_metrics.csv"),
-                                    index=False)
+        self.metrics.to_csv(os.path.join(dir, "metrics.csv"), index=False)
 
         self.predictions.to_csv(os.path.join(dir, "predictions.csv"),
                                 index=False)
