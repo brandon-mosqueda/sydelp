@@ -4,9 +4,9 @@ import numpy as np
 import pandas as pd
 import utils.utils as utils
 
-from typing import Callable, TypedDict, Protocol
+from typing import TypedDict, Protocol
 from numpy.typing import NDArray, ArrayLike
-from pandas import DataFrame, concat
+from pandas import DataFrame
 from nodes.node import Node
 from time import time
 from utils.utils import MyProgressBar, NNumeric, ModelParams, Float
@@ -15,8 +15,13 @@ from utils.aggregation import fed_avg
 from sklearn.metrics import accuracy_score
 
 
+class AggFunction(Protocol):
+    def __call__(self, models_params: list[ModelParams],
+                 *args, **kwargs) -> ModelParams: ...
+
+
 class AggParams(TypedDict):
-    function: Callable[[list[ModelParams]], ModelParams]
+    function: AggFunction
     params: dict
 
 
@@ -61,11 +66,20 @@ class FederatedLearning:
         self.global_model = global_model
         self.rounds = rounds
 
+        if (aggregation_params['function'] is fed_avg
+            and 'weights' not in aggregation_params['params']):
+            total_data: int = np.sum([node.x.shape[0] for node in nodes])
+            aggregation_params['params']['weights'] = np.array([
+                node.x.shape[0] / total_data for node in nodes
+            ])
         self.aggregation_params = aggregation_params
+
         self.metrics_params = metrics_params
 
     def aggregation(self) -> None:
-        models: list[ModelParams] = [node.get_model_params() for node in self.nodes]
+        models: list[ModelParams] = [
+            node.get_model_params() for node in self.nodes
+        ]
         avg_models: ModelParams = self.aggregation_params['function'](
             models,
             **self.aggregation_params['params']

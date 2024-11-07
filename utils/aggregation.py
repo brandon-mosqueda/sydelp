@@ -2,17 +2,31 @@ import numpy as np
 
 from numpy.typing import NDArray
 from typing import Union
-from utils.utils import ModelParams, bottom_indices, bottom_n
+from utils.utils import ModelParams, bottom_indices, bottom_n, NNumeric
 
 
-def fed_avg(models_params: list[ModelParams]) -> ModelParams:
+def fed_avg(models_params: list[ModelParams],
+            weights: NDArray[NNumeric]) -> ModelParams:
+    weights = weights.astype("float")
+
+    if len(models_params) != weights.size:
+        raise ValueError(
+            "models_params and data_sizes have to be of same length "
+            "(%s != %s)" % (len(models_params), weights.size)
+        )
+
     if not models_params:
         return []
 
     avg_params: ModelParams = []
+    layers_num: int = len(models_params[0])
 
-    for i in range(len(models_params[0])):
-        avg_params.append(np.mean([w[i] for w in models_params], axis=0))
+    for i in range(layers_num):
+        layer_params: NDArray = np.array([
+            model[i] * weight for model, weight in zip(models_params, weights)
+        ])
+
+        avg_params.append(layer_params.sum(axis=0))
 
     return avg_params
 
@@ -41,8 +55,11 @@ def model_params_distance_matrix(
 
 def krum(models_params: list[ModelParams],
          m: Union[float, int] = 0.3) -> ModelParams:
-    if len(models_params) < 3:
-        return fed_avg(models_params)
+    if not models_params:
+        return []
+    elif len(models_params) < 3:
+        weights: NDArray = np.repeat(1/len(models_params), len(models_params))
+        return fed_avg(models_params, weights)
 
     if m < 1:
         m = len(models_params) * m
@@ -51,7 +68,8 @@ def krum(models_params: list[ModelParams],
     m = min(int(m), n - 2)
     n_models: int = n - m - 2
 
-    distances: NDArray[np.float128] = model_params_distance_matrix(models_params)
+    distances: NDArray[np.float128] = model_params_distance_matrix(
+        models_params)
     scores: NDArray[np.float128] = np.zeros(n, dtype="float128")
 
     for i in range(n):
@@ -60,6 +78,9 @@ def krum(models_params: list[ModelParams],
         scores[i] = np.sum(bottom_n(distances[i], n_models + 1))
 
     best_indices: NDArray[np.int64] = bottom_indices(scores, n - m)
-    aggregated_model: ModelParams = fed_avg([models_params[i] for i in best_indices])
+    aggregated_model: ModelParams = fed_avg(
+        [models_params[i] for i in best_indices],
+        np.repeat(1/best_indices.size, best_indices.size)
+    )
 
     return aggregated_model

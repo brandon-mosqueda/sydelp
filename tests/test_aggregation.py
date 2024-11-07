@@ -1,5 +1,6 @@
 import numpy as np
 
+from numpy import array
 from utils.aggregation import *
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 from unittest import TestCase
@@ -7,19 +8,19 @@ from unittest import TestCase
 
 class TestAggregation(TestCase):
     x = [
-        np.array([0.08, 0.72, 0.67]),
-        np.array([0.01, 0.53, 0.24]),
-        np.array([[0.42, 0.42], [0.35, 0.64]])
+        array([0.08, 0.72, 0.67]),
+        array([0.01, 0.53, 0.24]),
+        array([[0.42, 0.42], [0.35, 0.64]])
     ]
     y = [
-        np.array([0.82, 0.88, 0.02]),
-        np.array([0.27, 0.37, 0.11]),
-        np.array([[0.84, 0.76], [0.02, 0.34]])
+        array([0.82, 0.88, 0.02]),
+        array([0.27, 0.37, 0.11]),
+        array([[0.84, 0.76], [0.02, 0.34]])
     ]
     z = [
-        np.array([0.45, 0.30, 0.55]),
-        np.array([0.21, 0.43, 0.17]),
-        np.array([[0.12, 0.45], [0.33, 0.21]])
+        array([0.45, 0.30, 0.55]),
+        array([0.21, 0.43, 0.17]),
+        array([[0.12, 0.45], [0.33, 0.21]])
     ]
 
     @staticmethod
@@ -55,28 +56,28 @@ class TestAggregation(TestCase):
         )
         assert_array_equal(
             model_params_distance_matrix([[]]),
-            np.array([[0]], dtype="float128"),
+            array([[0]], dtype="float128"),
             strict=True
         )
         assert_array_equal(
             model_params_distance_matrix([[np.arange(10)]]),
-            np.array([[0]], dtype="float128"),
+            array([[0]], dtype="float128"),
             strict=True
         )
 
         # Single element distance
-        x = [np.array([1.0])]
-        y = [np.array([4.0])]
+        x = [array([1.0])]
+        y = [array([4.0])]
         self.assertEqual(model_params_distance(x, y), 3)
         assert_array_equal(
             model_params_distance_matrix([x, y]),
-            np.array([[0, 3], [3, 0]], dtype="float128"),
+            array([[0, 3], [3, 0]], dtype="float128"),
             strict=True
         )
 
         # Multiple element distance
-        x = np.array([1, 2, 3])
-        y = np.array([2, 3, 4])
+        x = array([1, 2, 3])
+        y = array([2, 3, 4])
         self.assertEqual(model_params_distance([x], [x]), 0)
         self.assertEqual(model_params_distance([y], [y]), 0)
         self.assertAlmostEqual(model_params_distance([x], [y]), np.sqrt(3))
@@ -86,7 +87,7 @@ class TestAggregation(TestCase):
         )
         assert_array_equal(
             model_params_distance_matrix([[x], [x]]),
-            np.array([[0, 0], [0, 0]], dtype="float128"),
+            array([[0, 0], [0, 0]], dtype="float128"),
             strict=True
         )
         assert_array_almost_equal(
@@ -99,8 +100,8 @@ class TestAggregation(TestCase):
         )
 
         # Large numbers
-        x = [np.array([1e20, 2e20])]
-        y = [np.array([3e20, 4e20])]
+        x = [array([1e20, 2e20])]
+        y = [array([3e20, 4e20])]
         expected_result = np.sqrt((2e20)**2 + (2e20)**2, dtype="float128")
         self.assertAlmostEqual(
             model_params_distance(x, y),
@@ -129,52 +130,61 @@ class TestAggregation(TestCase):
 
     def test_fed_avg(self):
         # Empty params
-        self.assertEqual(fed_avg([]), [])
-        self.assertEqual(fed_avg([[], []]), [])
+        self.assertEqual(fed_avg([], array([])), [])
+        self.assertEqual(fed_avg([[], []], array([1, 1])), [])
 
         # Single element
-        assert_array_equal(fed_avg([[np.array([5])]]),
-                           [np.array([5.0])],
+        assert_array_equal(fed_avg([[array([5])]], array([1])),
+                           [array([5.0])],
                            strict=True)
-        assert_array_equal(fed_avg([[np.array([1, 2, 3])]]),
-                           [np.array([1.0, 2.0, 3.0])],
+        assert_array_equal(fed_avg([[array([1, 2, 3])]], array([1])),
+                           [array([1.0, 2.0, 3.0])],
                            strict=True)
 
         # Multiple elements
         assert_array_equal(
-            fed_avg([[np.array([1, 2])],
-                     [np.array([3, 4])]]),
-            [np.array([2.0, 3.0])],
+            fed_avg([[array([1, 2])],
+                     [array([3, 4])]],
+                    array([0.5, 0.5])),
+            [array([2.0, 3.0])],
             strict=True
         )
         assert_array_equal(
-            fed_avg([[np.array([1, 2])],
-                     [np.array([3, 4])],
-                     [np.array([5, 6])]]),
-            [np.array([3.0, 4.0])],
+            fed_avg([[array([1, 2])],
+                     [array([3, 4])],
+                     [array([5, 6])]],
+                    array([1/3, 1/3, 1/3])),
+            [array([3.0, 4.0])],
             strict=True
         )
         assert_array_equal(
-            fed_avg([[np.array([1, 2, 3])],
-                     [np.array([4, 5, 6])]]),
-            [np.array([2.5, 3.5, 4.5])],
+            fed_avg([[array([1, 2, 3])],
+                     [array([4, 5, 6])]],
+                    array([0.5, 0.5])),
+            [array([2.5, 3.5, 4.5])],
             strict=True
         )
 
         # Complex params
         expected_result = [
-            np.array([(0.08 + 0.82 + 0.45) / 3,
+            array([(0.08 + 0.82 + 0.45) / 3,
                       (0.72 + 0.88 + 0.30) / 3,
                       (0.67 + 0.02 + 0.55) / 3]),
-            np.array([(0.01 + 0.27 + 0.21) / 3,
+            array([(0.01 + 0.27 + 0.21) / 3,
                       (0.53 + 0.37 + 0.43) / 3,
                       (0.24 + 0.11 + 0.17) / 3]),
-            np.array([[(0.42 + 0.84 + 0.12) / 3, (0.42 + 0.76 + 0.45) / 3],
+            array([[(0.42 + 0.84 + 0.12) / 3, (0.42 + 0.76 + 0.45) / 3],
                       [(0.35 + 0.02 + 0.33) / 3, (0.64 + 0.34 + 0.21) / 3]])
         ]
-        self.assert_model_params(fed_avg([self.x, self.y, self.z]), expected_result)
+        self.assert_model_params(
+            fed_avg([self.x, self.y, self.z], array([1/3, 1/3, 1/3])),
+            expected_result
+        )
         # Different order does not change the result
-        self.assert_model_params(fed_avg([self.z, self.x, self.y]), expected_result)
+        self.assert_model_params(
+            fed_avg([self.z, self.x, self.y], array([1/3, 1/3, 1/3])),
+            expected_result
+        )
 
     def test_krum(self):
         # Empty params
@@ -182,26 +192,26 @@ class TestAggregation(TestCase):
         self.assertEqual(krum([[], [], [], []], 2), [])
 
         # Single element
-        assert_array_equal(krum([[np.array([5])]], 0),
-                           [np.array([5.0])],
+        assert_array_equal(krum([[array([5])]], 0),
+                           [array([5.0])],
                            strict=True)
-        assert_array_equal(krum([[np.array([1, 2, 3])]], 0),
-                           [np.array([1.0, 2.0, 3.0])],
+        assert_array_equal(krum([[array([1, 2, 3])]], 0),
+                           [array([1.0, 2.0, 3.0])],
                            strict=True)
 
         # Multiple elements
         assert_array_equal(
-            krum([[np.array([1, 2])],
-                  [np.array([3, 4])]], 0),
-            [np.array([2.0, 3.0])],
+            krum([[array([1, 2])],
+                  [array([3, 4])]], 0),
+            [array([2.0, 3.0])],
             strict=True
         )
 
         # Multiple elements with m
-        params = [[np.array([1, 2])],
-                  [np.array([3, 4])],
-                  [np.array([15, 3])],
-                  [np.array([10, 2])]]
+        params = [[array([1, 2])],
+                  [array([3, 4])],
+                  [array([15, 3])],
+                  [array([10, 2])]]
         #         1       2      3      4
         # 1  0.0000  2.8284 9.0000 14.036
         # 2  2.8284  0.0000 7.2801 12.042
@@ -212,26 +222,26 @@ class TestAggregation(TestCase):
         # appears first, it will be the one taken.
         assert_array_equal(
             krum(params, 1),
-            [np.array([19/3, 9/3])],
+            [array([19/3, 9/3])],
             strict=True
         )
         assert_array_equal(
             krum(params, 2),
-            [np.array([2.0, 3.0])],
+            [array([2.0, 3.0])],
             strict=True
         )
         # m = 3 is the same as m = 2 = min(int(m), n - 2)
         assert_array_equal(
             krum(params, 3),
-            [np.array([2.0, 3.0])],
+            [array([2.0, 3.0])],
             strict=True
         )
 
         # Complex params
         w = [
-            np.array([5.37, 3.85, 2.50]),
-            np.array([5.24, 8.52, 2.29]),
-            np.array([[4.00, 2.39], [8.55, 6.26]])
+            array([5.37, 3.85, 2.50]),
+            array([5.24, 8.52, 2.29]),
+            array([[4.00, 2.39], [8.55, 6.26]])
         ]
         #         x      w       y        z
         # x  0.00000 15.876  1.2636  0.81166
@@ -242,51 +252,53 @@ class TestAggregation(TestCase):
         #      x      w      y      z
         # 17.951 47.839 18.360 18.122
         expected_result_all = [
-            np.array([(0.08 + 0.82 + 0.45 + 5.37) / 4,
+            array([(0.08 + 0.82 + 0.45 + 5.37) / 4,
                       (0.72 + 0.88 + 0.30 + 3.85) / 4,
                       (0.67 + 0.02 + 0.55 + 2.50) / 4]),
-            np.array([(0.01 + 0.27 + 0.21 + 5.24) / 4,
+            array([(0.01 + 0.27 + 0.21 + 5.24) / 4,
                       (0.53 + 0.37 + 0.43 + 8.52) / 4,
                       (0.24 + 0.11 + 0.17 + 2.29) / 4]),
-            np.array([[(0.42 + 0.84 + 0.12 + 4.0) / 4,
+            array([[(0.42 + 0.84 + 0.12 + 4.0) / 4,
                        (0.42 + 0.76 + 0.45 + 2.39) / 4],
                       [(0.35 + 0.02 + 0.33 + 8.55) / 4,
                        (0.64 + 0.34 + 0.21 + 6.26) / 4]])
         ]
         self.assert_model_params(krum([self.x, w, self.y, self.z], 0),
-                            expected_result_all)
+                                 expected_result_all)
         # The same as FedAvg
-        self.assert_model_params(krum([self.x, w, self.y, self.z], 0),
-                            fed_avg([self.x, w, self.y, self.z]))
+        self.assert_model_params(
+            krum([self.x, w, self.y, self.z], 0),
+            fed_avg([self.x, w, self.y, self.z], array([1/4, 1/4, 1/4, 1/4]))
+        )
 
         expected_result = [
-            np.array([(0.08 + 0.82 + 0.45) / 3,
+            array([(0.08 + 0.82 + 0.45) / 3,
                       (0.72 + 0.88 + 0.30) / 3,
                       (0.67 + 0.02 + 0.55) / 3]),
-            np.array([(0.01 + 0.27 + 0.21) / 3,
+            array([(0.01 + 0.27 + 0.21) / 3,
                       (0.53 + 0.37 + 0.43) / 3,
                       (0.24 + 0.11 + 0.17) / 3]),
-            np.array([[(0.42 + 0.84 + 0.12) / 3, (0.42 + 0.76 + 0.45) / 3],
+            array([[(0.42 + 0.84 + 0.12) / 3, (0.42 + 0.76 + 0.45) / 3],
                       [(0.35 + 0.02 + 0.33) / 3, (0.64 + 0.34 + 0.21) / 3]])
         ]
         # w will be excluded from the final result
         self.assert_model_params(krum([self.x, w, self.y, self.z], 1),
-                            expected_result)
+                                 expected_result)
         # Different order does not change the result
         self.assert_model_params(krum([w, self.x, self.z, self.y], 1),
-                            expected_result)
+                                 expected_result)
 
         # expected_result is x and w
         expected_result = [
-            np.array([(0.08 + 5.37) / 2, (0.72 + 3.85) / 2, (0.67 + 2.50) / 2]),
-            np.array([(0.01 + 5.24) / 2, (0.53 + 8.52) / 2, (0.24 + 2.29) / 2]),
-            np.array([[(0.42 + 4.00) / 2, (0.42 + 2.39) / 2],
+            array([(0.08 + 5.37) / 2, (0.72 + 3.85) / 2, (0.67 + 2.50) / 2]),
+            array([(0.01 + 5.24) / 2, (0.53 + 8.52) / 2, (0.24 + 2.29) / 2]),
+            array([[(0.42 + 4.00) / 2, (0.42 + 2.39) / 2],
                       [(0.35 + 8.55) / 2, (0.64 + 6.26) / 2]])
         ]
         # with m = 2, the score is 0 for everyone, so the result will be the
         # average of x and w that are the first two elements
         self.assert_model_params(krum([self.x, w, self.y, self.z], 2),
-                            expected_result)
+                                 expected_result)
 
         # All the random params will be excluded
         self.assert_model_params(
@@ -299,4 +311,60 @@ class TestAggregation(TestCase):
                   self.random_params(self.x, 0, 100),
                   self.z], 4),
             expected_result_all
+        )
+
+    def test_fed_avg_with_different_data_sizes(self):
+        # Different data sizes
+        assert_array_equal(
+            fed_avg([[array([1, 2])],
+                     [array([3, 4])]],
+                    array([0.25, 0.75])),
+            [array([0.25 + 3*0.75, 2*0.25 + 4*0.75])],
+            strict=True
+        )
+
+        assert_array_equal(
+            fed_avg([[array([1, 2])],
+                     [array([3, 4])],
+                     [array([5, 6])]],
+                    array([0.25, 0.5, 0.25])),
+            [array([0.25 + 3*0.5 + 5*0.25,
+                       2*0.25 + 4*0.5 + 6*0.25])],
+            strict=True
+        )
+
+        assert_array_equal(
+            fed_avg([[array([1, 2, 3])],
+                     [array([4, 5, 6])],
+                     [array([7, 8, 9])]],
+                    array([1/6, 2/6, 3/6])),
+            [array([1/6 + 2/6*4 + 3/6*7,
+                       1/6*2 + 2/6*5 + 3/6*8,
+                       1/6*3 + 2/6*6 + 3/6*9])],
+            strict=True
+        )
+
+        # More model_params of length 3
+        params = [
+            [array([6, 8, 7]), array([2, 5, 9]), array([6, 7, 7])],
+            [array([1, 7, 7]), array([7, 3, 6]), array([9, 3, 5])],
+            [array([6, 1, 9]), array([1, 2, 5]), array([9, 6, 8])]
+        ]
+        w = array([7, 2, 4]) / (7 + 2 + 4)
+
+        expected_result = [
+            array([w[0]*6 + w[1]*1 + w[2]*6,
+                   w[0]*8 + w[1]*7 + w[2]*1,
+                   w[0]*7 + w[1]*7 + w[2]*9]),
+            array([w[0]*2 + w[1]*7 + w[2]*1,
+                   w[0]*5 + w[1]*3 + w[2]*2,
+                   w[0]*9 + w[1]*6 + w[2]*5]),
+            array([w[0]*6 + w[1]*9 + w[2]*9,
+                   w[0]*7 + w[1]*3 + w[2]*6,
+                   w[0]*7 + w[1]*5 + w[2]*8])
+        ]
+        assert_array_equal(
+            fed_avg(params, w),
+            expected_result,
+            strict=True
         )
