@@ -23,12 +23,12 @@ class TestAggregation(TestCase):
     ]
 
     @staticmethod
-    def random_weights(ref: Weights,
-                       low: Union[float, int] = 0,
-                       high: Union[float, int] = 1) -> Weights:
+    def random_params(ref: ModelParams,
+                      low: Union[float, int] = 0,
+                      high: Union[float, int] = 1) -> ModelParams:
         return [np.random.uniform(low, high, arr.shape) for arr in ref]
 
-    def assert_weights(self, x, y):
+    def assert_model_params(self, x, y):
         self.assertTrue(isinstance(x, list), "x is not a list")
         self.assertTrue(isinstance(y, list), "y is not a list")
         self.assertEqual(len(x), len(y), "x and y have different lengths")
@@ -45,21 +45,21 @@ class TestAggregation(TestCase):
 
             assert_array_almost_equal(x_i, y_i, err_msg="x_i and y_i differ")
 
-    def test_weights_distances(self):
-        # Zero distance and empty weights
-        self.assertEqual(weights_distance([], []), 0)
+    def test_model_params_distances(self):
+        # Zero distance and empty params
+        self.assertEqual(model_params_distance([], []), 0)
         assert_array_equal(
-            weights_distance_matrix([]),
+            model_params_distance_matrix([]),
             np.zeros((0, 0), dtype="float128"),
             strict=True
         )
         assert_array_equal(
-            weights_distance_matrix([[]]),
+            model_params_distance_matrix([[]]),
             np.array([[0]], dtype="float128"),
             strict=True
         )
         assert_array_equal(
-            weights_distance_matrix([[np.arange(10)]]),
+            model_params_distance_matrix([[np.arange(10)]]),
             np.array([[0]], dtype="float128"),
             strict=True
         )
@@ -67,9 +67,9 @@ class TestAggregation(TestCase):
         # Single element distance
         x = [np.array([1.0])]
         y = [np.array([4.0])]
-        self.assertEqual(weights_distance(x, y), 3)
+        self.assertEqual(model_params_distance(x, y), 3)
         assert_array_equal(
-            weights_distance_matrix([x, y]),
+            model_params_distance_matrix([x, y]),
             np.array([[0, 3], [3, 0]], dtype="float128"),
             strict=True
         )
@@ -77,24 +77,24 @@ class TestAggregation(TestCase):
         # Multiple element distance
         x = np.array([1, 2, 3])
         y = np.array([2, 3, 4])
-        self.assertEqual(weights_distance([x], [x]), 0)
-        self.assertEqual(weights_distance([y], [y]), 0)
-        self.assertAlmostEqual(weights_distance([x], [y]), np.sqrt(3))
+        self.assertEqual(model_params_distance([x], [x]), 0)
+        self.assertEqual(model_params_distance([y], [y]), 0)
+        self.assertAlmostEqual(model_params_distance([x], [y]), np.sqrt(3))
         self.assertAlmostEqual(
-            weights_distance([x, y], [y, x]),
+            model_params_distance([x, y], [y, x]),
             np.sqrt(6)
         )
         assert_array_equal(
-            weights_distance_matrix([[x], [x]]),
+            model_params_distance_matrix([[x], [x]]),
             np.array([[0, 0], [0, 0]], dtype="float128"),
             strict=True
         )
         assert_array_almost_equal(
-            weights_distance_matrix([[x], [y]]),
+            model_params_distance_matrix([[x], [y]]),
             [[0, np.sqrt(3)], [np.sqrt(3), 0]]
         )
         assert_array_almost_equal(
-            weights_distance_matrix([[x, y], [y, x]]),
+            model_params_distance_matrix([[x, y], [y, x]]),
             [[0, np.sqrt(6)], [np.sqrt(6), 0]]
         )
 
@@ -103,15 +103,15 @@ class TestAggregation(TestCase):
         y = [np.array([3e20, 4e20])]
         expected_result = np.sqrt((2e20)**2 + (2e20)**2, dtype="float128")
         self.assertAlmostEqual(
-            weights_distance(x, y),
+            model_params_distance(x, y),
             expected_result
         )
         assert_array_almost_equal(
-            weights_distance_matrix([x, y]),
+            model_params_distance_matrix([x, y]),
             [[0, expected_result], [expected_result, 0]]
         )
 
-        # Complex weights
+        # Complex params
         expected_result = np.sum([
             (0.08 - 0.82)**2, (0.72 - 0.88)**2, (0.67 - 0.02)**2,
             (0.01 - 0.27)**2, (0.53 - 0.37)**2, (0.24 - 0.11)**2,
@@ -119,16 +119,16 @@ class TestAggregation(TestCase):
             (0.35 - 0.02)**2, (0.64 - 0.34)**2
         ], dtype="float128")
         self.assertAlmostEqual(
-            weights_distance(self.x, self.y),
+            model_params_distance(self.x, self.y),
             np.sqrt(expected_result)
         )
         assert_array_almost_equal(
-            weights_distance_matrix([self.x, self.y]),
+            model_params_distance_matrix([self.x, self.y]),
             [[0, np.sqrt(expected_result)], [np.sqrt(expected_result), 0]]
         )
 
     def test_fed_avg(self):
-        # Empty weights
+        # Empty params
         self.assertEqual(fed_avg([]), [])
         self.assertEqual(fed_avg([[], []]), [])
 
@@ -161,7 +161,7 @@ class TestAggregation(TestCase):
             strict=True
         )
 
-        # Complex weights
+        # Complex params
         expected_result = [
             np.array([(0.08 + 0.82 + 0.45) / 3,
                       (0.72 + 0.88 + 0.30) / 3,
@@ -172,12 +172,12 @@ class TestAggregation(TestCase):
             np.array([[(0.42 + 0.84 + 0.12) / 3, (0.42 + 0.76 + 0.45) / 3],
                       [(0.35 + 0.02 + 0.33) / 3, (0.64 + 0.34 + 0.21) / 3]])
         ]
-        self.assert_weights(fed_avg([self.x, self.y, self.z]), expected_result)
+        self.assert_model_params(fed_avg([self.x, self.y, self.z]), expected_result)
         # Different order does not change the result
-        self.assert_weights(fed_avg([self.z, self.x, self.y]), expected_result)
+        self.assert_model_params(fed_avg([self.z, self.x, self.y]), expected_result)
 
     def test_krum(self):
-        # Empty weights
+        # Empty params
         self.assertEqual(krum([], 0), [])
         self.assertEqual(krum([[], [], [], []], 2), [])
 
@@ -198,10 +198,10 @@ class TestAggregation(TestCase):
         )
 
         # Multiple elements with m
-        weights = [[np.array([1, 2])],
-                   [np.array([3, 4])],
-                   [np.array([15, 3])],
-                   [np.array([10, 2])]]
+        params = [[np.array([1, 2])],
+                  [np.array([3, 4])],
+                  [np.array([15, 3])],
+                  [np.array([10, 2])]]
         #         1       2      3      4
         # 1  0.0000  2.8284 9.0000 14.036
         # 2  2.8284  0.0000 7.2801 12.042
@@ -211,23 +211,23 @@ class TestAggregation(TestCase):
         # because only one element is left on n_models = n - m - 2. But as 3
         # appears first, it will be the one taken.
         assert_array_equal(
-            krum(weights, 1),
+            krum(params, 1),
             [np.array([19/3, 9/3])],
             strict=True
         )
         assert_array_equal(
-            krum(weights, 2),
+            krum(params, 2),
             [np.array([2.0, 3.0])],
             strict=True
         )
         # m = 3 is the same as m = 2 = min(int(m), n - 2)
         assert_array_equal(
-            krum(weights, 3),
+            krum(params, 3),
             [np.array([2.0, 3.0])],
             strict=True
         )
 
-        # Complex weights
+        # Complex params
         w = [
             np.array([5.37, 3.85, 2.50]),
             np.array([5.24, 8.52, 2.29]),
@@ -253,10 +253,10 @@ class TestAggregation(TestCase):
                       [(0.35 + 0.02 + 0.33 + 8.55) / 4,
                        (0.64 + 0.34 + 0.21 + 6.26) / 4]])
         ]
-        self.assert_weights(krum([self.x, w, self.y, self.z], 0),
+        self.assert_model_params(krum([self.x, w, self.y, self.z], 0),
                             expected_result_all)
         # The same as FedAvg
-        self.assert_weights(krum([self.x, w, self.y, self.z], 0),
+        self.assert_model_params(krum([self.x, w, self.y, self.z], 0),
                             fed_avg([self.x, w, self.y, self.z]))
 
         expected_result = [
@@ -270,10 +270,10 @@ class TestAggregation(TestCase):
                       [(0.35 + 0.02 + 0.33) / 3, (0.64 + 0.34 + 0.21) / 3]])
         ]
         # w will be excluded from the final result
-        self.assert_weights(krum([self.x, w, self.y, self.z], 1),
+        self.assert_model_params(krum([self.x, w, self.y, self.z], 1),
                             expected_result)
         # Different order does not change the result
-        self.assert_weights(krum([w, self.x, self.z, self.y], 1),
+        self.assert_model_params(krum([w, self.x, self.z, self.y], 1),
                             expected_result)
 
         # expected_result is x and w
@@ -285,18 +285,18 @@ class TestAggregation(TestCase):
         ]
         # with m = 2, the score is 0 for everyone, so the result will be the
         # average of x and w that are the first two elements
-        self.assert_weights(krum([self.x, w, self.y, self.z], 2),
+        self.assert_model_params(krum([self.x, w, self.y, self.z], 2),
                             expected_result)
 
-        # All the random weights will be excluded
-        self.assert_weights(
+        # All the random params will be excluded
+        self.assert_model_params(
             krum([self.x,
-                  self.random_weights(self.x, 0, 100),
+                  self.random_params(self.x, 0, 100),
                   w,
-                  self.random_weights(self.x, 0, 100),
+                  self.random_params(self.x, 0, 100),
                   self.y,
-                  self.random_weights(self.x, 0, 100),
-                  self.random_weights(self.x, 0, 100),
+                  self.random_params(self.x, 0, 100),
+                  self.random_params(self.x, 0, 100),
                   self.z], 4),
             expected_result_all
         )

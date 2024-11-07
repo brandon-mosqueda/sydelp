@@ -1,6 +1,6 @@
 from nodes.malicious_node import MaliciousNode
-from utils.utils import Weights
-from utils.attack import random_gaussian_weights
+from utils.utils import ModelParams
+from utils.attack import random_gaussian_model
 
 
 # This attacks consist on skipping the train phase and send random gaussian
@@ -20,7 +20,7 @@ class RandomNode(MaliciousNode):
 
     def train(self) -> None:
         if self.attacking:
-            self.set_weights(random_gaussian_weights(
+            self.set_model_params(random_gaussian_model(
                 reference=self.model.get_weights(),
                 mean=self.mean,
                 sd=self.sd

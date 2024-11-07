@@ -2,12 +2,12 @@ import numpy as np
 
 from typing import Union
 from numpy.typing import NDArray
-from utils.utils import Weights, NNumeric
+from utils.utils import ModelParams, NNumeric
 
 
-def random_gaussian_weights(reference: Weights,
-                            mean: float = 0,
-                            sd: float = 1) -> Weights:
+def random_gaussian_model(reference: ModelParams,
+                          mean: float = 0,
+                          sd: float = 1) -> ModelParams:
     return [
         np.random.normal(loc=mean, scale=sd, size=layer.shape)
         for layer in reference

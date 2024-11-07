@@ -1,4 +1,4 @@
-from utils.utils import NNumeric, Weights
+from utils.utils import NNumeric, ModelParams
 from numpy.typing import NDArray
 from keras.src.models import Model as KerasModel
 
@@ -26,10 +26,10 @@ class Node:
 
         self.rows_num = x.shape[0]
 
-    def set_weights(self, weights: Weights) -> None:
-        self.model.set_weights(weights)
+    def set_model_params(self, model_params: ModelParams) -> None:
+        self.model.set_weights(model_params)
 
-    def get_weights(self) -> Weights:
+    def get_model_params(self) -> ModelParams:
         return self.model.get_weights()
 
     def train(self) -> None:

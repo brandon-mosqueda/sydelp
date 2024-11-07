@@ -20,8 +20,7 @@ Int = Union[np.uint, np.uint8, np.uint16, np.uint32, np.uint64,
 
 Float = Union[float, np.float16, np.float32, np.float64, np.float128]
 
-Weights = list[NDArray[NNumeric]]
-
+ModelParams = list[NDArray[NNumeric]]
 
 def print_array(x: NDArray[np.generic], n: int = 5, digits: int = 4) -> None:
     if np.issubdtype(x.dtype, np.number):
@@ -177,11 +176,11 @@ def remove_indices(x: list, indices: list) -> list:
 
 def replicate_model(model: KerasModel,
                     n: int = 5,
-                    same_weights: bool = True,
+                    same_params: bool = True,
                     compiled: bool = True) -> list[KerasModel]:
     model_list: list[KerasModel] = [models.clone_model(model) for _ in range(n)]
 
-    if same_weights:
+    if same_params:
         [mod.set_weights(model.get_weights()) for mod in model_list]
 
     if compiled:

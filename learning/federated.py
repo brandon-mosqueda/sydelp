@@ -9,14 +9,14 @@ from numpy.typing import NDArray, ArrayLike
 from pandas import DataFrame, concat
 from nodes.node import Node
 from time import time
-from utils.utils import MyProgressBar, NNumeric, Weights, Float
+from utils.utils import MyProgressBar, NNumeric, ModelParams, Float
 from keras.src.models import Model as KerasModel
 from utils.aggregation import fed_avg
 from sklearn.metrics import accuracy_score
 
 
 class AggParams(TypedDict):
-    function: Callable[[list[Weights]], Weights]
+    function: Callable[[list[ModelParams]], ModelParams]
     params: dict
 
 
@@ -65,16 +65,16 @@ class FederatedLearning:
         self.metrics_params = metrics_params
 
     def aggregation(self) -> None:
-        weights: list[Weights] = [node.get_weights() for node in self.nodes]
-        avg_weights: Weights = self.aggregation_params['function'](
-            weights,
+        models: list[ModelParams] = [node.get_model_params() for node in self.nodes]
+        avg_models: ModelParams = self.aggregation_params['function'](
+            models,
             **self.aggregation_params['params']
         )
 
-        self.global_model.set_weights(avg_weights)
+        self.global_model.set_weights(avg_models)
 
         for node in self.nodes:
-            node.set_weights(avg_weights)
+            node.set_model_params(avg_models)
 
     def round_predictions(self) -> DataFrame:
         preds: DataFrame = DataFrame(self.global_model.predict(

@@ -1,4 +1,4 @@
-from utils.utils import Weights
+from utils.utils import ModelParams
 from nodes.malicious_node import MaliciousNode
 
 
@@ -18,7 +18,7 @@ class SignFlippingNode(MaliciousNode):
 
         if self.attacking:
             # Scale and flip sign
-            self.set_weights(
-                [-self.scale_factor * weigth
-                 for weigth in self.get_weights()]
+            self.set_model_params(
+                [-self.scale_factor * param
+                 for param in self.get_model_params()]
             )
