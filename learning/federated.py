@@ -65,15 +65,7 @@ class FederatedLearning:
         self.y_testing = y_testing
         self.global_model = global_model
         self.rounds = rounds
-
-        if (aggregation_params['function'] is fed_avg
-            and 'weights' not in aggregation_params['params']):
-            total_data: int = np.sum([node.x.shape[0] for node in nodes])
-            aggregation_params['params']['weights'] = np.array([
-                node.x.shape[0] / total_data for node in nodes
-            ])
         self.aggregation_params = aggregation_params
-
         self.metrics_params = metrics_params
 
     def aggregation(self) -> None:

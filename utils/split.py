@@ -85,6 +85,18 @@ def class_non_iid_split(X: NDArray[NNumeric],
     return client_data
 
 
+# Generate splits with balanced number of samples for each class
+def balanced_split(X: NDArray[NNumeric],
+                   y: NDArray[NNumeric],
+                   n_splits: int,
+                   seed: Union[int, None] = None) -> list[Split]:
+    return class_non_iid_split(X=X,
+                               y=y,
+                               n_splits=n_splits,
+                               n_classes_per_split=np.unique(y).size,
+                               seed=seed)
+
+
 def dirichlet_split(X: NDArray[NNumeric],
                     y: NDArray[NNumeric],
                     n_splits: int,

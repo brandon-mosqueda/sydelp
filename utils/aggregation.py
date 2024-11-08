@@ -6,7 +6,9 @@ from utils.utils import ModelParams, bottom_indices, bottom_n, NNumeric
 
 
 def fed_avg(models_params: list[ModelParams],
-            weights: NDArray[NNumeric]) -> ModelParams:
+            weights: Union[NDArray[NNumeric], None] = None) -> ModelParams:
+    if weights is None:
+        weights = np.repeat(1/len(models_params), len(models_params))
     weights = weights.astype("float")
 
     if len(models_params) != weights.size:
@@ -54,12 +56,14 @@ def model_params_distance_matrix(
 
 
 def krum(models_params: list[ModelParams],
-         m: Union[float, int] = 0.3) -> ModelParams:
+         m: Union[float, int] = 0.3,
+         weighting_mode: str = "uniform",
+         data_sizes: Union[NDArray[NNumeric], None] = None) -> ModelParams:
     if not models_params:
         return []
-    elif len(models_params) < 3:
-        weights: NDArray = np.repeat(1/len(models_params), len(models_params))
-        return fed_avg(models_params, weights)
+
+    if len(models_params) < 3:
+        return fed_avg(models_params)
 
     if m < 1:
         m = len(models_params) * m
@@ -78,9 +82,28 @@ def krum(models_params: list[ModelParams],
         scores[i] = np.sum(bottom_n(distances[i], n_models + 1))
 
     best_indices: NDArray[np.int64] = bottom_indices(scores, n - m)
+
+    weights: NDArray[np.float_]
+    if weighting_mode == "uniform":
+        weights = np.repeat(1/best_indices.size,
+                            best_indices.size).astype("float")
+    elif weighting_mode == "data":
+        if data_sizes is None:
+            raise ValueError(
+                "With weighting_mode='data', you have to provide data_sizes")
+
+        weights = np.array([data_sizes[i] for i in best_indices], dtype="float")
+        weights /= weights.sum()
+    elif weighting_mode == "score":
+        # The lowest score receives the highest weight
+        weights = np.flip(np.arange(best_indices.size) + 1).astype("float")
+        weights /= weights.sum()
+    else:
+        raise ValueError(f"Invalid weighting_mode '{weighting_mode}'")
+
     aggregated_model: ModelParams = fed_avg(
         [models_params[i] for i in best_indices],
-        np.repeat(1/best_indices.size, best_indices.size)
+        weights
     )
 
     return aggregated_model
