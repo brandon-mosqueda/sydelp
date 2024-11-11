@@ -33,7 +33,6 @@ global_model: KerasModel = init.get_model_by_dataset(params)
 models: list[KerasModel] = utils.replicate_model(global_model,
                                                  n=params['nodes_num'])
 
-aggregation_params: AggParams = init.get_aggregation_by_protocol(params)
 metrics_params: dict[str, MetricParams] = init.get_metrics(params)
 
 malicious_num: int = (
@@ -117,6 +116,8 @@ for _ in range(honest_num):
                       epochs=params['local_epochs_num'],
                       batch_size=params['batch_size']))
 
+aggregation_params: AggParams = init.get_aggregation_by_protocol(params, nodes)
+
 # Create a FederatedLearning instance
 federated_learning = FederatedLearning(
     rounds=params['iterations_num'],
@@ -137,12 +138,14 @@ results_dir: str = os.path.join(
     as_name(params['dataset']),
     as_name(params['attack']),
     as_name(params['seed']),
+    as_name(params['weighting_mode']),
 )
 
 metadata = {
     'Protocol': params['protocol'],
     'Dataset': params['dataset'],
     'Attack': params['attack'],
-    'Seed': params['seed']
+    'Seed': params['seed'],
+    "WeightingMode": params['weighting_mode'],
 }
 federated_learning.save(results_dir, metadata=metadata)

@@ -1,6 +1,8 @@
 import pandas as pd
 import requests as rq
+import numpy as np
 
+from nodes.node import Node
 from tensorflow.keras.preprocessing.text import Tokenizer # type: ignore
 from tensorflow.keras.preprocessing.sequence import pad_sequences # type: ignore
 from sklearn.preprocessing import LabelEncoder
@@ -189,9 +191,9 @@ def init_mnist(nodes_num: int,
 
 
 def spam_model(learning_rate: float = 0.001,
-               vocabulary_size: int = 1000,
-               sequence_length: int = 50,
-               embedding_dim: int = 64,
+               vocabulary_size: int = 10000,
+               sequence_length: int = 100,
+               embedding_dim: int = 32,
                lstm_units: int = 32,
                metrics: list = []) -> models.Model:
     model: models.Model = models.Sequential([
@@ -300,17 +302,43 @@ def get_model_by_dataset(params: dict) -> KerasModel:
         raise ValueError(f"{params['dataset']} is not a valid dataset")
 
 
-def get_aggregation_by_protocol(params: dict) -> AggParams:
-    if as_name(params['protocol']) in ["dl", "baseline"]:
-        return {'function': fed_avg, 'params': {}}
-    elif as_name(params['protocol']) == "sydelp":
-        return {
+def get_aggregation_by_protocol(params: dict, nodes: list[Node]) -> AggParams:
+    protocol: str = as_name(params['protocol'])
+    mode: str = as_name(params['weighting_mode'])
+    result: AggParams
+
+    if protocol in ["dl", "baseline"]:
+        result = {'function': fed_avg, 'params': {}}
+
+        if mode == "data":
+            result['params']['weights'] = np.array(
+                [node.x.shape[0] for node in nodes], dtype="float")
+            result['params']['weights'] /= result['params']['weights'].sum()
+        elif mode == "uniform":
+            n: int = len(nodes)
+            result['params']['weights'] = np.repeat(1/n, n)
+        else:
+            raise ValueError(
+                f"{params['weighting_mode']} cannot be used "
+                " with {params['protocol']}")
+    elif protocol in ["sydelp"]:
+        if mode not in ["uniform", "data", "score"]:
+            raise ValueError(
+                f"{params['weighting_mode']} cannot be used "
+                " with {params['protocol']}")
+
+        result = {
             'function': krum,
-            'params': {'m': params['expected_malicious_num']}
+            'params': {
+                'm': params['expected_malicious_num'],
+                'weighting_mode': mode,
+                'data_sizes': np.array([node.x.shape[0] for node in nodes])
+            }
         }
     else:
         raise ValueError(f"{params['protocol']} is not a valid protocol")
 
+    return result
 
 def get_metrics(params: dict) -> dict[str, MetricParams]:
     metrics: dict[str, MetricParams] = {}
