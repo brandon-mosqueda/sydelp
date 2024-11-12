@@ -24,6 +24,7 @@ params_file: str = sys.argv[1]
 # params_file: str = 'params/15.dl_spam_solitary.test.json'
 # params_file: str = 'params/11.dl_spam.test.json'
 params: dict = utils.read_json(params_file)
+print(params)
 
 X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric]; X_mal: NDArray[NNumeric];
 y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]; y_mal: NDArray[NNumeric];

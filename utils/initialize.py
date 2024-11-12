@@ -1,7 +1,10 @@
 import pandas as pd
 import requests as rq
 import numpy as np
+import re
 
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
 from nodes.node import Node
 from tensorflow.keras.preprocessing.text import Tokenizer # type: ignore
 from tensorflow.keras.preprocessing.sequence import pad_sequences # type: ignore
@@ -215,6 +218,20 @@ def spam_model(learning_rate: float = 0.001,
     return model
 
 
+def clean_text(text):
+    lemmatizer = WordNetLemmatizer()
+
+    # Removing non-word characters
+    text = re.sub(r'\W', ' ', text)
+    text = text.lower()
+    # Has list of words here
+    text = text.split()
+    text = [lemmatizer.lemmatize(word)
+            for word in text if word not in set(stopwords.words('english'))]
+
+    return (' '.join(text))
+
+
 def spam_data(testing_proportion: float = 0.2,
               vocabulary_size: int = 1000,
               max_sequence_length: int = 50) -> list[NDArray[NNumeric]]:
@@ -239,6 +256,7 @@ def spam_data(testing_proportion: float = 0.2,
                                      names=['label', 'text'],
                                      encoding='latin-1')
     Data['label'] = LabelEncoder().fit_transform(Data['label'])
+    Data['text'] = Data['text'].apply(clean_text)
 
     X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric]
     y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]
@@ -307,7 +325,7 @@ def get_aggregation_by_protocol(params: dict, nodes: list[Node]) -> AggParams:
     mode: str = as_name(params['weighting_mode'])
     result: AggParams
 
-    if protocol in ["dl", "baseline"]:
+    if protocol in ["dl", "baseline"] or "baseline" in protocol:
         result = {'function': fed_avg, 'params': {}}
 
         if mode == "data":
@@ -321,7 +339,7 @@ def get_aggregation_by_protocol(params: dict, nodes: list[Node]) -> AggParams:
             raise ValueError(
                 f"{params['weighting_mode']} cannot be used "
                 " with {params['protocol']}")
-    elif protocol in ["sydelp"]:
+    elif protocol in ["sydelp"] or "sydelp" in protocol:
         if mode not in ["uniform", "data", "score"]:
             raise ValueError(
                 f"{params['weighting_mode']} cannot be used "

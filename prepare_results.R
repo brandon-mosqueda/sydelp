@@ -9,7 +9,8 @@ library(SKM)
 source("~/Desktop/notes/utils.R")
 
 attack_levels <- c(
-  "No attack", "Random", "Sign flipping", "Solitary", "Label flipping"
+  "No attack", "Random", "Sign flipping", "Label flipping",
+  "Solitary targeted", "Solitary untargeted"
 )
 Metrics <- merge_results("results", "/metrics.csv") %>%
   mutate(
@@ -36,14 +37,22 @@ plot_results <- function(data, group) {
   plot_dir <- file.path("plots", group$Dataset)
   mkdir(plot_dir)
 
-  ggsave(file.path(plot_dir, sprintf("%s.png", group$Attack)), plot)
+  ggsave(
+    file.path(plot_dir, sprintf("%s.png", group$Attack)),
+    plot,
+    width = 2400,
+    height = 1200,
+    units = "px"
+  )
 
   return(1)
 }
 
 Metrics %>%
   pivot_longer(
-    cols = c("accuracy", "f1_score", "attack_success_rate", "label_recall"),
+    cols = c(
+      "accuracy", "f1_score", "attack_success_rate", "label_recall", "loss"
+    ),
     names_to = "Metric",
     values_to = "Value"
   ) %>%
