@@ -14,12 +14,15 @@ attack_levels <- c(
 )
 Metrics <- merge_results("results", "/metrics.csv") %>%
   mutate(
-    `log(loss)` = log10(loss),
+    Loss = log10(loss),
     Attack = factor(Attack, levels = attack_levels)
   )
 write_csv(Metrics, "results/all_metrics.csv")
 
 plot_results <- function(data, group) {
+  data <- data %>%
+    mutate(Value = ifelse(Metric == "loss", Value / max(Value), Value))
+
   plot <- line_plot(
     data,
     x = "round",
@@ -60,3 +63,22 @@ Metrics %>%
   droplevels() %>%
   group_by(Dataset, Attack) %>%
   group_map(plot_results, .keep = TRUE)
+
+Final <- Metrics %>%
+  group_by(Dataset, Protocol, Attack, WeightingMode) %>%
+  filter(round == 99)
+
+bar_plot(
+  Final,
+  x = "Attack",
+  y = "attack_success_rate",
+  # y = "f1_score",
+  # y = "accuracy",
+
+  fill_by = "Protocol",
+  facet_col = "Dataset",
+
+  font_size = 8,
+  theme = "paper",
+  x_angle = 45
+)

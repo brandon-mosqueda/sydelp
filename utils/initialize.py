@@ -12,14 +12,13 @@ from sklearn.preprocessing import LabelEncoder
 from os.path import isfile
 from zipfile import ZipFile
 from io import BytesIO
-from utils.split import class_non_iid_split, Split, dirichlet_split
 from nodes.node import Node
 from keras import optimizers
 from keras import layers, models
 from sklearn.datasets import load_iris
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from typing import TypedDict, Callable, TypeVar, Union
+from typing import TypedDict
 from numpy.typing import NDArray
 from utils.utils import NNumeric, as_name
 from keras.datasets.mnist import load_data as load_mnist  # type: ignore
@@ -35,32 +34,6 @@ class Initializer(TypedDict):
     global_model: models.Model
     X_test: NDArray[NNumeric]
     y_test: NDArray[NNumeric]
-
-
-AnyNode = TypeVar('AnyNode', bound='Node')
-
-def init_nodes(splits: list[Split],
-               model_fn: Callable,
-               epochs: int = 10,
-               batch_size: int = 32,
-               node_class: Callable[..., AnyNode] = Node,
-               model_args: dict = {
-                   'learning_rate': 0.01
-                },
-               **kwargs) -> list[AnyNode]:
-    nodes: list[AnyNode] = []
-
-    for split in splits:
-        model: models.Model = model_fn(**model_args)
-        node: AnyNode = node_class(x=split['X'],
-                                   y=split['y'],
-                                   model=model,
-                                   epochs=epochs,
-                                   batch_size=batch_size,
-                                   **kwargs)
-        nodes.append(node)
-
-    return nodes
 
 
 def iris_model(learning_rate: float = 0.01) -> models.Model:
@@ -100,34 +73,6 @@ def iris_data(testing_proportion: float = 0.2) -> list[NDArray[NNumeric]]:
     return [X_train, X_test, y_train, y_test]
 
 
-def init_iris(nodes_num: int,
-              testing_proportion: float = 0.2,
-              learning_rate: float = 0.01,
-              epochs: int = 10,
-              batch_size: int = 32) -> Initializer:
-    X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric]
-    y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]
-
-    # Split the data into balanced training and testing datasets
-    X_train, X_test, y_train, y_test = iris_data(testing_proportion)
-
-    global_model: models.Model = iris_model(learning_rate)
-
-    splits: list[Split] = class_non_iid_split(X_train, y_train, nodes_num)
-    nodes: list[Node] = init_nodes(splits=splits,
-                                   model_fn=iris_model,
-                                   learning_rate=learning_rate,
-                                   epochs=epochs,
-                                   batch_size=batch_size)
-
-    return {
-        'nodes': nodes,
-        'global_model': global_model,
-        'X_test': X_test,
-        'y_test': y_test
-    }
-
-
 def mnist_model(learning_rate: float = 0.001,
                 dense_units: int = 100,
                 metrics: list = []) -> models.Model:
@@ -156,41 +101,6 @@ def mnist_data() -> list[NDArray[NNumeric]]:
     X_test = X_test.reshape(10000, 784).astype("float32") / 255
 
     return [X_train, X_test, y_train, y_test]
-
-
-def init_mnist(nodes_num: int,
-               learning_rate: float = 0.001,
-               dense_units: int = 100,
-               epochs: int = 5,
-               batch_size: int = 16,
-               alpha: float = 0.1,
-               split_min_size: Union[int, None] = 16) -> Initializer:
-    # Load and preprocess the data
-    X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric]
-    y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]
-    X_train, X_test, y_train, y_test = mnist_data()
-
-    global_model: models.Model = mnist_model(learning_rate, dense_units)
-
-    splits: list[Split] = dirichlet_split(
-        X_train,
-        y_train,
-        n_splits=nodes_num,
-        alpha=alpha,
-        split_min_size=split_min_size
-    )
-    nodes: list[Node] = init_nodes(splits=splits,
-                                   model_fn=mnist_model,
-                                   learning_rate=learning_rate,
-                                   epochs=epochs,
-                                   batch_size=batch_size)
-
-    return {
-        'nodes': nodes,
-        'global_model': global_model,
-        'X_test': X_test,
-        'y_test': y_test
-    }
 
 
 def spam_model(learning_rate: float = 0.001,
@@ -224,7 +134,7 @@ def clean_text(text):
     # Removing non-word characters
     text = re.sub(r'\W', ' ', text)
     text = text.lower()
-    # Has list of words here
+    # Convert to a list of words
     text = text.split()
     text = [lemmatizer.lemmatize(word)
             for word in text if word not in set(stopwords.words('english'))]
@@ -357,6 +267,7 @@ def get_aggregation_by_protocol(params: dict, nodes: list[Node]) -> AggParams:
         raise ValueError(f"{params['protocol']} is not a valid protocol")
 
     return result
+
 
 def get_metrics(params: dict) -> dict[str, MetricParams]:
     metrics: dict[str, MetricParams] = {}

@@ -1,5 +1,4 @@
 from nodes.malicious_node import MaliciousNode
-from utils.utils import ModelParams
 from utils.attack import random_gaussian_model
 
 

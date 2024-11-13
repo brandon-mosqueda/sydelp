@@ -1,4 +1,3 @@
-from utils.utils import ModelParams
 from nodes.malicious_node import MaliciousNode
 
 

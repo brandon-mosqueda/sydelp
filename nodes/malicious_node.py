@@ -1,5 +1,4 @@
 from keras.src.models import Model as KerasModel
-from numpy.typing import NDArray
 from nodes.node import Node
 
 
