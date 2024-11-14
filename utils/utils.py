@@ -199,3 +199,35 @@ def read_json(file: str) -> dict:
 
 def as_name(x: Any):
     return str(x).lower().replace(' ', '_')
+
+
+def get_flatten_weights(model: KerasModel) -> NDArray:
+    weights = model.get_weights()
+    total_size = sum(w.size for w in weights)
+
+    # Pre-allocate a single array with the necessary size
+    flat_weights = np.empty(total_size, dtype="float32")
+
+    # Fill the flat_weights array in place
+    idx = 0
+    for w in weights:
+        flat_size = w.size
+        flat_weights[idx:idx + flat_size] = w.flatten()
+        idx += flat_size
+
+    return flat_weights
+
+
+def set_flatten_weights(model: KerasModel, weights: NDArray) -> None:
+    original_weights = model.get_weights()
+    new_weights = []
+    index = 0
+
+    # Directly reshape each section of `weights` without additional slicing
+    for w in original_weights:
+        num_elements = w.size
+        new_weights.append(np.reshape(
+            weights[index:index + num_elements], w.shape))
+        index += num_elements
+
+    model.set_weights(new_weights)

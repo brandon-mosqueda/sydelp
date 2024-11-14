@@ -13,7 +13,7 @@ from keras.models import Model # type: ignore
 
 import utils.initialize as init
 from utils.split import dirichlet_split, Split
-from utils.utils import remove_indices
+from utils.utils import remove_indices, get_flatten_weights, set_flatten_weights
 from sklearn.metrics import accuracy_score
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
@@ -26,7 +26,7 @@ session = tf.compat.v1.Session(config=config)
 local_epoch: int = 10
 client_num: int = 100
 iterations_num: int = 100
-f: int = 33
+byzantine_num: int = 33
 miu: float = 0.1
 c_max: float = 0.3
 c_min: float = 0.1
@@ -36,7 +36,7 @@ alpha: float = 0
 local_epoch = 2
 client_num = 12
 iterations_num = 10
-f = 3
+byzantine_num = 3
 miu = 0.1
 c_max = 0.3
 c_min = 0.1
@@ -45,34 +45,8 @@ alpha = 0
 X_train, X_test, y_train, y_test = init.mnist_data()
 
 
-def get_flatten_weights(model: Model) -> NDArray:
-    weights: list[NDArray] = model.get_weights()
-
-    return np.concatenate([w.flatten() for w in weights], dtype="float")
-
-
-def set_flatten_weights(model: Model, weights: NDArray) -> None:
-    original_weights: list[NDArray] = model.get_weights()
-
-    new_weights: list = []
-    index: int = 0
-
-    for w in original_weights:
-        # Calculate the number of elements in this layer's weights
-        num_elements = w.size
-
-        # Reshape and add to the new weights list
-        new_weights.append(weights[index:index + num_elements].reshape(w.shape))
-
-        index += num_elements
-
-    # Set the reshaped weights back to the model
-    model.set_weights(new_weights)
-
-
 class Client:
-    update: NDArray
-    X: NDArray
+    x: NDArray
     y: NDArray
     id: int
     x_num: int
@@ -83,129 +57,137 @@ class Client:
     momentum: NDArray
     update: NDArray
     seleted_epoch: int
+    epochs: int
 
-    def __init__(self, X, y, id):
-        self.X = X
+    def __init__(self, x, y, id, epochs):
+        self.x = x
         self.y = y
         self.id = id
-        self.x_num = len(X)
+        self.epochs = epochs
+        self.x_num = len(x)
         self.model = init.mnist_model()
         self.is_byzantine = False
         self.success_prob = 1
         self.fail_prob = 1
-        self.momentum = np.array(get_flatten_weights(self.model)) * 0
-        self.update = np.array(get_flatten_weights(self.model)) * 0
         self.seleted_epoch = 0
+
+        total_size: int = sum(w.size for w in self.model.get_weights())
+        self.momentum = np.zeros(total_size)
+        self.update = np.zeros(total_size)
 
     def set_weights(self, weights: NDArray):
         set_flatten_weights(self.model, weights)
 
     def train(self):
-        self.model.fit(self.X,
+        self.model.fit(self.x,
                        self.y,
                        batch_size=64,
-                       epochs=local_epoch,
+                       epochs=self.epochs,
                        verbose=0)
 
+    def set_update(self, global_weights: NDArray) -> None:
         self.update = get_flatten_weights(self.model) - global_weights
 
 
-def cos_similarity(x: NDArray, y: NDArray, unit: bool) -> np.float32:
+def cos_similarity(x: NDArray, y: NDArray, is_unit: bool) -> np.float32:
     res: np.float32 = (x * y).sum()
 
-    if not unit:
+    # This would be redudant for unit vectors
+    if not is_unit:
         res /= np.linalg.norm(x) * np.linalg.norm(y)
 
     return np.float32(min(res, 1))
 
 
-def LIE(clients: list[Client], selectedId: list[int]) -> None:
-    benignId: list[int] = []
+# Little Is Enough (LIE) attack
+def LIE(clients: list[Client], selected_ids: list[int]) -> None:
+    benign_ids: list[int] = [i for i in selected_ids
+                             if not clients[i].is_byzantine]
 
-    for i in selectedId:
-        if clients[i].is_byzantine == False:
-            benignId.append(i)
+    s: int = int(client_num/2 + 1) - byzantine_num
 
-    s: int = int(client_num/2 + 1) - f
-
-    z: NDArray = norm.ppf((client_num - f - s) / (client_num - f))
-    mean: NDArray = np.mean([clients[i].update for i in benignId], axis=0)
-    std: NDArray = np.std([clients[i].update for i in benignId], axis=0)
+    z: NDArray = norm.ppf((client_num - byzantine_num - s)
+                          / (client_num - byzantine_num))
+    mean: NDArray = np.mean([clients[i].update for i in benign_ids], axis=0)
+    std: NDArray = np.std([clients[i].update for i in benign_ids], axis=0)
 
     bad_update: NDArray = mean - z * std
 
-    for i in selectedId:
-        if clients[i].is_byzantine == True:
+    for i in selected_ids:
+        if clients[i].is_byzantine:
             clients[i].update = bad_update
 
 
-def TS(clients: list[Client]) -> list[int]:
-    selectedId: list[int] = []
+def client_beta_selection(clients: list[Client]) -> list[int]:
+    selected_ids: list[int] = []
 
-    for i in range(client_num):
-        p: float = np.random.beta(clients[i].success_prob, clients[i].fail_prob)
+    for client in clients:
+        p: float = np.random.beta(client.success_prob, client.fail_prob)
 
-        if p >= 0.9:
-            selectedId.append(clients[i].id)
-        if p > 0.2 and p <= 0.9 and np.random.random() < p:
-            selectedId.append(clients[i].id)
+        if p >= 0.9 or (p > 0.2 and np.random.random() < p):
+            selected_ids.append(client.id)
 
-    if len(selectedId) == 0:
-        selectedId = [i for i in range(client_num)]
+    if len(selected_ids) == 0:
+        selected_ids = [c.id for c in clients]
 
-    return selectedId
+    return selected_ids
 
 
 def MAB_FL(clients: list[Client],
-           selectedId: list[int],
-           iter: int) -> tuple[np.float32, NDArray]:
-    for i in selectedId:
+           selected_ids: list[int],
+           iteration_num: int,
+           c_max: float,
+           c_min: float) -> tuple[np.float32, NDArray]:
+    for i in selected_ids:
         clients[i].momentum = (clients[i].update
-                               + miu**(iter - clients[i].seleted_epoch)
+                               + miu**(iteration_num - clients[i].seleted_epoch)
                                * clients[i].momentum)
 
         clients[i].momentum = (clients[i].momentum
                                / np.linalg.norm(clients[i].momentum))
 
-        clients[i].seleted_epoch = iter
+        clients[i].seleted_epoch = iteration_num
 
-    G: nx.Graph = nx.Graph()
+    graph: nx.Graph = nx.Graph()
     edges: list[tuple] = []
 
     # To detect sybils
-    sim_threshold: float = max(c_max * np.exp(-iter / 20), c_min)
+    sim_threshold: float = max(c_max * np.exp(-iteration_num / 20), c_min)
     print(f"* Threshold: {sim_threshold}")
 
-    for i in range(len(selectedId)):
-        for j in range(i+1, len(selectedId)):
+    for i in range(len(selected_ids)):
+        for j in range(i+1, len(selected_ids)):
             similarity: np.float32 = cos_similarity(
-                clients[selectedId[i]].momentum,
-                clients[selectedId[j]].momentum,
-                unit=True
+                clients[selected_ids[i]].momentum,
+                clients[selected_ids[j]].momentum,
+                is_unit=True
             )
 
             if similarity > sim_threshold:
-                edges.append((selectedId[i], selectedId[j]))
+                edges.append((selected_ids[i], selected_ids[j]))
 
-    G.add_nodes_from(selectedId)
-    G.add_edges_from(edges)
+    graph.add_nodes_from(selected_ids)
+    graph.add_edges_from(edges)
 
-    C: list = sorted(nx.connected_components(G), key=len, reverse=True)
+    max_connected_component: list = sorted(nx.connected_components(graph),
+                                           key=len,
+                                           reverse=True)
 
-    # Remove sybils
+    # Remove potential sybils
     remove_ids: list[int] = []
-    if (len(C[0]) > 1):
-        for i in C[0]:
+    if (len(max_connected_component[0]) > 1):
+        for i in max_connected_component[0]:
             clients[i].fail_prob += 1
             remove_ids.append(i)
 
-    if len(remove_ids) < len(selectedId) - 1:
-        selectedId = remove_indices(selectedId, remove_ids)
-        print(f"* Selected Ids: {selectedId}")
+    if len(remove_ids) < len(selected_ids) - 1:
+        selected_ids = remove_indices(selected_ids, remove_ids)
+        print(f"* Selected Ids: {selected_ids}")
     else:
         print("* Just one model was selected as non-sybil, take them all")
 
-    local_updates: NDArray = np.array([clients[i].momentum for i in selectedId])
+    local_updates: NDArray = np.array(
+        [clients[i].momentum for i in selected_ids])
 
     pca = PCA(n_components=0.95)
     X_reduced = pca.fit_transform(local_updates)
@@ -214,38 +196,44 @@ def MAB_FL(clients: list[Client],
     estimator.fit(X_reduced)
     label_pred = estimator.labels_
 
-    selectedId_c1: list[int] = []
-    selectedId_c2: list[int] = []
-    for i in range(len(selectedId)):
+    ids_cluster1: list[int] = []
+    ids_cluster2: list[int] = []
+    for i in range(len(selected_ids)):
         if label_pred[i] == 0:
-            selectedId_c1.append(selectedId[i])
+            ids_cluster1.append(selected_ids[i])
         else:
-            selectedId_c2.append(selectedId[i])
+            ids_cluster2.append(selected_ids[i])
 
-    m1: NDArray = np.mean([clients[i].momentum for i in selectedId_c1], axis=0)
-    m2: NDArray = np.mean([clients[i].momentum for i in selectedId_c2], axis=0)
+    mean_cluster1: NDArray = np.mean(
+        [clients[i].momentum for i in ids_cluster1],
+        axis=0)
+    mean_cluster2: NDArray = np.mean(
+        [clients[i].momentum for i in ids_cluster2],
+        axis=0)
 
-    cos_between_clusters = cos_similarity(m1, m2, False)
+    cos_between_clusters: np.float32 = cos_similarity(mean_cluster1,
+                                                      mean_cluster2,
+                                                      is_unit=False)
 
     if cos_between_clusters < alpha:
-        if len(selectedId_c1) > len(selectedId_c2):
-            for i in selectedId_c2:
-                clients[i].fail_prob += 1
-                selectedId.remove(i)
-        else:
-            for i in selectedId_c1:
-                clients[i].fail_prob += 1
-                selectedId.remove(i)
+        smallest_cluster = (ids_cluster2
+                           if len(ids_cluster1) > len(ids_cluster2)
+                           else ids_cluster1)
 
-    for i in selectedId:
+        for i in smallest_cluster:
+            clients[i].fail_prob += 1
+            selected_ids.remove(i)
+
+    # Increase the prob for the remaining clients
+    for i in selected_ids:
         clients[i].success_prob += 1
 
-    print("* Final aggregation:", selectedId)
+    print("* Final aggregation:", selected_ids)
 
     lr: np.float32 = np.median(
-        [np.linalg.norm(clients[i].update) for i in selectedId])
+        [np.linalg.norm(clients[i].update) for i in selected_ids])
 
-    return lr, np.mean([clients[i].momentum for i in selectedId], axis=0)
+    return lr, np.mean([clients[i].momentum for i in selected_ids], axis=0)
 
 
 model_accuracy_list: list[float] = []
@@ -265,9 +253,9 @@ splits: list[Split] = dirichlet_split(
 
 clients: list[Client] = []
 for i in range(0, client_num):
-    clients.append(Client(splits[i]['X'], splits[i]['y'], i))
+    clients.append(Client(splits[i]['X'], splits[i]['y'], i, local_epoch))
 
-    if i >= client_num - f:
+    if i >= client_num - byzantine_num:
         clients[i].is_byzantine = True
 
 for c in clients:
@@ -281,16 +269,21 @@ for iter in range(iterations_num):
     if iter < 10:
         selectedId = [i for i in range(client_num)]
     else:
-        selectedId = TS(clients)
+        selectedId = client_beta_selection(clients)
 
     for i in selectedId:
         if not clients[i].is_byzantine:
             print(f"\t + Training on client {clients[i].id}")
 
             clients[i].train()
+            clients[i].set_update(global_weights)
 
     LIE(clients, selectedId)
-    lr, global_update = MAB_FL(clients, selectedId, iter)
+    lr, global_update = MAB_FL(clients,
+                               selectedId,
+                               iteration_num=iter,
+                               c_max=c_max,
+                               c_min=c_min)
 
     global_weights = global_weights + lr * global_update
     set_flatten_weights(global_model, global_weights)
