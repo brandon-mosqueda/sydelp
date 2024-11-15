@@ -50,3 +50,9 @@ def label_recall(y_true: ArrayLike,
 
 def f1_score(y_true: ArrayLike, y_pred: ArrayLike) -> Float:
     return float(_f1_score(y_true, y_pred, zero_division=0))
+
+
+def cos_similarity(x: NDArray, y: NDArray) -> np.float32:
+    res: np.float32 = (x * y).sum() / np.linalg.norm(x) * np.linalg.norm(y)
+
+    return np.float32(min(res, 1))

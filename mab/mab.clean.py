@@ -1,8 +1,14 @@
+import sys
+import os
+
+os.chdir("/home/bmosqueda/doctorado/experiments/decentralized_learning")
+sys.path.append("/home/bmosqueda/doctorado/experiments/decentralized_learning")
+
 import networkx as nx
 
 from sklearn.decomposition import PCA
-from scipy.stats import norm
 from sklearn.cluster import AgglomerativeClustering
+from scipy.stats import norm
 
 import tensorflow as tf
 import numpy as np
@@ -14,6 +20,7 @@ from keras.models import Model # type: ignore
 import utils.initialize as init
 from utils.split import dirichlet_split, Split
 from utils.utils import remove_indices, get_flatten_weights, set_flatten_weights
+from utils.metrics import cos_similarity
 from sklearn.metrics import accuracy_score
 
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
@@ -89,14 +96,61 @@ class Client:
         self.update = get_flatten_weights(self.model) - global_weights
 
 
-def cos_similarity(x: NDArray, y: NDArray, is_unit: bool) -> np.float32:
-    res: np.float32 = (x * y).sum()
+def client_beta_selection(clients: list[Client]) -> list[int]:
+    selected_ids: list[int] = []
 
-    # This would be redudant for unit vectors
-    if not is_unit:
-        res /= np.linalg.norm(x) * np.linalg.norm(y)
+    for client in clients:
+        p: float = np.random.beta(client.success_prob, client.fail_prob)
 
-    return np.float32(min(res, 1))
+        if p >= 0.9 or (p > 0.2 and np.random.random() < p):
+            selected_ids.append(client.id)
+
+    if not selected_ids:
+        selected_ids = [c.id for c in clients]
+
+    return selected_ids
+
+
+def remove_sybils_ids(selected_ids: list[int],
+                      clients: list[Client],
+                      c_max: float,
+                      c_min: float,
+                      iteration_num: int) -> list[int]:
+    # To detect sybils
+    sim_threshold: float = max(c_max * np.exp(-iteration_num / 20), c_min)
+    print(f"* Threshold: {sim_threshold}")
+
+    graph: nx.Graph = nx.Graph()
+    edges: list[tuple] = []
+
+    for i in range(len(selected_ids)):
+        for j in range(i + 1, len(selected_ids)):
+            similarity: np.float32 = cos_similarity(
+                clients[selected_ids[i]].momentum,
+                clients[selected_ids[j]].momentum
+            )
+
+            if similarity > sim_threshold:
+                edges.append((selected_ids[i], selected_ids[j]))
+
+    graph.add_nodes_from(selected_ids)
+    graph.add_edges_from(edges)
+
+    max_connected_component: set = sorted(nx.connected_components(graph),
+                                          key=len,
+                                          reverse=True)[0]
+
+    # Remove potential sybils
+    remove_idxs: list[int] = []
+    if (len(max_connected_component) > 1):
+        for i in max_connected_component:
+            clients[i].fail_prob += 1
+            remove_idxs.append(i)
+
+    if len(remove_idxs) < len(selected_ids) - 1:
+        return remove_indices(selected_ids, remove_idxs)
+
+    return selected_ids
 
 
 # Little Is Enough (LIE) attack
@@ -118,21 +172,6 @@ def LIE(clients: list[Client], selected_ids: list[int]) -> None:
             clients[i].update = bad_update
 
 
-def client_beta_selection(clients: list[Client]) -> list[int]:
-    selected_ids: list[int] = []
-
-    for client in clients:
-        p: float = np.random.beta(client.success_prob, client.fail_prob)
-
-        if p >= 0.9 or (p > 0.2 and np.random.random() < p):
-            selected_ids.append(client.id)
-
-    if len(selected_ids) == 0:
-        selected_ids = [c.id for c in clients]
-
-    return selected_ids
-
-
 def MAB_FL(clients: list[Client],
            selected_ids: list[int],
            iteration_num: int,
@@ -148,43 +187,11 @@ def MAB_FL(clients: list[Client],
 
         clients[i].seleted_epoch = iteration_num
 
-    graph: nx.Graph = nx.Graph()
-    edges: list[tuple] = []
-
-    # To detect sybils
-    sim_threshold: float = max(c_max * np.exp(-iteration_num / 20), c_min)
-    print(f"* Threshold: {sim_threshold}")
-
-    for i in range(len(selected_ids)):
-        for j in range(i+1, len(selected_ids)):
-            similarity: np.float32 = cos_similarity(
-                clients[selected_ids[i]].momentum,
-                clients[selected_ids[j]].momentum,
-                is_unit=True
-            )
-
-            if similarity > sim_threshold:
-                edges.append((selected_ids[i], selected_ids[j]))
-
-    graph.add_nodes_from(selected_ids)
-    graph.add_edges_from(edges)
-
-    max_connected_component: list = sorted(nx.connected_components(graph),
-                                           key=len,
-                                           reverse=True)
-
-    # Remove potential sybils
-    remove_ids: list[int] = []
-    if (len(max_connected_component[0]) > 1):
-        for i in max_connected_component[0]:
-            clients[i].fail_prob += 1
-            remove_ids.append(i)
-
-    if len(remove_ids) < len(selected_ids) - 1:
-        selected_ids = remove_indices(selected_ids, remove_ids)
-        print(f"* Selected Ids: {selected_ids}")
-    else:
-        print("* Just one model was selected as non-sybil, take them all")
+    selected_ids = remove_sybils_ids(selected_ids,
+                                     clients,
+                                     c_max=c_max,
+                                     c_min=c_min,
+                                     iteration_num=iter)
 
     local_updates: NDArray = np.array(
         [clients[i].momentum for i in selected_ids])
@@ -212,8 +219,7 @@ def MAB_FL(clients: list[Client],
         axis=0)
 
     cos_between_clusters: np.float32 = cos_similarity(mean_cluster1,
-                                                      mean_cluster2,
-                                                      is_unit=False)
+                                                      mean_cluster2)
 
     if cos_between_clusters < alpha:
         smallest_cluster = (ids_cluster2
@@ -264,23 +270,23 @@ for c in clients:
 iter = 1
 for iter in range(iterations_num):
     print(f"\n\n*** Iteration {iter} ***")
-    selectedId: list[int]
+    selected_ids: list[int]
 
     if iter < 10:
-        selectedId = [i for i in range(client_num)]
+        selected_ids = [i for i in range(client_num)]
     else:
-        selectedId = client_beta_selection(clients)
+        selected_ids = client_beta_selection(clients)
 
-    for i in selectedId:
+    for i in selected_ids:
         if not clients[i].is_byzantine:
             print(f"\t + Training on client {clients[i].id}")
 
             clients[i].train()
             clients[i].set_update(global_weights)
 
-    LIE(clients, selectedId)
+    LIE(clients, selected_ids)
     lr, global_update = MAB_FL(clients,
-                               selectedId,
+                               selected_ids,
                                iteration_num=iter,
                                c_max=c_max,
                                c_min=c_min)
