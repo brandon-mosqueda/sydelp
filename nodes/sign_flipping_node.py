@@ -12,12 +12,9 @@ class SignFlippingNode(MaliciousNode):
         super().__init__(*args, **kwargs)
         self.scale_factor = scale_factor
 
-    def train(self) -> None:
+    def attack(self) -> None:
         super().train()
 
-        if self.attacking:
-            # Scale and flip sign
-            self.set_model_params(
-                [-self.scale_factor * param
-                 for param in self.get_model_params()]
-            )
+        # Scale and flip sign
+        self.set_model_params(
+            [-self.scale_factor * param for param in self.get_model_params()])

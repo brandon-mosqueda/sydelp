@@ -12,6 +12,9 @@ class UntargetedLabelFlippingNode(MaliciousNode):
 
         self.classes_num = len(unique(self.y))
 
+    def attack(self) -> None:
+        pass
+
     def train(self) -> None:
         # Attacking | Has_real | Change labels
         #   False   | False    |    True        to original

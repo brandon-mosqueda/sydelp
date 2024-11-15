@@ -20,6 +20,9 @@ class TargetedLabelFlippingNode(MaliciousNode):
         self.target = target
         self.source_indices = np.where(self.y == self.source)[0]
 
+    def attack(self) -> None:
+        pass
+
     def train(self) -> None:
         label: int = self.target if self.attacking else self.source
         self.y[self.source_indices] = label

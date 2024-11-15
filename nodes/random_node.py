@@ -17,12 +17,9 @@ class RandomNode(MaliciousNode):
         self.mean = mean
         self.sd = sd
 
-    def train(self) -> None:
-        if self.attacking:
-            self.set_model_params(random_gaussian_model(
-                reference=self.model.get_weights(),
-                mean=self.mean,
-                sd=self.sd
-            ))
-        else:
-            super().train()
+    def attack(self) -> None:
+        self.set_model_params(random_gaussian_model(
+            reference=self.model.get_weights(),
+            mean=self.mean,
+            sd=self.sd
+        ))
