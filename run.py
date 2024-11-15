@@ -13,7 +13,7 @@ from nodes.targeted_label_flipping_node import TargetedLabelFlippingNode
 from nodes.sign_flipping_node import SignFlippingNode
 from utils.utils import IntArray, as_name, NumArray
 from utils.split import dirichlet_split, Split, balanced_split
-from learning.federated import FederatedLearning, AggParams
+from learning.learning import Learning
 from learning.learning import MetricParams
 from keras.src.models import Model as KerasModel
 from sklearn.model_selection import train_test_split
@@ -22,6 +22,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 params_file: str = sys.argv[1]
 # params_file: str = 'params/26.sydelp_spam_random.test.json'
+# params_file: str = 'params/15.dl_spam_label_flip.test.json'
 params: dict = utils.read_json(params_file)
 print(params)
 
@@ -116,21 +117,18 @@ for _ in range(honest_num):
                       epochs=params['local_epochs_num'],
                       batch_size=params['batch_size']))
 
-aggregation_params: AggParams = init.get_aggregation_by_protocol(params, nodes)
-
 # Create a FederatedLearning instance
-federated_learning = FederatedLearning(
-    iterations=params['iterations_num'],
+learning_controller: Learning = init.get_controller_by_protocol(
+    params=params,
     nodes=nodes,
     global_model=global_model,
     x_testing=X_test,
     y_testing=y_test,
-    aggregation_params=aggregation_params,
     metrics_params=metrics_params,
 )
 
-federated_learning.start()
-print("Total running time: %.4f minutes" % federated_learning.execution_time)
+learning_controller.start()
+print("Total running time: %.4f minutes" % learning_controller.execution_time)
 
 results_dir: str = os.path.join(
     params['results_dir'],
@@ -148,4 +146,4 @@ metadata = {
     'Seed': params['seed'],
     "WeightingMode": params['weighting_mode'],
 }
-federated_learning.save(results_dir, metadata=metadata)
+learning_controller.save(results_dir, metadata=metadata)

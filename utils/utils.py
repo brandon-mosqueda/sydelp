@@ -6,7 +6,7 @@ import numpy as np
 from json import load as load_json
 from keras import models
 from keras.src.models import Model as KerasModel
-from numpy.typing import NDArray
+from numpy.typing import NDArray, ArrayLike
 from typing import Union, Any
 
 NNumeric = Union[
@@ -231,3 +231,14 @@ def set_flatten_weights(model: KerasModel, weights: NumArray) -> None:
         index += num_elements
 
     model.set_weights(new_weights)
+
+
+def replace_by(x: Union[NDArray, list],
+               values_mapping: dict,
+               default_value=None) -> Union[NDArray, list]:
+    res: Union[NDArray, list] = [values_mapping.get(key, default_value)
+                                 for key in x]
+    if isinstance(x, np.ndarray):
+        res = np.array(res)
+
+    return res

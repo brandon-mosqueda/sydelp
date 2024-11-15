@@ -23,9 +23,9 @@ from sklearn.model_selection import train_test_split
 from typing import TypedDict
 from utils.utils import NumArray, IntArray, as_name
 from keras.src.models import Model as KerasModel
-from learning.federated import AggParams
-from learning.learning import MetricParams
-from utils.aggregation import fed_avg, krum
+from learning.learning import MetricParams, Learning
+from learning.federated import FederatedLearning
+from learning.sydelp import Sydelp
 from utils.metrics import f1_score, label_flipping_success_rate, label_recall
 from sklearn.metrics import accuracy_score
 
@@ -241,43 +241,35 @@ def get_model_by_dataset(params: dict) -> KerasModel:
         raise ValueError(f"{params['dataset']} is not a valid dataset")
 
 
-def get_aggregation_by_protocol(params: dict, nodes: list[Node]) -> AggParams:
-    protocol: str = as_name(params['protocol'])
-    mode: str = as_name(params['weighting_mode'])
-    result: AggParams
+def get_controller_by_protocol(params: dict,
+                               nodes: list[Node],
+                               global_model: KerasModel,
+                               x_testing: NumArray,
+                               y_testing: NumArray,
+                               metrics_params: dict[str,
+                                                    MetricParams]) -> Learning:
+    base_params: dict = {
+        'iterations': params['iterations_num'],
+        'nodes': nodes,
+        'global_model': global_model,
+        'x_testing': x_testing,
+        'y_testing': y_testing,
+        'metrics_params': metrics_params,
+    }
 
-    if protocol in ["dl", "baseline"] or "baseline" in protocol:
-        result = {'function': fed_avg, 'params': {}}
-
-        if mode == "data":
-            result['params']['weights'] = np.array(
-                [node.x.shape[0] for node in nodes], dtype="float")
-            result['params']['weights'] /= result['params']['weights'].sum()
-        elif mode == "uniform":
-            n: int = len(nodes)
-            result['params']['weights'] = np.repeat(1/n, n)
-        else:
-            raise ValueError(
-                f"{params['weighting_mode']} cannot be used "
-                " with {params['protocol']}")
-    elif protocol in ["sydelp"] or "sydelp" in protocol:
-        if mode not in ["uniform", "data", "score"]:
-            raise ValueError(
-                f"{params['weighting_mode']} cannot be used "
-                " with {params['protocol']}")
-
-        result = {
-            'function': krum,
-            'params': {
-                'm': params['expected_malicious_num'],
-                'weighting_mode': mode,
-                'data_sizes': np.array([node.x.shape[0] for node in nodes])
-            }
-        }
+    if as_name(params['protocol']) == "dl":
+        return FederatedLearning(
+            weighting_mode=params['weighting_mode'],
+            **base_params
+        )
+    elif as_name(params['protocol']) == "sydelp":
+        return Sydelp(
+            weighting_mode=params['weighting_mode'],
+            expected_malicious_num=params['expected_malicious_num'],
+            **base_params
+        )
     else:
-        raise ValueError(f"{params['protocol']} is not a valid protocol")
-
-    return result
+        raise ValueError(f'Protocol "{params["protocol"]}" not recognized')
 
 
 def get_metrics(params: dict) -> dict[str, MetricParams]:
