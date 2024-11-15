@@ -14,15 +14,15 @@ from nodes.sign_flipping_node import SignFlippingNode
 from numpy.typing import NDArray
 from utils.utils import NNumeric, as_name
 from utils.split import dirichlet_split, Split, balanced_split
-from learning.federated import FederatedLearning, AggParams, MetricParams
+from learning.federated import FederatedLearning, AggParams
+from learning.learning import MetricParams
 from keras.src.models import Model as KerasModel
 from sklearn.model_selection import train_test_split
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 params_file: str = sys.argv[1]
-# params_file: str = 'params/15.dl_spam_solitary.test.json'
-# params_file: str = 'params/11.dl_spam.test.json'
+# params_file: str = 'params/26.sydelp_spam_random.test.json'
 params: dict = utils.read_json(params_file)
 print(params)
 
@@ -121,7 +121,7 @@ aggregation_params: AggParams = init.get_aggregation_by_protocol(params, nodes)
 
 # Create a FederatedLearning instance
 federated_learning = FederatedLearning(
-    rounds=params['iterations_num'],
+    iterations=params['iterations_num'],
     nodes=nodes,
     global_model=global_model,
     x_testing=X_test,

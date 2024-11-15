@@ -23,7 +23,8 @@ from numpy.typing import NDArray
 from utils.utils import NNumeric, as_name
 from keras.datasets.mnist import load_data as load_mnist  # type: ignore
 from keras.src.models import Model as KerasModel
-from learning.federated import AggParams, MetricParams
+from learning.federated import AggParams
+from learning.learning import MetricParams
 from utils.aggregation import fed_avg, krum
 from utils.metrics import f1_score, label_flipping_success_rate, label_recall
 from sklearn.metrics import accuracy_score
