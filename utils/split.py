@@ -1,29 +1,28 @@
 import numpy as np
 
-from utils.utils import NNumeric
-from numpy.typing import NDArray
+from utils.utils import NumArray, IntArray, FloatArray, BoolArray
 from typing import TypedDict, Union, Any
 
 
 class Split(TypedDict):
-    X: NDArray[NNumeric]
-    y: NDArray[NNumeric]
+    X: NumArray
+    y: IntArray
 
 
-def class_non_iid_split(X: NDArray[NNumeric],
-                        y: NDArray[NNumeric],
+def class_non_iid_split(X: NumArray,
+                        y: IntArray,
                         n_splits: int,
                         n_classes_per_split: int = 2,
                         seed: Union[int, None] = None) -> list[Split]:
     rng = np.random.default_rng(seed)
 
-    classes: NDArray[NNumeric] = np.unique(y)
+    classes: IntArray = np.unique(y)
     n_classes: int = len(classes)
     n_splits_per_class: int = n_splits * n_classes_per_split // n_classes
 
     # For each class create a list with the required number splits introducing
     # some randomness in the inner-class indices selection
-    classes_splits: list[list[NDArray[np.int64]]] = [
+    classes_splits: list[list[IntArray]] = [
         np.array_split(
             rng.permutation(np.where(y == cls)[0]),
             n_splits_per_class
@@ -32,14 +31,14 @@ def class_non_iid_split(X: NDArray[NNumeric],
     ]
     # For each split we will keep track the classes that were already included
     splits_included_classes: list[list[int]] = [[] for _ in range(n_splits)]
-    clients_samples: list[list[NDArray[np.int64]]] = [
+    clients_samples: list[list[IntArray]] = [
         [] for _ in range(n_splits)
     ]
 
     i: int = 0
     n_remaining_splits: int = n_splits_per_class * n_classes
     for _ in range(n_splits_per_class * n_classes):
-        not_included_classes: NDArray[NNumeric] = rng.permutation(
+        not_included_classes: NumArray = rng.permutation(
             np.delete(classes, splits_included_classes[i])
         )
 
@@ -56,7 +55,7 @@ def class_non_iid_split(X: NDArray[NNumeric],
 
     # Remove the one level of depth in classes_splits with the not assigned
     # splits
-    remaining_splits: list[NDArray[np.int64]] = [
+    remaining_splits: list[IntArray] = [
         split for class_split in classes_splits for split in class_split
     ]
 
@@ -75,7 +74,7 @@ def class_non_iid_split(X: NDArray[NNumeric],
     client_data: list[Split] = []
 
     for i in range(n_splits):
-        client_indices: NDArray[np.int64] = np.concatenate(clients_samples[i])
+        client_indices: IntArray = np.concatenate(clients_samples[i])
 
         client_data.append({
             'X': X[client_indices],
@@ -86,8 +85,8 @@ def class_non_iid_split(X: NDArray[NNumeric],
 
 
 # Generate splits with balanced number of samples for each class
-def balanced_split(X: NDArray[NNumeric],
-                   y: NDArray[NNumeric],
+def balanced_split(X: NumArray,
+                   y: IntArray,
                    n_splits: int,
                    seed: Union[int, None] = None) -> list[Split]:
     return class_non_iid_split(X=X,
@@ -97,22 +96,22 @@ def balanced_split(X: NDArray[NNumeric],
                                seed=seed)
 
 
-def dirichlet_split(X: NDArray[NNumeric],
-                    y: NDArray[NNumeric],
+def dirichlet_split(X: NumArray,
+                    y: IntArray,
                     n_splits: int,
                     alpha: float = 0.5,
                     split_min_size: Union[int, None] = None,
                     seed: Union[int, None] = None) -> list[Split]:
     rng = np.random.default_rng(seed)
 
-    classes: NDArray[NNumeric] = np.unique(y)
-    is_index_available: NDArray[np.bool_] = np.repeat(True, len(y))
-    clients_samples: list[list[NDArray[np.int64]]] = []
+    classes: NumArray = np.unique(y)
+    is_index_available: BoolArray = np.repeat(True, len(y))
+    clients_samples: list[list[IntArray]] = []
 
     if split_min_size is None:
         clients_samples = [[] for _ in range(n_splits)]
     else:
-        initial_indices: NDArray[np.int64] = rng.choice(
+        initial_indices: IntArray = rng.choice(
             np.arange(len(y)),
             size=split_min_size * n_splits,
             replace=False
@@ -125,27 +124,23 @@ def dirichlet_split(X: NDArray[NNumeric],
         is_index_available[initial_indices] = False
 
     # Partition the data for each class
-    idx_by_class: dict[Any, NDArray[np.int64]] = {
+    idx_by_class: dict[Any, IntArray] = {
         cls: np.where(np.logical_and(y == cls, is_index_available))[0]
         for cls in classes
     }
 
     for cls in classes:
         # Get data points for this class
-        idx: NDArray[np.int64] = idx_by_class[cls]
+        idx: IntArray = idx_by_class[cls]
 
         # Draw proportions for each client using the Dirichlet distribution
-        proportions: NDArray[np.float64] = rng.dirichlet(
-            np.repeat(alpha, n_splits)
-        )
+        proportions: FloatArray = rng.dirichlet(np.repeat(alpha, n_splits))
 
         # Determine how many samples from this class each client will get
-        class_splits: NDArray[np.int64] = np.floor(
-            proportions * len(idx)
-        ).astype(int)
+        class_splits: IntArray = np.floor(proportions * len(idx)).astype(int)
 
         # Ensure all samples are assigned by adjusting the split
-        extra_samples: np.int64 = len(idx) - np.sum(class_splits)
+        extra_samples: int = int(len(idx) - np.sum(class_splits))
         class_splits[rng.choice(len(class_splits),
                                 extra_samples,
                                 replace=False)] += 1
@@ -156,7 +151,7 @@ def dirichlet_split(X: NDArray[NNumeric],
         # Assign the samples to each client
         current_idx: int = 0
         for i in range(n_splits):
-            client_idx: NDArray[np.int64] = idx[
+            client_idx: IntArray = idx[
                 np.arange(current_idx, current_idx + class_splits[i])
             ]
             clients_samples[i].append(client_idx)
@@ -167,7 +162,7 @@ def dirichlet_split(X: NDArray[NNumeric],
     client_data: list[Split] = []
 
     for i in range(n_splits):
-        client_indices: NDArray[np.int64] = np.concatenate(clients_samples[i])
+        client_indices: IntArray = np.concatenate(clients_samples[i])
 
         client_data.append({
             'X': X[client_indices],

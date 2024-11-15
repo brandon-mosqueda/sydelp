@@ -1,89 +1,68 @@
 import numpy as np
 
-from numpy.typing import NDArray
+from scipy.spatial.distance import cdist
 from typing import Union
-from utils.utils import ModelParams, bottom_indices, bottom_n, NNumeric
+from utils.utils import NumArray, bottom_indices, bottom_n, IntArray, FloatArray
 
 
-def fed_avg(models_params: list[ModelParams],
-            weights: Union[NDArray[NNumeric], None] = None) -> ModelParams:
+def fed_avg(models_params: NumArray,
+            weights: Union[NumArray, None] = None) -> NumArray:
+    if len(models_params.shape) != 2:
+        raise ValueError("models_params has to be a 2-D array")
+
+    models_num: int = models_params.shape[0]
+    if models_num == 0 or models_params.shape[1] == 0:
+        return np.zeros(models_params.shape)
+
     if weights is None:
-        weights = np.repeat(1/len(models_params), len(models_params))
+        weights = np.repeat(1/models_num, models_num)
     weights = weights.astype("float")
 
-    if len(models_params) != weights.size:
+    if models_num != weights.size:
         raise ValueError(
-            "models_params and data_sizes have to be of same length "
-            "(%s != %s)" % (len(models_params), weights.size)
+            "models_params.shape[0] and weights have to be of same length "
+            "(%s != %s)" % (models_params.shape[0], weights.size)
         )
 
-    if not models_params:
-        return []
-
-    avg_params: ModelParams = []
-    layers_num: int = len(models_params[0])
-
-    for i in range(layers_num):
-        layer_params: NDArray = np.array([
-            model[i] * weight for model, weight in zip(models_params, weights)
-        ])
-
-        avg_params.append(layer_params.sum(axis=0))
-
-    return avg_params
+    return np.dot(weights, models_params)
 
 
-def model_params_distance(x: ModelParams, y: ModelParams) -> np.float128:
-    dist: np.float128 = np.sum(
-        [np.sum((x_i - y_i)**2, dtype="float128") for x_i, y_i in zip(x, y)]
-    )
-
-    return np.sqrt(dist)
-
-
-def model_params_distance_matrix(
-        models_params: list[ModelParams]) -> NDArray[np.float128]:
-    n: int = len(models_params)
-    matrix: NDArray[np.float128] = np.zeros((n, n), dtype="float128")
-
-    for i in range(n):
-        for j in range(i + 1, n):
-            matrix[i, j] = model_params_distance(models_params[i],
-                                                 models_params[j])
-            matrix[j, i] = matrix[i, j]
-
-    return matrix
-
-
-def krum(models_params: list[ModelParams],
+def krum(models_params: NumArray,
          m: Union[float, int] = 0.3,
          weighting_mode: str = "uniform",
-         data_sizes: Union[NDArray[NNumeric], None] = None) -> ModelParams:
-    if not models_params:
-        return []
+         data_sizes: Union[NumArray, None] = None) -> NumArray:
+    if len(models_params.shape) != 2:
+        raise ValueError("models_params has to be a 2-D array")
 
-    if len(models_params) < 3:
+    models_num: int = models_params.shape[0]
+    if models_num == 0 or models_params.shape[1] == 0:
+        return np.zeros(models_params.shape)
+    elif models_num < 3:
         return fed_avg(models_params)
 
+    # In case m is a proportion (default)
     if m < 1:
-        m = len(models_params) * m
+        m = models_num * m
 
-    n: int = len(models_params)
-    m = min(int(m), n - 2)
-    n_models: int = n - m - 2
+    m = int(m)
+    kept_models_num: int = models_num - m - 2
+    if kept_models_num < 1:
+        raise ValueError("models_num - m - 2 yielded < 1")
 
-    distances: NDArray[np.float128] = model_params_distance_matrix(
-        models_params)
-    scores: NDArray[np.float128] = np.zeros(n, dtype="float128")
+    distances: NumArray = cdist(models_params,
+                                models_params,
+                                metric='euclidean')
 
-    for i in range(n):
+    scores: FloatArray = np.zeros(models_num, dtype="float")
+
+    for i in range(models_num):
         # We use n_models + 1 because the distance with itself is always the
         # lowest (0)
-        scores[i] = np.sum(bottom_n(distances[i], n_models + 1))
+        scores[i] = np.sum(bottom_n(distances[i], kept_models_num + 1))
 
-    best_indices: NDArray[np.int64] = bottom_indices(scores, n - m)
+    best_indices: IntArray = bottom_indices(scores, kept_models_num)
 
-    weights: NDArray[np.float_]
+    weights: FloatArray
     if weighting_mode == "uniform":
         weights = np.repeat(1/best_indices.size,
                             best_indices.size).astype("float")
@@ -91,6 +70,9 @@ def krum(models_params: list[ModelParams],
         if data_sizes is None:
             raise ValueError(
                 "With weighting_mode='data', you have to provide data_sizes")
+        elif data_sizes.size != models_num:
+            raise ValueError("data_sizes.size has to be equals to "
+                             "the number of provided models")
 
         weights = np.array([data_sizes[i] for i in best_indices], dtype="float")
         weights /= weights.sum()
@@ -101,9 +83,4 @@ def krum(models_params: list[ModelParams],
     else:
         raise ValueError(f"Invalid weighting_mode '{weighting_mode}'")
 
-    aggregated_model: ModelParams = fed_avg(
-        [models_params[i] for i in best_indices],
-        weights
-    )
-
-    return aggregated_model
+    return fed_avg(models_params[best_indices], weights)

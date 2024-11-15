@@ -1,4 +1,3 @@
-import unittest
 from utils.utils import *
 
 import numpy as np

@@ -1,11 +1,10 @@
-from utils.utils import NNumeric, ModelParams
-from numpy.typing import NDArray
+from utils.utils import NumArray, IntArray, get_flatten_weights, set_flatten_weights
 from keras.src.models import Model as KerasModel
 
 
 class Node:
-    x: NDArray[NNumeric]
-    y: NDArray[NNumeric]
+    x: NumArray
+    y: IntArray
     model: KerasModel
     epochs: int
     batch_size: int
@@ -13,8 +12,8 @@ class Node:
     is_malicious: bool = False
 
     def __init__(self,
-                 x: NDArray[NNumeric],
-                 y: NDArray[NNumeric],
+                 x: NumArray,
+                 y: IntArray,
                  model: KerasModel,
                  epochs: int,
                  batch_size: int) -> None:
@@ -26,11 +25,11 @@ class Node:
 
         self.rows_num = x.shape[0]
 
-    def set_model_params(self, model_params: ModelParams) -> None:
-        self.model.set_weights(model_params)
+    def set_model_params(self, model_params: NumArray) -> None:
+        set_flatten_weights(self.model, model_params)
 
-    def get_model_params(self) -> ModelParams:
-        return self.model.get_weights()
+    def get_model_params(self) -> NumArray:
+        return get_flatten_weights(self.model)
 
     def train(self) -> None:
         self.model.fit(self.x,

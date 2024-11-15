@@ -1,7 +1,7 @@
 import progressbar
 
+import keras
 import numpy as np
-import keras.optimizers as optimizers  # type: ignore
 
 from json import load as load_json
 from keras import models
@@ -20,9 +20,12 @@ Int = Union[np.uint, np.uint8, np.uint16, np.uint32, np.uint64,
 
 Float = Union[float, np.float16, np.float32, np.float64, np.float128]
 
-ModelParams = list[NDArray[NNumeric]]
+NumArray = NDArray[NNumeric]
+IntArray = NDArray[np.int_]
+FloatArray = NDArray[np.float_]
+BoolArray = NDArray[np.bool_]
 
-def print_array(x: NDArray[np.generic], n: int = 5, digits: int = 4) -> None:
+def print_array(x: NDArray, n: int = 5, digits: int = 4) -> None:
     if np.issubdtype(x.dtype, np.number):
         x = x.round(digits)
 
@@ -94,9 +97,6 @@ def summary(obj: object,
 class MyProgressBar(progressbar.ProgressBar):
     current: int = 0
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-
     def next(self) -> None:
         self.current = self.current + 1
 
@@ -110,9 +110,7 @@ def progress_bar(rounds: int) -> MyProgressBar:
         ' ', progressbar.Timer()
     ]
 
-    bar: MyProgressBar = MyProgressBar(widgets=widgets, max_value=rounds)
-
-    return bar
+    return MyProgressBar(widgets=widgets, max_value=rounds)
 
 
 # Count the number of apperances
@@ -122,7 +120,7 @@ def count(x: Union[NDArray, list, tuple]) -> dict:
     return {cls: num for cls, num in zip(np_counts[0], np_counts[1])}
 
 
-def top_indices(x: NDArray[NNumeric], n: int) -> NDArray[np.int64]:
+def top_indices(x: NumArray, n: int) -> IntArray:
     if n < 0 or n > x.shape[0]:
         raise ValueError("n should be 0 <= n <= x.shape")
 
@@ -134,11 +132,11 @@ def top_indices(x: NDArray[NNumeric], n: int) -> NDArray[np.int64]:
     return np.flip(np.argsort(x))[:n]
 
 
-def top_n(x: NDArray[NNumeric], n: int = 1) -> NDArray[NNumeric]:
+def top_n(x: NumArray, n: int = 1) -> NumArray:
     return x[top_indices(x, n)]
 
 
-def bottom_indices(x: NDArray[NNumeric], n: int = 1) -> NDArray[np.int64]:
+def bottom_indices(x: NumArray, n: int = 1) -> IntArray:
     if n < 0 or n > x.shape[0]:
         raise ValueError("n should be 0 <= n <= x.shape")
 
@@ -150,7 +148,7 @@ def bottom_indices(x: NDArray[NNumeric], n: int = 1) -> NDArray[np.int64]:
     return np.argsort(x)[:n]
 
 
-def bottom_n(x: NDArray[NNumeric], n: int = 1) -> NDArray[NNumeric]:
+def bottom_n(x: NumArray, n: int = 1) -> NumArray:
     return x[bottom_indices(x, n)]
 
 
@@ -165,7 +163,7 @@ def elapsed_time(start: float, end: float, units: str = "mins") -> float:
     return elapsed
 
 
-def remove_indices(x: list, indices: list) -> list:
+def remove_indices(x: list, indices: list[int]) -> list:
     indices_set: set = set(indices)
 
     return [
@@ -185,9 +183,11 @@ def replicate_model(model: KerasModel,
 
     if compiled:
         for mod in model_list:
-            mod.compile(optimizer=optimizers.deserialize(
-                            optimizers.serialize(model.optimizer)),
-                        loss=model.loss)
+            mod.compile(
+                optimizer=keras.optimizers.deserialize(
+                    keras.optimizers.serialize(model.optimizer)),
+                loss=model.loss
+            )
 
     return model_list
 
@@ -201,7 +201,7 @@ def as_name(x: Any):
     return str(x).lower().replace(' ', '_')
 
 
-def get_flatten_weights(model: KerasModel) -> NDArray:
+def get_flatten_weights(model: KerasModel) -> NumArray:
     weights = model.get_weights()
     total_size = sum(w.size for w in weights)
 
@@ -218,7 +218,7 @@ def get_flatten_weights(model: KerasModel) -> NDArray:
     return flat_weights
 
 
-def set_flatten_weights(model: KerasModel, weights: NDArray) -> None:
+def set_flatten_weights(model: KerasModel, weights: NumArray) -> None:
     original_weights = model.get_weights()
     new_weights = []
     index = 0
@@ -226,8 +226,8 @@ def set_flatten_weights(model: KerasModel, weights: NDArray) -> None:
     # Directly reshape each section of `weights` without additional slicing
     for w in original_weights:
         num_elements = w.size
-        new_weights.append(np.reshape(
-            weights[index:index + num_elements], w.shape))
+        new_weights.append(weights[index:index + num_elements]
+                           .reshape(w.shape))
         index += num_elements
 
     model.set_weights(new_weights)

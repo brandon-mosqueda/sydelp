@@ -1,21 +1,17 @@
 import numpy as np
 
 from sklearn.metrics import recall_score, f1_score as _f1_score
-from numpy.typing import NDArray, ArrayLike
-from utils.utils import Float, Int
+from utils.utils import Float, FloatArray, IntArray, Int, NumArray
 
 
-def label_flipping_success_rate(y_true: ArrayLike,
-                                y_pred: ArrayLike,
+def label_flipping_success_rate(y_true: IntArray,
+                                y_pred: IntArray,
                                 source: Int,
                                 target: Int) -> Float:
-    y_true = np.array(y_true)
-    y_pred = np.array(y_pred)
-
     if y_true.size != y_pred.size:
         raise ValueError('y_true and y_pred must have the same length')
 
-    source_indices: NDArray[np.int64] = np.where(y_true == source)[0]
+    source_indices: IntArray = np.where(y_true == source)[0]
 
     if not y_true.size or not source_indices.size:
         return 0
@@ -25,19 +21,14 @@ def label_flipping_success_rate(y_true: ArrayLike,
     return success_rate / len(source_indices)
 
 
-def label_recall(y_true: ArrayLike,
-                 y_pred: ArrayLike,
-                 label: Int) -> Float:
-    y_true = np.array(y_true)
-    y_pred = np.array(y_pred)
-
+def label_recall(y_true: IntArray, y_pred: IntArray, label: Int) -> Float:
     if y_true.size != y_pred.size:
         raise ValueError('y_true and y_pred must have the same length')
 
     if not y_true.size:
         return 0
 
-    recalls: NDArray = np.array(recall_score(
+    recalls: FloatArray = np.array(recall_score(
         y_true,
         y_pred,
         average=None,
@@ -48,11 +39,11 @@ def label_recall(y_true: ArrayLike,
     return recalls[label]
 
 
-def f1_score(y_true: ArrayLike, y_pred: ArrayLike) -> Float:
+def f1_score(y_true: IntArray, y_pred: IntArray) -> Float:
     return float(_f1_score(y_true, y_pred, zero_division=0))
 
 
-def cos_similarity(x: NDArray, y: NDArray) -> np.float32:
-    res: np.float32 = (x * y).sum() / np.linalg.norm(x) * np.linalg.norm(y)
+def cos_similarity(x: NumArray, y: NumArray) -> Float:
+    res: np.float_ = (x * y).sum() / np.linalg.norm(x) * np.linalg.norm(y)
 
-    return np.float32(min(res, 1))
+    return np.float_(min(res, 1))

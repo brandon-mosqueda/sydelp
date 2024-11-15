@@ -8,14 +8,13 @@ from time import time
 from typing import TypedDict, Protocol
 from abc import ABC, abstractmethod
 from nodes.node import Node
-from utils.utils import MyProgressBar, NNumeric, Float
+from utils.utils import MyProgressBar, NumArray, Float, IntArray
 from keras.src.models import Model as KerasModel
 from pandas import DataFrame
-from numpy.typing import NDArray, ArrayLike
 
 
 class MetricFunction(Protocol):
-    def __call__(self, y_true: ArrayLike, y_pred: ArrayLike,
+    def __call__(self, y_true: IntArray, y_pred: IntArray,
                  *args, **kwargs) -> Float: ...
 
 
@@ -27,10 +26,10 @@ class MetricParams(TypedDict):
 class Learning(ABC):
     nodes: list[Node]
     global_model: KerasModel
-    x_testing: NDArray[NNumeric]
-    y_testing: NDArray[NNumeric]
+    x_testing: NumArray
+    y_testing: IntArray
     iterations: int
-    execution_time: float = 0
+    execution_time: float
     metrics: DataFrame
     predictions: DataFrame
     metrics_params: dict[str, MetricParams]
@@ -39,8 +38,8 @@ class Learning(ABC):
                  iterations: int,
                  nodes: list[Node],
                  global_model: KerasModel,
-                 x_testing: NDArray[NNumeric],
-                 y_testing: NDArray[NNumeric],
+                 x_testing: NumArray,
+                 y_testing: IntArray,
                  metrics_params: dict[str, MetricParams]) -> None:
         self.nodes = nodes
         self.x_testing = x_testing
@@ -48,6 +47,8 @@ class Learning(ABC):
         self.global_model = global_model
         self.iterations = iterations
         self.metrics_params = metrics_params
+
+        self.execution_time = 0
 
     @abstractmethod
     def aggregation(self) -> None:
@@ -78,10 +79,10 @@ class Learning(ABC):
                                                  self.y_testing,
                                                  verbose=0)
 
-        round_metrics = {
+        round_metrics: dict[str, Float] = {
             metric: self.metrics_params[metric]['function'](
-                predictions['observed'],
-                predictions['predicted'],
+                y_true=predictions['observed'].to_numpy().astype("int"),
+                y_pred=predictions['predicted'].to_numpy().astype("int"),
                 **self.metrics_params[metric]['params']
             ) for metric in self.metrics_params
         }

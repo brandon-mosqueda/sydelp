@@ -18,8 +18,10 @@ class RandomNode(MaliciousNode):
         self.sd = sd
 
     def attack(self) -> None:
+        size: int = sum(w.size for w in self.model.get_weights())
+
         self.set_model_params(random_gaussian_model(
-            reference=self.model.get_weights(),
+            size=size,
             mean=self.mean,
             sd=self.sd
         ))

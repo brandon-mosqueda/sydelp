@@ -11,8 +11,7 @@ from nodes.node import Node
 from nodes.random_node import RandomNode
 from nodes.targeted_label_flipping_node import TargetedLabelFlippingNode
 from nodes.sign_flipping_node import SignFlippingNode
-from numpy.typing import NDArray
-from utils.utils import NNumeric, as_name
+from utils.utils import IntArray, as_name, NumArray
 from utils.split import dirichlet_split, Split, balanced_split
 from learning.federated import FederatedLearning, AggParams
 from learning.learning import MetricParams
@@ -26,8 +25,8 @@ params_file: str = sys.argv[1]
 params: dict = utils.read_json(params_file)
 print(params)
 
-X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric]; X_mal: NDArray[NNumeric];
-y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]; y_mal: NDArray[NNumeric];
+X_train: NumArray; X_test: NumArray; X_mal: NumArray;
+y_train: IntArray; y_test: IntArray; y_mal: IntArray;
 X_train, X_test, y_train, y_test = init.get_dataset(params)
 
 global_model: KerasModel = init.get_model_by_dataset(params)

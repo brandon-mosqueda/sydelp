@@ -1,3 +1,4 @@
+import keras
 import pandas as pd
 import requests as rq
 import numpy as np
@@ -15,13 +16,12 @@ from io import BytesIO
 from nodes.node import Node
 from keras import optimizers
 from keras import layers, models
+from keras.src.models import Model as KerasModel
 from sklearn.datasets import load_iris
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from typing import TypedDict
-from numpy.typing import NDArray
-from utils.utils import NNumeric, as_name
-from keras.datasets.mnist import load_data as load_mnist  # type: ignore
+from utils.utils import NumArray, IntArray, as_name
 from keras.src.models import Model as KerasModel
 from learning.federated import AggParams
 from learning.learning import MetricParams
@@ -29,16 +29,17 @@ from utils.aggregation import fed_avg, krum
 from utils.metrics import f1_score, label_flipping_success_rate, label_recall
 from sklearn.metrics import accuracy_score
 
+load_mnist = keras.datasets.mnist.load_data
 
 class Initializer(TypedDict):
     nodes: list[Node]
-    global_model: models.Model
-    X_test: NDArray[NNumeric]
-    y_test: NDArray[NNumeric]
+    global_model: KerasModel
+    X_test: NumArray
+    y_test: IntArray
 
 
-def iris_model(learning_rate: float = 0.01) -> models.Model:
-    model: models.Model = models.Sequential([
+def iris_model(learning_rate: float = 0.01) -> KerasModel:
+    model: KerasModel = models.Sequential([
         layers.Input(shape=(4, )),
         layers.Dense(10, activation='relu'),
         layers.Dense(10, activation='relu'),
@@ -53,13 +54,14 @@ def iris_model(learning_rate: float = 0.01) -> models.Model:
     return model
 
 
-def iris_data(testing_proportion: float = 0.2) -> list[NDArray[NNumeric]]:
+def iris_data(testing_proportion: float = 0.2) -> tuple[NumArray, NumArray,
+                                                        IntArray, IntArray]:
     # Load and preprocess the data
-    X: NDArray[NNumeric]; y: NDArray[NNumeric]
+    X: NumArray; y: IntArray
     X, y = load_iris(return_X_y=True)  # type: ignore
 
-    X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric]
-    y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]
+    X_train: NumArray; X_test: NumArray
+    y_train: IntArray; y_test: IntArray
 
     # Split the data into balanced training and testing datasets
     X_train, X_test, y_train, y_test = train_test_split(
@@ -71,13 +73,13 @@ def iris_data(testing_proportion: float = 0.2) -> list[NDArray[NNumeric]]:
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
 
-    return [X_train, X_test, y_train, y_test]
+    return X_train, X_test, y_train, y_test
 
 
 def mnist_model(learning_rate: float = 0.001,
                 dense_units: int = 100,
-                metrics: list = []) -> models.Model:
-    model: models.Model = models.Sequential([
+                metrics: list = []) -> KerasModel:
+    model: KerasModel = models.Sequential([
         layers.Input(shape=(784, )),
         layers.Dense(dense_units, activation='relu'),
         layers.Dense(10, activation='softmax')
@@ -92,16 +94,16 @@ def mnist_model(learning_rate: float = 0.001,
     return model
 
 
-def mnist_data() -> list[NDArray[NNumeric]]:
+def mnist_data() -> tuple[NumArray, NumArray, IntArray, IntArray]:
     # Load and preprocess the data
-    X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric]
-    y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]
+    X_train: NumArray; X_test: NumArray
+    y_train: IntArray; y_test: IntArray
     (X_train, y_train), (X_test, y_test) = load_mnist()
 
     X_train = X_train.reshape(60000, 784).astype("float32") / 255
     X_test = X_test.reshape(10000, 784).astype("float32") / 255
 
-    return [X_train, X_test, y_train, y_test]
+    return X_train, X_test, y_train, y_test
 
 
 def spam_model(learning_rate: float = 0.001,
@@ -109,8 +111,8 @@ def spam_model(learning_rate: float = 0.001,
                sequence_length: int = 100,
                embedding_dim: int = 32,
                lstm_units: int = 32,
-               metrics: list = []) -> models.Model:
-    model: models.Model = models.Sequential([
+               metrics: list = []) -> KerasModel:
+    model: KerasModel = models.Sequential([
         # The sequence length is the same as the number of columns in the input
         # matrix after tokenization
         layers.Input(shape=(sequence_length,)),
@@ -128,24 +130,31 @@ def spam_model(learning_rate: float = 0.001,
 
     return model
 
+class TextCleaner:
+    lemmatizer: WordNetLemmatizer
+    stop_words: set
 
-def clean_text(text):
-    lemmatizer = WordNetLemmatizer()
+    def __init__(self) -> None:
+        self.lemmatizer = WordNetLemmatizer()
+        self.stop_words = set(stopwords.words('english'))
 
-    # Removing non-word characters
-    text = re.sub(r'\W', ' ', text)
-    text = text.lower()
-    # Convert to a list of words
-    text = text.split()
-    text = [lemmatizer.lemmatize(word)
-            for word in text if word not in set(stopwords.words('english'))]
+    def clean(self, text) -> str:
+        # Removing non-word characters
+        text = re.sub(r'\W', ' ', text).lower()
 
-    return (' '.join(text))
+        cleaned_text: list[str] = [
+            self.lemmatizer.lemmatize(word)
+            for word in text.split()
+            if word not in self.stop_words
+        ]
+
+        return ' '.join(cleaned_text)
 
 
 def spam_data(testing_proportion: float = 0.2,
               vocabulary_size: int = 1000,
-              max_sequence_length: int = 50) -> list[NDArray[NNumeric]]:
+              max_sequence_length: int = 50) -> tuple[NumArray, NumArray,
+                                                      IntArray, IntArray]:
     file_path: str = "data/sms_spam_collection/SMSSpamCollection"
 
     if not isfile(file_path):
@@ -167,10 +176,11 @@ def spam_data(testing_proportion: float = 0.2,
                                      names=['label', 'text'],
                                      encoding='latin-1')
     Data['label'] = LabelEncoder().fit_transform(Data['label'])
-    Data['text'] = Data['text'].apply(clean_text)
+    cleaner: TextCleaner = TextCleaner()
+    Data['text'] = Data['text'].apply(cleaner.clean)
 
-    X_train: NDArray[NNumeric]; X_test: NDArray[NNumeric]
-    y_train: NDArray[NNumeric]; y_test: NDArray[NNumeric]
+    X_train: NumArray; X_test: NumArray
+    y_train: IntArray; y_test: IntArray
 
     X_train, X_test, y_train, y_test = train_test_split(
         Data['text'],
@@ -184,23 +194,23 @@ def spam_data(testing_proportion: float = 0.2,
     X_train_seq = tokenizer.texts_to_sequences(X_train)
     X_test_seq = tokenizer.texts_to_sequences(X_test)
 
-    X_train_padded: NDArray[NNumeric] = pad_sequences(
+    X_train_padded: NumArray = pad_sequences(
         X_train_seq,
         maxlen=max_sequence_length,
         padding='post',
         truncating='post'
     )
-    X_test_padded: NDArray[NNumeric] = pad_sequences(
+    X_test_padded: NumArray = pad_sequences(
         X_test_seq,
         maxlen=max_sequence_length,
         padding='post',
         truncating='post'
     )
 
-    return [X_train_padded, X_test_padded, y_train, y_test]
+    return X_train_padded, X_test_padded, y_train, y_test
 
 
-def get_dataset(params: dict) -> list[NDArray[NNumeric]]:
+def get_dataset(params: dict) -> tuple[NumArray, NumArray, IntArray, IntArray]:
     if as_name(params['dataset']) == "mnist":
         return mnist_data()
     elif as_name(params['dataset']) == "sms_spam":

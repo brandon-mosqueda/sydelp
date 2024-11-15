@@ -2,7 +2,6 @@ import numpy as np
 
 from numpy import array
 from numpy.typing import NDArray
-from utils.utils import Int
 from utils.metrics import *
 from unittest import TestCase
 
