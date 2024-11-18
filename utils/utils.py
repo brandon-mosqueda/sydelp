@@ -6,7 +6,7 @@ import numpy as np
 from json import load as load_json
 from keras import models
 from keras.src.models import Model as KerasModel
-from numpy.typing import NDArray, ArrayLike
+from numpy.typing import NDArray
 from typing import Union, Any
 
 NNumeric = Union[
@@ -16,9 +16,9 @@ NNumeric = Union[
 ]
 
 Int = Union[np.uint, np.uint8, np.uint16, np.uint32, np.uint64,
-            np.int8, np.int16, np.int32, np.int64, int]
+            np.int8, np.int16, np.int32, np.int64, np.int_, int]
 
-Float = Union[float, np.float16, np.float32, np.float64, np.float128]
+Float = Union[float, np.float_, np.float16, np.float32, np.float64, np.float128]
 
 NumArray = NDArray[NNumeric]
 IntArray = NDArray[np.int_]
@@ -124,10 +124,8 @@ def top_indices(x: NumArray, n: int) -> IntArray:
     if n < 0 or n > x.shape[0]:
         raise ValueError("n should be 0 <= n <= x.shape")
 
-    if n == 0 or x.shape[0] == 0:
-        return np.array([], dtype="int64")
-
-    n = min(n, x.shape[0])
+    if n == 0:
+        return np.array([], dtype="int")
 
     return np.flip(np.argsort(x))[:n]
 
@@ -140,10 +138,8 @@ def bottom_indices(x: NumArray, n: int = 1) -> IntArray:
     if n < 0 or n > x.shape[0]:
         raise ValueError("n should be 0 <= n <= x.shape")
 
-    if n == 0 or x.shape[0] == 0:
-        return np.array([], dtype="int64")
-
-    n = min(n, x.shape[0])
+    if n == 0:
+        return np.array([], dtype="int")
 
     return np.argsort(x)[:n]
 
@@ -218,19 +214,24 @@ def get_flatten_weights(model: KerasModel) -> NumArray:
     return flat_weights
 
 
-def set_flatten_weights(model: KerasModel, weights: NumArray) -> None:
-    original_weights = model.get_weights()
-    new_weights = []
+def flatten_to_original(weights: NumArray,
+                        ref_model: KerasModel) -> list[NumArray]:
+    ref_weights: list[NumArray] = ref_model.get_weights()
+    new_weights: list[NumArray] = []
     index = 0
 
     # Directly reshape each section of `weights` without additional slicing
-    for w in original_weights:
+    for w in ref_weights:
         num_elements = w.size
         new_weights.append(weights[index:index + num_elements]
                            .reshape(w.shape))
         index += num_elements
 
-    model.set_weights(new_weights)
+    return new_weights
+
+
+def set_flatten_weights(model: KerasModel, weights: NumArray) -> None:
+    model.set_weights(flatten_to_original(weights, model))
 
 
 def replace_by(x: Union[NDArray, list],

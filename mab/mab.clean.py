@@ -19,7 +19,7 @@ from keras.models import Model # type: ignore
 
 import utils.initialize as init
 from utils.split import dirichlet_split, Split
-from utils.utils import remove_indices, get_flatten_weights, set_flatten_weights
+from utils.utils import remove_indices, get_flatten_weights, set_flatten_weights, Float
 from utils.metrics import cos_similarity
 from sklearn.metrics import accuracy_score
 
@@ -125,7 +125,7 @@ def remove_sybils_ids(selected_ids: list[int],
 
     for i in range(len(selected_ids)):
         for j in range(i + 1, len(selected_ids)):
-            similarity: np.float32 = cos_similarity(
+            similarity: Float = cos_similarity(
                 clients[selected_ids[i]].momentum,
                 clients[selected_ids[j]].momentum
             )
@@ -218,8 +218,8 @@ def MAB_FL(clients: list[Client],
         [clients[i].momentum for i in ids_cluster2],
         axis=0)
 
-    cos_between_clusters: np.float32 = cos_similarity(mean_cluster1,
-                                                      mean_cluster2)
+    cos_between_clusters: Float = cos_similarity(mean_cluster1,
+                                                 mean_cluster2)
 
     if cos_between_clusters < alpha:
         smallest_cluster = (ids_cluster2

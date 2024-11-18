@@ -33,6 +33,7 @@ class Learning(ABC):
     metrics: DataFrame
     predictions: DataFrame
     metrics_params: dict[str, MetricParams]
+    models_matrix: NumArray
 
     def __init__(self,
                  iterations: int,
@@ -48,14 +49,22 @@ class Learning(ABC):
         self.iterations = iterations
         self.metrics_params = metrics_params
 
+        model_size = sum(
+            w.size for w in self.nodes[0].get_flatten_model_params())
+        self.models_matrix = np.empty((len(self.nodes), model_size))
+
         self.execution_time = 0
 
     @abstractmethod
-    def aggregation(self) -> None:
+    def model_sharing(self) -> None:
         pass
 
+    def update_models_matrix(self) -> None:
+        for i in range(len(self.nodes)):
+            self.models_matrix[i] = self.nodes[i].get_flatten_model_params()
+
     @abstractmethod
-    def model_sharing(self) -> None:
+    def aggregation(self) -> None:
         pass
 
     def round_predictions(self) -> DataFrame:
@@ -103,10 +112,13 @@ class Learning(ABC):
 
             for node in self.nodes:
                 node.train()
+
                 bar.next()
 
             bar.finish()
+
             self.model_sharing()
+            self.update_models_matrix()
             self.aggregation()
 
             predictions_i: DataFrame = self.round_predictions()

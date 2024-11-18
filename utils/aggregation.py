@@ -12,7 +12,7 @@ def fed_avg(models_params: NumArray,
 
     models_num: int = models_params.shape[0]
     if models_num == 0 or models_params.shape[1] == 0:
-        return np.zeros(models_params.shape)
+        return np.zeros((1, models_params.shape[1]))
 
     if weights is None:
         weights = np.repeat(1/models_num, models_num)
@@ -36,7 +36,7 @@ def krum(models_params: NumArray,
 
     models_num: int = models_params.shape[0]
     if models_num == 0 or models_params.shape[1] == 0:
-        return np.zeros(models_params.shape)
+        return np.zeros((1, models_params.shape[1]))
     elif models_num < 3:
         return fed_avg(models_params)
 

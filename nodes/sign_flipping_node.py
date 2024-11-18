@@ -1,4 +1,5 @@
 from nodes.malicious_node import MaliciousNode
+from utils.utils import NumArray
 
 
 # When attacking the model is normally trained but using the flipped labels
@@ -15,5 +16,10 @@ class SignFlippingNode(MaliciousNode):
     def attack(self) -> None:
         super().train()
 
+        flipped_model: list[NumArray] = [
+            -self.scale_factor * layer_w
+            for layer_w in self.model.get_weights()
+        ]
+
         # Scale and flip sign
-        self.set_model_params(-self.scale_factor * self.get_model_params())
+        self.set_model_params(flipped_model)

@@ -1,7 +1,7 @@
 import numpy as np
 
 from learning.learning import Learning
-from utils.utils import NumArray, set_flatten_weights
+from utils.utils import NumArray, flatten_to_original
 from utils.aggregation import krum
 
 
@@ -25,14 +25,15 @@ class Sydelp(Learning):
         self.data_sizes = np.array([node.rows_num for node in self.nodes])
 
     def aggregation(self) -> None:
-        all_models: NumArray = np.array(
-            [node.get_model_params() for node in self.nodes])
+        avg_model: list[NumArray] = flatten_to_original(
+            krum(self.models_matrix,
+                 m=self.expected_malicious_num,
+                 weighting_mode=self.weighting_mode,
+                 data_sizes=self.data_sizes),
+            self.global_model
+        )
 
-        avg_model: NumArray = krum(all_models,
-                                   m=self.expected_malicious_num,
-                                   weighting_mode=self.weighting_mode,
-                                   data_sizes=self.data_sizes)
-        set_flatten_weights(self.global_model, avg_model)
+        self.global_model.set_weights(avg_model)
 
         for node in self.nodes:
             node.set_model_params(avg_model)

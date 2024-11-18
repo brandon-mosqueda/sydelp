@@ -31,10 +31,10 @@ class TestAggregation(TestCase):
         # Empty params
         assert_array_equal(fed_avg(array([[]])), np.zeros((1, 0)), strict=True)
         assert_array_equal(fed_avg(array([[], []])),
-                           np.zeros((2, 0)),
+                           np.zeros((1, 0)),
                            strict=True)
         assert_array_equal(fed_avg(array([[], [], []])),
-                           np.zeros((3, 0)),
+                           np.zeros((1, 0)),
                            strict=True)
 
         # Single element
@@ -91,7 +91,7 @@ class TestAggregation(TestCase):
         # Empty params
         assert_array_equal(krum(array([[]]), 0), np.zeros((1, 0)), strict=True)
         assert_array_equal(krum(array([[], [], [], []]), 2),
-                           np.zeros((4, 0)),
+                           np.zeros((1, 0)),
                            strict=True)
 
         # Single element

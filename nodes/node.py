@@ -1,4 +1,4 @@
-from utils.utils import NumArray, IntArray, get_flatten_weights, set_flatten_weights
+from utils.utils import NumArray, IntArray, get_flatten_weights
 from keras.src.models import Model as KerasModel
 
 
@@ -25,10 +25,10 @@ class Node:
 
         self.rows_num = x.shape[0]
 
-    def set_model_params(self, model_params: NumArray) -> None:
-        set_flatten_weights(self.model, model_params)
+    def set_model_params(self, model_params: list[NumArray]) -> None:
+        self.model.set_weights(model_params)
 
-    def get_model_params(self) -> NumArray:
+    def get_flatten_model_params(self) -> NumArray:
         return get_flatten_weights(self.model)
 
     def train(self) -> None:
