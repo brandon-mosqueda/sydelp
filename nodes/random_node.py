@@ -1,5 +1,5 @@
+from numpy.random import normal as random_gauss
 from nodes.malicious_node import MaliciousNode
-from utils.attack import random_gaussian_model
 from utils.utils import NumArray, flatten_to_original
 
 
@@ -22,11 +22,7 @@ class RandomNode(MaliciousNode):
 
     def attack(self) -> None:
         random_model: list[NumArray] = flatten_to_original(
-            random_gaussian_model(
-                size=self.model_size,
-                mean=self.mean,
-                sd=self.sd
-            ),
+            random_gauss(loc=self.mean, scale=self.sd, size=self.model_size),
             self.model
         )
 

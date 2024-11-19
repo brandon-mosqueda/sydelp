@@ -24,7 +24,13 @@ class FederatedLearning(Learning):
         else:
             raise ValueError(f"{weighting_mode} is not a valid weighting mode")
 
-    def aggregation(self) -> None:
+    def iteration_setup(self, iteration_num: int) -> None:
+        pass
+
+    def model_sharing(self) -> None:
+        pass
+
+    def aggregation(self, iteration_num: int) -> None:
         avg_model: list[NumArray] = flatten_to_original(
             fed_avg(self.models_matrix, self.weights),
             self.global_model
@@ -34,6 +40,3 @@ class FederatedLearning(Learning):
 
         for node in self.nodes:
             node.set_model_params(avg_model)
-
-    def model_sharing(self) -> None:
-        pass

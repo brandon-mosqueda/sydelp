@@ -44,6 +44,6 @@ def f1_score(y_true: IntArray, y_pred: IntArray) -> Float:
 
 
 def cos_similarity(x: NumArray, y: NumArray) -> Float:
-    res: np.float_ = (x * y).sum() / np.linalg.norm(x) * np.linalg.norm(y)
+    res: np.float_ = (x * y).sum() / (np.linalg.norm(x) * np.linalg.norm(y))
 
     return np.float_(min(res, 1))

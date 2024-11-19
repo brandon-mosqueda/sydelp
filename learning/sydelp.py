@@ -24,7 +24,13 @@ class Sydelp(Learning):
         self.expected_malicious_num = expected_malicious_num
         self.data_sizes = np.array([node.rows_num for node in self.nodes])
 
-    def aggregation(self) -> None:
+    def iteration_setup(self, iteration_num: int) -> None:
+        pass
+
+    def model_sharing(self) -> None:
+        pass
+
+    def aggregation(self, iteration_num: int) -> None:
         avg_model: list[NumArray] = flatten_to_original(
             krum(self.models_matrix,
                  m=self.expected_malicious_num,
@@ -37,6 +43,3 @@ class Sydelp(Learning):
 
         for node in self.nodes:
             node.set_model_params(avg_model)
-
-    def model_sharing(self) -> None:
-        pass

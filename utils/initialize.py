@@ -26,6 +26,7 @@ from keras.src.models import Model as KerasModel
 from learning.learning import MetricParams, Learning
 from learning.federated import FederatedLearning
 from learning.sydelp import Sydelp
+from learning.mab import Mab
 from utils.metrics import f1_score, label_flipping_success_rate, label_recall
 from sklearn.metrics import accuracy_score
 
@@ -266,6 +267,16 @@ def get_controller_by_protocol(params: dict,
         return Sydelp(
             weighting_mode=params['weighting_mode'],
             expected_malicious_num=params['expected_malicious_num'],
+            **base_params
+        )
+    elif as_name(params['protocol']) == "mab_fl":
+        return Mab(
+            warm_up_iterations=params['warm_up_iterations'],
+            alpha=params['alpha'],
+            miu=params['miu'],
+            c_max=params['c_max'],
+            c_min=params['c_min'],
+            pca_components=params['pca_components'],
             **base_params
         )
     else:

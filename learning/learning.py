@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from time import time
-from typing import TypedDict, Protocol
+from typing import TypedDict, Protocol, TypeVar, Generic
 from abc import ABC, abstractmethod
 from nodes.node import Node
 from utils.utils import MyProgressBar, NumArray, Float, IntArray
@@ -23,8 +23,12 @@ class MetricParams(TypedDict):
     params: dict
 
 
-class Learning(ABC):
-    nodes: list[Node]
+# This allows to use any kind of node in the learning sub-classes
+NodeType = TypeVar('NodeType', bound='Node')
+
+
+class Learning(ABC, Generic[NodeType]):
+    nodes: list[NodeType]
     global_model: KerasModel
     x_testing: NumArray
     y_testing: IntArray
@@ -37,7 +41,7 @@ class Learning(ABC):
 
     def __init__(self,
                  iterations: int,
-                 nodes: list[Node],
+                 nodes: list[NodeType],
                  global_model: KerasModel,
                  x_testing: NumArray,
                  y_testing: IntArray,
@@ -56,6 +60,15 @@ class Learning(ABC):
         self.execution_time = 0
 
     @abstractmethod
+    def iteration_setup(self, iteration_num: int) -> None:
+        pass
+
+    def training(self, bar: MyProgressBar) -> None:
+        for node in self.nodes:
+            node.train()
+            bar.next()
+
+    @abstractmethod
     def model_sharing(self) -> None:
         pass
 
@@ -64,7 +77,7 @@ class Learning(ABC):
             self.models_matrix[i] = self.nodes[i].get_flatten_model_params()
 
     @abstractmethod
-    def aggregation(self) -> None:
+    def aggregation(self, iteration_num: int) -> None:
         pass
 
     def round_predictions(self) -> DataFrame:
@@ -110,16 +123,14 @@ class Learning(ABC):
 
             bar: MyProgressBar = utils.progress_bar(len(self.nodes))
 
-            for node in self.nodes:
-                node.train()
+            self.iteration_setup(i)
 
-                bar.next()
-
+            self.training(bar)
             bar.finish()
 
             self.model_sharing()
             self.update_models_matrix()
-            self.aggregation()
+            self.aggregation(i)
 
             predictions_i: DataFrame = self.round_predictions()
             predictions_i['round'] = i
