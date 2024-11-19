@@ -1,3 +1,4 @@
+from nodes.node import Node
 from nodes.malicious_node import MaliciousNode
 from utils.utils import NumArray
 
@@ -14,12 +15,11 @@ class SignFlippingNode(MaliciousNode):
         self.scale_factor = scale_factor
 
     def attack(self) -> None:
-        super().train()
-
-        flipped_model: list[NumArray] = [
-            -self.scale_factor * layer_w
-            for layer_w in self.model.get_weights()
-        ]
+        # This prevents infinite recursion when calling MaliciousNode.train
+        Node.train(self)
 
         # Scale and flip sign
-        self.set_model_params(flipped_model)
+        self.set_model_params([
+            -self.scale_factor * layer_w
+            for layer_w in self.model.get_weights()
+        ])

@@ -1,12 +1,10 @@
 import keras
 import pandas as pd
 import requests as rq
-import numpy as np
 import re
 
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
-from nodes.node import Node
 from tensorflow.keras.preprocessing.text import Tokenizer # type: ignore
 from tensorflow.keras.preprocessing.sequence import pad_sequences # type: ignore
 from sklearn.preprocessing import LabelEncoder
@@ -22,6 +20,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 from typing import TypedDict
 from utils.utils import NumArray, IntArray, as_name
+from utils.split import Split, balanced_split, dirichlet_split
 from keras.src.models import Model as KerasModel
 from learning.learning import MetricParams, Learning
 from learning.federated import FederatedLearning
@@ -29,6 +28,13 @@ from learning.sydelp import Sydelp
 from learning.mab import Mab
 from utils.metrics import f1_score, label_flipping_success_rate, label_recall
 from sklearn.metrics import accuracy_score
+
+from nodes.node import Node
+from nodes.random_node import RandomNode
+from nodes.targeted_label_flipping_node import TargetedLabelFlippingNode
+from nodes.sign_flipping_node import SignFlippingNode
+from nodes.mab_malicious_nodes import *
+from nodes.mab_node import MabNode
 
 load_mnist = keras.datasets.mnist.load_data
 
@@ -269,10 +275,10 @@ def get_controller_by_protocol(params: dict,
             expected_malicious_num=params['expected_malicious_num'],
             **base_params
         )
-    elif as_name(params['protocol']) == "mab_fl":
+    elif as_name(params['protocol']) == "mab-fl":
         return Mab(
             warm_up_iterations=params['warm_up_iterations'],
-            alpha=params['alpha'],
+            alpha=params['mab_alpha'],
             miu=params['miu'],
             c_max=params['c_max'],
             c_min=params['c_min'],
@@ -308,3 +314,109 @@ def get_metrics(params: dict) -> dict[str, MetricParams]:
             raise ValueError(f'metric "{metric}" not recognized')
 
     return metrics
+
+
+def get_nodes_by_protocol(params: dict,
+                          X_train: NumArray,
+                          y_train: IntArray,
+                          models: list[KerasModel]) -> list[Node]:
+    if params['nodes_num'] != len(models):
+        raise ValueError("params['nodes_num'] != len(models)")
+
+    base_node_params: dict = {
+        'epochs': params['local_epochs_num'],
+        'batch_size': params['batch_size']
+    }
+
+    NodeClass = Node
+    RandomClass = RandomNode
+    SignClass = SignFlippingNode
+    TarLabelClass = TargetedLabelFlippingNode
+
+    if as_name(params['protocol']) == "mab-fl":
+        NodeClass = MabNode
+        RandomClass = MabRandomNode
+        SignClass = MabSignFlippingNode
+        TarLabelClass = MabTargetedLabelFlippingNode
+
+    malicious_num: int = (
+        params.get('random_malicious_num', 0)
+        + params.get('sign_flip_malicious_num', 0)
+        + params.get('label_flip_malicious_num', 0)
+    )
+    honest_num: int = params['nodes_num'] - malicious_num
+
+    nodes: list[Node] = []
+
+    if malicious_num > 0:
+        # Divide the training set for malicious users proportionally
+        X_train, X_mal, y_train, y_mal = train_test_split(
+            X_train,
+            y_train,
+            stratify=y_train,
+            test_size=malicious_num/params['nodes_num']
+        )
+
+        mal_splits: list[Split] = balanced_split(
+            X_mal,
+            y_mal,
+            n_splits=malicious_num,
+            seed=params['seed'],
+        )
+
+        for _ in range(params.get('random_malicious_num', 0)):
+            split: Split = mal_splits.pop()
+
+            nodes.append(RandomClass(
+                mean=params['attack_mean'],
+                sd=params['attack_sd'],
+
+                x=split['X'],
+                y=split['y'],
+                model=models.pop(),
+                **base_node_params
+            ))
+
+        for _ in range(params.get('sign_flip_malicious_num', 0)):
+            split: Split = mal_splits.pop()
+
+            nodes.append(SignClass(
+                scale_factor=params['attack_scale_factor'],
+
+                x=split['X'],
+                y=split['y'],
+                model=models.pop(),
+                **base_node_params
+            ))
+
+        for _ in range(params.get('label_flip_malicious_num', 0)):
+            split: Split = mal_splits.pop()
+
+            nodes.append(TarLabelClass(
+                source=params['source_label'],
+                target=params['target_label'],
+
+                x=split['X'],
+                y=split['y'],
+                model=models.pop(),
+                **base_node_params
+            ))
+
+    honest_splits: list[Split] = dirichlet_split(
+        X_train,
+        y_train,
+        n_splits=honest_num,
+        alpha=params['alpha'],
+        split_min_size=params['split_min_size'],
+        seed=params['seed'],
+    )
+
+    for _ in range(honest_num):
+        split: Split = honest_splits.pop()
+
+        nodes.append(NodeClass(x=split['X'],
+                               y=split['y'],
+                               model=models.pop(),
+                               **base_node_params))
+
+    return nodes

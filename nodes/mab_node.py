@@ -3,6 +3,7 @@ import numpy as np
 from utils.utils import NumArray, get_flatten_weights
 from nodes.node import Node
 
+
 class MabNode(Node):
     success_prob: float
     fail_prob: float
@@ -10,9 +11,7 @@ class MabNode(Node):
     update: NumArray
     seleted_epoch: int
 
-    def __init__(self,
-                 *args,
-                 **kwargs) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.success_prob = 1
         self.fail_prob = 1
