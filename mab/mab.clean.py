@@ -141,14 +141,15 @@ def remove_sybils_ids(selected_ids: list[int],
                                           reverse=True)[0]
 
     # Remove potential sybils
-    remove_idxs: list[int] = []
+    remove_vals: list[int] = []
     if (len(max_connected_component) > 1):
         for i in max_connected_component:
             clients[i].fail_prob += 1
-            remove_idxs.append(i)
+            remove_vals.append(i)
 
-    if len(remove_idxs) < len(selected_ids) - 1:
-        return remove_indices(selected_ids, remove_idxs)
+    if len(remove_vals) < len(selected_ids) - 1:
+        for val in remove_vals:
+            selected_ids.remove(val)
 
     return selected_ids
 

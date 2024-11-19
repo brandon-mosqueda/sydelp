@@ -70,7 +70,6 @@ class Mab(Learning[MabNode]):
 
     # Remove possible sybil ids selected_idx
     def remove_sybils_idx(self, iteration_num: int) -> None:
-        # To detect sybils
         sybil_similarity_threshold: float = max(
             self.c_max * np.exp(-iteration_num / 20),
             self.c_min
@@ -87,9 +86,13 @@ class Mab(Learning[MabNode]):
                 )
 
                 if similarity > sybil_similarity_threshold:
-                    edges.append((self.selected_idx[i], self.selected_idx[j]))
+                    # We add the indices of the elements relative to
+                    # selected_idx so we can extract this indices from
+                    # max_connected_component and then remove them of
+                    # selected_idx
+                    edges.append((i, j))
 
-        graph.add_nodes_from(self.selected_idx)
+        graph.add_nodes_from(np.arange(len(self.selected_idx)))
         graph.add_edges_from(edges)
         max_connected_component: set = sorted(connected_components(graph),
                                               key=len,
@@ -107,6 +110,7 @@ class Mab(Learning[MabNode]):
             self.selected_idx = np.delete(self.selected_idx, remove_idx)
 
     def aggregation(self, iteration_num: int) -> None:
+        # self.selected_idx is update before training in iteration_setup
         for i in self.selected_idx:
             node: MabNode = self.nodes[i]
 
