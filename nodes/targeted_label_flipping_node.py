@@ -1,5 +1,6 @@
 import numpy as np
 
+from nodes.node import Node
 from nodes.malicious_node import MaliciousNode
 from numpy.typing import NDArray
 
@@ -21,10 +22,12 @@ class TargetedLabelFlippingNode(MaliciousNode):
         self.source_indices = np.where(self.y == self.source)[0]
 
     def attack(self) -> None:
-        pass
+        self.y[self.source_indices] = self.target
+
+        # This prevents infinite recursion when calling MaliciousNode.train
+        Node.train(self)
 
     def train(self) -> None:
-        label: int = self.target if self.attacking else self.source
-        self.y[self.source_indices] = label
+        self.y[self.source_indices] = self.source
 
-        super().train()
+        Node.train(self)

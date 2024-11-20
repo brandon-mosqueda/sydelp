@@ -16,7 +16,7 @@ from keras.src.models import Model as KerasModel
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 params_file: str = sys.argv[1]
-# params_file: str = 'params/54.mab_spam_solitary_untargeted.test.json'
+# params_file: str = 'params/53.mab_spam_solitary_targeted.test.json'
 # params_file: str = 'params/22.dl_mnist_sign_flip.test.json'
 # params_file: str = 'params/26.sydelp_spam_random.test.json'
 params: dict = utils.read_json(params_file)

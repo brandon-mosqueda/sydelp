@@ -18,7 +18,7 @@ class RandomNode(MaliciousNode):
         super().__init__(*args, **kwargs)
         self.mean = mean
         self.sd = sd
-        self.model_size = sum(w.size for w in self.model.get_weights())
+        self.model_size = sum(w.size for w in self.get_model_params())
 
     def attack(self) -> None:
         random_model: list[NumArray] = flatten_to_original(

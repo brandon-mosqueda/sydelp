@@ -28,6 +28,9 @@ class Node:
     def set_model_params(self, model_params: list[NumArray]) -> None:
         self.model.set_weights(model_params)
 
+    def get_model_params(self) -> list[NumArray]:
+        return self.model.get_weights()
+
     def get_flatten_model_params(self) -> NumArray:
         return get_flatten_weights(self.model)
 

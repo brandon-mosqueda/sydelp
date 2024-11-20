@@ -21,5 +21,5 @@ class SignFlippingNode(MaliciousNode):
         # Scale and flip sign
         self.set_model_params([
             -self.scale_factor * layer_w
-            for layer_w in self.model.get_weights()
+            for layer_w in self.get_model_params()
         ])
