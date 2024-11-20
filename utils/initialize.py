@@ -264,18 +264,20 @@ def get_controller_by_protocol(params: dict,
         'metrics_params': metrics_params,
     }
 
-    if as_name(params['protocol']) == "dl":
+    protocol: str = as_name(params['protocol'])
+
+    if protocol in ["dl", "baseline"]:
         return FederatedLearning(
             weighting_mode=params['weighting_mode'],
             **base_params
         )
-    elif as_name(params['protocol']) == "sydelp":
+    elif protocol == "sydelp":
         return Sydelp(
             weighting_mode=params['weighting_mode'],
             expected_malicious_num=params['expected_malicious_num'],
             **base_params
         )
-    elif as_name(params['protocol']) == "mab-fl":
+    elif protocol == "mab-fl":
         return Mab(
             warm_up_iterations=params['warm_up_iterations'],
             alpha=params['mab_alpha'],

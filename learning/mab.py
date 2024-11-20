@@ -36,6 +36,9 @@ class Mab(Learning[MabNode]):
         self.c_min = c_min
         self.pca_components = pca_components
 
+        # It will not be used in this class
+        del self.models_matrix
+
     def client_beta_selection(self) -> IntArray:
         selected_ids: list[int] = []
 
@@ -66,6 +69,9 @@ class Mab(Learning[MabNode]):
             bar.next()
 
     def model_sharing(self) -> None:
+        pass
+
+    def update_models_matrix(self) -> None:
         pass
 
     # Remove possible sybil ids selected_idx
@@ -116,11 +122,11 @@ class Mab(Learning[MabNode]):
 
             node.momentum = (
                 node.update
-                + self.miu**(iteration_num - node.seleted_epoch)
-                * node.momentum
+                + (self.miu**(iteration_num - node.seleted_epoch)
+                   * node.momentum)
             )
 
-            node.momentum = (node.momentum / np.linalg.norm(node.momentum))
+            node.momentum = node.momentum / np.linalg.norm(node.momentum)
             node.seleted_epoch = iteration_num
 
         # Remove sybils
@@ -136,15 +142,23 @@ class Mab(Learning[MabNode]):
         estimator.fit(X_reduced)
         cluster_labels: IntArray = estimator.labels_
 
-        ids_cluster1: IntArray = np.where(cluster_labels == 0)[0]
-        ids_cluster2: IntArray = np.where(cluster_labels == 1)[0]
+        # cluster_labels is the same length as self.selected_idx, but we want to
+        # use these ids from the cluster to index self.nodes
+        ids_cluster1: IntArray = self.selected_idx[
+            np.where(cluster_labels == 0)[0]
+        ]
+        ids_cluster2: IntArray = self.selected_idx[
+            np.where(cluster_labels == 1)[0]
+        ]
 
         mean_cluster1: NumArray = np.mean(
             [self.nodes[i].momentum for i in ids_cluster1],
-            axis=0)
+            axis=0
+        )
         mean_cluster2: NumArray = np.mean(
             [self.nodes[i].momentum for i in ids_cluster2],
-            axis=0)
+            axis=0
+        )
 
         clusters_similarity: Float = cos_similarity(mean_cluster1,
                                                     mean_cluster2)
@@ -161,7 +175,7 @@ class Mab(Learning[MabNode]):
 
             self.selected_idx = largest_cluster
 
-        # Increase the prob for the remaining nodes
+        # Increase the prob for the remaining nodes (largest cluster)
         for i in self.selected_idx:
             self.nodes[i].success_prob += 1
 
@@ -176,8 +190,8 @@ class Mab(Learning[MabNode]):
 
         aggregated_weights: list[NumArray] = utils.flatten_to_original(
             utils.get_flatten_weights(self.global_model)
-            + lr
-            * global_update,
+                + lr
+                * global_update,
             self.global_model
         )
 
