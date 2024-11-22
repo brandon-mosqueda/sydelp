@@ -61,12 +61,10 @@ class Mab(Learning[MabNode]):
 
     def training(self) -> None:
         bar: MyProgressBar = utils.progress_bar(self.honest_num)
-        global_weights: NumArray = utils.get_flatten_weights(self.global_model)
 
         for i in self.selected_idx:
             if not self.nodes[i].is_malicious:
                 self.nodes[i].train()
-                self.nodes[i].set_update(global_weights)
                 bar.next()
 
         bar.finish()
@@ -116,9 +114,12 @@ class Mab(Learning[MabNode]):
             self.selected_idx = np.delete(self.selected_idx, remove_idx)
 
     def aggregation(self, iteration_num: int) -> None:
+        global_weights: NumArray = utils.get_flatten_weights(self.global_model)
+
         # self.selected_idx is update before training in iteration_setup
         for i in self.selected_idx:
             node: MabNode = self.nodes[i]
+            node.set_update(global_weights)
 
             node.momentum = (
                 node.update

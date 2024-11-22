@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from nodes.malicious_node import MaliciousNode
 from typing import Generic, TypeVar
-from utils.utils import MyProgressBar
+from utils.utils import MyProgressBar, progress_bar
 
 
 MalNodeType = TypeVar('MalNodeType', bound='MaliciousNode')
@@ -28,7 +28,7 @@ class Attacker(ABC, Generic[MalNodeType]):
         if not self.nodes:
             return
 
-        bar: MyProgressBar = MyProgressBar(len(self.nodes))
+        bar: MyProgressBar = progress_bar(len(self.nodes))
         attacking_nodes: list[MalNodeType] = [node
                                               for node in self.nodes
                                               if node.attacking]
