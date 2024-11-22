@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from nodes.malicious_node import MaliciousNode
 from typing import Generic, TypeVar
-from utils.utils import MyProgressBar, progress_bar
+from utils.utils import MyProgressBar, progress_bar, NumArray
 
 
 MalNodeType = TypeVar('MalNodeType', bound='MaliciousNode')
@@ -19,9 +19,8 @@ class Attacker(ABC, Generic[MalNodeType]):
         self.is_identical_attack = is_identical_attack
 
     @abstractmethod
-    def identical_attack(self,
-                         attacking_nodes: list[MalNodeType],
-                         bar: MyProgressBar) -> None:
+    def get_attack_params(self,
+                          attacking_nodes: list[MalNodeType]) -> list[NumArray]:
         pass
 
     def attack(self) -> None:
@@ -44,10 +43,15 @@ class Attacker(ABC, Generic[MalNodeType]):
             return
 
         if self.is_identical_attack:
-            self.identical_attack(attacking_nodes, bar)
+            attack_params: list[NumArray] = self.get_attack_params(
+                attacking_nodes)
+
+            for node in attacking_nodes:
+                node.set_model_params(attack_params)
+                bar.next()
         else:
             for node in attacking_nodes:
                 node.attack()
                 bar.next()
 
-            bar.finish()
+        bar.finish()

@@ -60,7 +60,8 @@ class Mab(Learning[MabNode]):
             self.selected_idx = self.client_beta_selection()
 
     def training(self) -> None:
-        bar: MyProgressBar = utils.progress_bar(self.honest_num)
+        bar: MyProgressBar = utils.progress_bar(len([
+            i for i in self.selected_idx if not self.nodes[i].is_malicious]))
 
         for i in self.selected_idx:
             if not self.nodes[i].is_malicious:

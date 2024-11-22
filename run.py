@@ -61,6 +61,7 @@ results_dir: str = os.path.join(
     as_name(params['attack']),
     as_name(params['seed']),
     as_name(params.get('weighting_mode', 'uniform')),
+    as_name(params['is_identical_attack']),
 )
 
 metadata = {
@@ -69,5 +70,6 @@ metadata = {
     'Attack': params['attack'],
     'Seed': params['seed'],
     "WeightingMode": params.get('weighting_mode', 'uniform'),
+    'IdenticalAttack': params['is_identical_attack'],
 }
 learning_controller.save(results_dir, metadata=metadata)
