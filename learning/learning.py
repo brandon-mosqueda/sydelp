@@ -5,9 +5,10 @@ import numpy as np
 import pandas as pd
 
 from time import time
-from typing import TypedDict, Protocol, TypeVar, Generic
+from typing import TypedDict, Protocol, TypeVar, Generic, Union
 from abc import ABC, abstractmethod
 from nodes.node import Node
+from attack.attacker import Attacker
 from utils.utils import MyProgressBar, NumArray, Float, IntArray
 from keras.src.models import Model as KerasModel
 from pandas import DataFrame
@@ -29,6 +30,7 @@ NodeType = TypeVar('NodeType', bound='Node')
 
 class Learning(ABC, Generic[NodeType]):
     nodes: list[NodeType]
+    honest_num: int
     global_model: KerasModel
     x_testing: NumArray
     y_testing: IntArray
@@ -38,6 +40,7 @@ class Learning(ABC, Generic[NodeType]):
     predictions: DataFrame
     metrics_params: dict[str, MetricParams]
     models_matrix: NumArray
+    attacker: Union[Attacker, None]
 
     def __init__(self,
                  iterations: int,
@@ -45,32 +48,35 @@ class Learning(ABC, Generic[NodeType]):
                  global_model: KerasModel,
                  x_testing: NumArray,
                  y_testing: IntArray,
-                 metrics_params: dict[str, MetricParams]) -> None:
+                 metrics_params: dict[str, MetricParams],
+                 attacker: Union[Attacker, None] = None) -> None:
         self.nodes = nodes
         self.x_testing = x_testing
         self.y_testing = y_testing
         self.global_model = global_model
         self.iterations = iterations
         self.metrics_params = metrics_params
+        self.execution_time = 0
+        self.honest_num = sum(not node.is_malicious for node in self.nodes)
+        self.attacker = attacker
 
         model_size = sum(
             w.size for w in self.nodes[0].get_flatten_model_params())
         self.models_matrix = np.empty((len(self.nodes), model_size))
 
-        self.execution_time = 0
-
     @abstractmethod
     def iteration_setup(self, iteration_num: int) -> None:
         pass
 
-    def training(self, bar: MyProgressBar) -> None:
-        for node in self.nodes:
-            node.train()
-            bar.next()
+    def training(self) -> None:
+        bar: MyProgressBar = utils.progress_bar(self.honest_num)
 
-    @abstractmethod
-    def model_sharing(self) -> None:
-        pass
+        for node in self.nodes:
+            if not node.is_malicious:
+                node.train()
+                bar.next()
+
+        bar.finish()
 
     def update_models_matrix(self) -> None:
         for i in range(len(self.nodes)):
@@ -121,14 +127,15 @@ class Learning(ABC, Generic[NodeType]):
         for i in range(self.iterations):
             print(f'* Iteration {i + 1}/{self.iterations}')
 
-            bar: MyProgressBar = utils.progress_bar(len(self.nodes))
-
             self.iteration_setup(i)
 
-            self.training(bar)
-            bar.finish()
+            print("\t+ Training")
+            self.training()
 
-            self.model_sharing()
+            if self.attacker:
+                print("\t+ Attacking")
+                self.attacker.attack()
+
             self.update_models_matrix()
             self.aggregation(i)
 

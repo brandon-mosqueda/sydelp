@@ -18,7 +18,7 @@ from keras.src.models import Model as KerasModel
 from sklearn.datasets import load_iris
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-from typing import TypedDict
+from typing import TypedDict, Union
 from utils.utils import NumArray, IntArray, as_name
 from utils.split import Split, balanced_split, dirichlet_split
 from keras.src.models import Model as KerasModel
@@ -28,6 +28,13 @@ from learning.sydelp import Sydelp
 from learning.mab import Mab
 from utils.metrics import f1_score, label_flipping_success_rate, label_recall
 from sklearn.metrics import accuracy_score
+
+from attack.attacker import Attacker
+from attack.mab_attackers import *
+from attack.random_attacker import RandomAttacker
+from attack.sign_flipping_attacker import SignFlippingAttacker
+from attack.targeted_label_flipping_attacker import TargetedLabelFlippingAttacker
+from attack.untargeted_label_flipping_attacker import UntargetedLabelFlippingAttacker
 
 from nodes.node import Node
 from nodes.random_node import RandomNode
@@ -254,7 +261,9 @@ def get_controller_by_protocol(params: dict,
                                x_testing: NumArray,
                                y_testing: NumArray,
                                metrics_params: dict[str,
-                                                    MetricParams]) -> Learning:
+                                                    MetricParams],
+                               attacker: Union[Attacker,
+                                               None] = None) -> Learning:
     base_params: dict = {
         'iterations': params['iterations_num'],
         'nodes': nodes,
@@ -262,6 +271,7 @@ def get_controller_by_protocol(params: dict,
         'x_testing': x_testing,
         'y_testing': y_testing,
         'metrics_params': metrics_params,
+        'attacker': attacker,
     }
 
     protocol: str = as_name(params['protocol'])
@@ -422,3 +432,42 @@ def get_nodes_by_protocol(params: dict,
                                **base_node_params))
 
     return nodes
+
+
+def get_attacker(nodes: list[Node], params: dict) -> Union[Attacker, None]:
+    mal_nodes: list[MaliciousNode] = [node
+                                      for node in nodes
+                                      if isinstance(node, MaliciousNode)]
+
+    if not mal_nodes:
+        return None
+
+    attack: str = as_name(params['attack'])
+
+    if as_name(params['protocol']) == "mab-fl":
+        if attack in ['random', 'solitary_untargeted']:
+            AttackerClass = MabRandomAttacker
+        elif attack == 'sign_flipping':
+            AttackerClass = MabSignFlippingAttacker
+        elif attack in ['label_flipping', 'solitary_targeted']:
+            AttackerClass = MabTargetedLabelFlippingAttacker
+        elif 'untargeted_label_flipping':
+            AttackerClass = MabUntargetedLabelFlippingAttacker
+        else:
+            raise ValueError(f"{params['attack']} is not a valid attack")
+    else:
+        if attack in ['random', 'solitary_untargeted']:
+            AttackerClass = RandomAttacker
+        elif attack == 'sign_flipping':
+            AttackerClass = SignFlippingAttacker
+        elif attack in ['label_flipping', 'solitary_targeted']:
+            AttackerClass = TargetedLabelFlippingAttacker
+        elif 'untargeted_label_flipping':
+            AttackerClass = UntargetedLabelFlippingAttacker
+        else:
+            raise ValueError(f"{params['attack']} is not a valid attack")
+
+    return AttackerClass(
+        nodes=mal_nodes,
+        is_identical_attack=params['is_identical_attack']
+    )

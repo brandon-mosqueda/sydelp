@@ -27,9 +27,6 @@ class FederatedLearning(Learning):
     def iteration_setup(self, iteration_num: int) -> None:
         pass
 
-    def model_sharing(self) -> None:
-        pass
-
     def aggregation(self, iteration_num: int) -> None:
         avg_model: list[NumArray] = flatten_to_original(
             fed_avg(self.models_matrix, self.weights),

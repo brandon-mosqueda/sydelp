@@ -13,9 +13,3 @@ class MaliciousNode(Node, ABC):
     @abstractmethod
     def attack(self) -> None:
         pass
-
-    def train(self) -> None:
-        if self.attacking:
-            self.attack()
-        else:
-            super().train()

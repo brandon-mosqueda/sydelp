@@ -59,17 +59,17 @@ class Mab(Learning[MabNode]):
         else:
             self.selected_idx = self.client_beta_selection()
 
-    def training(self, bar: MyProgressBar) -> None:
+    def training(self) -> None:
+        bar: MyProgressBar = utils.progress_bar(self.honest_num)
         global_weights: NumArray = utils.get_flatten_weights(self.global_model)
 
         for i in self.selected_idx:
-            self.nodes[i].train()
-            self.nodes[i].set_update(global_weights)
+            if not self.nodes[i].is_malicious:
+                self.nodes[i].train()
+                self.nodes[i].set_update(global_weights)
+                bar.next()
 
-            bar.next()
-
-    def model_sharing(self) -> None:
-        pass
+        bar.finish()
 
     def update_models_matrix(self) -> None:
         pass

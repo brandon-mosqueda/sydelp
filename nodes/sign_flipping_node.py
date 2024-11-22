@@ -1,6 +1,4 @@
-from nodes.node import Node
 from nodes.malicious_node import MaliciousNode
-from utils.utils import NumArray
 
 
 # When attacking the model is normally trained but using the flipped labels
@@ -15,8 +13,7 @@ class SignFlippingNode(MaliciousNode):
         self.scale_factor = scale_factor
 
     def attack(self) -> None:
-        # This prevents infinite recursion when calling MaliciousNode.train
-        Node.train(self)
+        super().train()
 
         # Scale and flip sign
         self.set_model_params([

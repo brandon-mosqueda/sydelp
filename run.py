@@ -7,16 +7,18 @@ sys.path.append("/home/bmosqueda/doctorado/experiments/decentralized_learning")
 import utils.initialize as init
 import utils.utils as utils
 
+from typing import Union
 from nodes.node import Node
 from utils.utils import IntArray, as_name, NumArray
+from attack.attacker import Attacker
 from learning.learning import Learning
 from learning.learning import MetricParams
 from keras.src.models import Model as KerasModel
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-params_file: str = sys.argv[1]
-# params_file: str = 'params/53.mab_spam_solitary_targeted.test.json'
+# params_file: str = sys.argv[1]
+params_file: str = 'params/53.mab_spam_solitary_targeted.test.json'
 # params_file: str = 'params/22.dl_mnist_sign_flip.test.json'
 # params_file: str = 'params/26.sydelp_spam_random.test.json'
 params: dict = utils.read_json(params_file)
@@ -36,6 +38,8 @@ nodes: list[Node] =  init.get_nodes_by_protocol(params,
                                                 y_train=y_train,
                                                 models=models)
 
+attacker: Union[Attacker, None] = init.get_attacker(nodes, params)
+
 # Create a FederatedLearning instance
 learning_controller: Learning = init.get_controller_by_protocol(
     params=params,
@@ -44,6 +48,7 @@ learning_controller: Learning = init.get_controller_by_protocol(
     x_testing=X_test,
     y_testing=y_test,
     metrics_params=metrics_params,
+    attacker=attacker
 )
 
 learning_controller.start()

@@ -71,9 +71,9 @@ Final <- Metrics %>%
 bar_plot(
   Final,
   x = "Attack",
-  y = "attack_success_rate",
+  # y = "attack_success_rate",
   # y = "f1_score",
-  # y = "accuracy",
+  y = "accuracy",
 
   fill_by = "Protocol",
   facet_col = "Dataset",

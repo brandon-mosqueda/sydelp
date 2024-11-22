@@ -1,6 +1,5 @@
 from numpy import unique
 from nodes.malicious_node import MaliciousNode
-from nodes.node import Node
 
 
 # When attacking the model is normally trained but using the flipped labels
@@ -21,11 +20,11 @@ class UntargetedLabelFlippingNode(MaliciousNode):
             self.flip_labels()
             self.has_real_labels = False
 
-        Node.train(self)
+        super().train()
 
     def train(self) -> None:
         if not self.has_real_labels:
             self.flip_labels()
             self.has_real_labels = True
 
-        Node.train(self)
+        super().train()
