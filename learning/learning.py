@@ -60,8 +60,7 @@ class Learning(ABC, Generic[NodeType]):
         self.honest_num = sum(not node.is_malicious for node in self.nodes)
         self.attacker = attacker
 
-        model_size = sum(
-            w.size for w in self.nodes[0].get_flatten_model_params())
+        model_size = sum(w.size for w in self.nodes[0].get_model_params())
         self.models_matrix = np.empty((len(self.nodes), model_size))
 
     @abstractmethod

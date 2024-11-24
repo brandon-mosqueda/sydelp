@@ -99,19 +99,20 @@ class Mab(Learning[MabNode]):
 
         graph.add_nodes_from(np.arange(len(self.selected_idx)))
         graph.add_edges_from(edges)
-        max_connected_component: set = sorted(connected_components(graph),
-                                              key=len,
-                                              reverse=True)[0]
 
-        remove_idx: list[int] = []
-        if (len(max_connected_component) > 1):
-            for i in max_connected_component:
-                self.nodes[i].fail_prob += 1
-                remove_idx.append(i)
+        # max connected component
+        remove_idx: list[int] = list(sorted(
+            connected_components(graph),
+            key=len,
+            reverse=True
+        )[0])
 
         # If almost all selected indices are going to be deleted, keep them all
         # We need at least two models to avoid errors in cluster operations
         if len(self.selected_idx) - len(remove_idx) >= 2:
+            for i in self.selected_idx[remove_idx]:
+                self.nodes[i].fail_prob += 1
+
             self.selected_idx = np.delete(self.selected_idx, remove_idx)
 
     def aggregation(self, iteration_num: int) -> None:

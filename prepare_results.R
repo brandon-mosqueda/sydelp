@@ -52,6 +52,7 @@ plot_results <- function(data, group) {
 }
 
 Metrics %>%
+  select(-IdenticalAttack) %>%
   pivot_longer(
     cols = c(
       "accuracy", "f1_score", "attack_success_rate", "label_recall", "loss"

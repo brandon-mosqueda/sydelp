@@ -40,6 +40,7 @@ class Attacker(ABC, Generic[MalNodeType]):
             bar.next()
 
         if not attacking_nodes:
+            bar.finish()
             return
 
         if self.is_identical_attack:

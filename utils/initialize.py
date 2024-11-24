@@ -455,7 +455,8 @@ def get_attacker(nodes: list[Node], params: dict) -> Union[Attacker, None]:
     mal_nodes = [node for node in nodes if node.is_malicious]
 
     if len(class_nodes) != len(mal_nodes):
-        raise ValueError("len(class_nodes) != len(mal_nodes)")
+        raise ValueError("All mal nodes should be of the same type "
+                         "len(class_nodes) != len(mal_nodes)")
 
     if not class_nodes:
         return None
