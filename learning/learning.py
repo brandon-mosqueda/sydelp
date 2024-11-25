@@ -1,5 +1,4 @@
 import os
-import time
 
 import utils.utils as utils
 import numpy as np
