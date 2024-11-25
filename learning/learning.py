@@ -39,7 +39,6 @@ class Learning(ABC, Generic[NodeType]):
     metrics: DataFrame
     predictions: DataFrame
     metrics_params: dict[str, MetricParams]
-    models_matrix: NumArray
     attacker: Union[Attacker, None]
 
     def __init__(self,
@@ -60,9 +59,6 @@ class Learning(ABC, Generic[NodeType]):
         self.honest_num = sum(not node.is_malicious for node in self.nodes)
         self.attacker = attacker
 
-        model_size = sum(w.size for w in self.nodes[0].get_model_params())
-        self.models_matrix = np.empty((len(self.nodes), model_size))
-
     @abstractmethod
     def iteration_setup(self, iteration_num: int) -> None:
         pass
@@ -76,10 +72,6 @@ class Learning(ABC, Generic[NodeType]):
                 bar.next()
 
         bar.finish()
-
-    def update_models_matrix(self) -> None:
-        for i in range(len(self.nodes)):
-            self.models_matrix[i] = self.nodes[i].get_flatten_model_params()
 
     @abstractmethod
     def aggregation(self, iteration_num: int) -> None:
@@ -135,7 +127,6 @@ class Learning(ABC, Generic[NodeType]):
                 print("\t+ Attacking")
                 self.attacker.attack()
 
-            self.update_models_matrix()
             self.aggregation(i)
 
             predictions_i: DataFrame = self.round_predictions()

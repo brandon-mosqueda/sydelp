@@ -36,9 +36,6 @@ class Mab(Learning[MabNode]):
         self.c_min = c_min
         self.pca_components = pca_components
 
-        # It will not be used in this class
-        del self.models_matrix
-
     def client_beta_selection(self) -> IntArray:
         selected_ids: list[int] = []
 
@@ -69,9 +66,6 @@ class Mab(Learning[MabNode]):
                 bar.next()
 
         bar.finish()
-
-    def update_models_matrix(self) -> None:
-        pass
 
     # Remove possible sybil ids selected_idx
     def remove_sybils_idx(self, iteration_num: int) -> None:
