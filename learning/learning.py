@@ -133,9 +133,9 @@ class Learning(ABC, Generic[NodeType]):
             predictions_i['round'] = i
 
             metrics_i: dict[str, Float] = self.round_metrics(predictions_i)
-            print("\t- Metrics:", {
-                key: round(value, 4) for key, value in metrics_i.items()
-            })
+            print("\t+ Metrics:")
+            [print("\t\t- %s: %.4f" % item) for item in metrics_i.items()]
+
             metrics_i['round'] = i
             metrics_i['time'] = utils.elapsed_time(start, time())
 
