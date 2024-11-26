@@ -34,6 +34,7 @@ class Sybilwall(Learning[SybilwallNode]):
         pass
 
     def gossiping(self) -> None:
+        # First share the most recent version of own models with neighborhood
         for node_i, node in enumerate(self.nodes):
             for neighbor_i in self.graph.neighbors(node_i):
                 neighbor: SybilwallNode = self.nodes[neighbor_i]
@@ -43,7 +44,15 @@ class Sybilwall(Learning[SybilwallNode]):
                 send_model['distance'] = 1
                 neighbor.replace_in_history(send_model)
 
-                # Gossip a model from the database
+        # Now shared a randomly selected model from the historic database.
+        # Both sharings are separated to first have the updated models of
+        # neighbors.
+        for node_i, node in enumerate(self.nodes):
+            for neighbor_i in self.graph.neighbors(node_i):
+                neighbor: SybilwallNode = self.nodes[neighbor_i]
+
+                # Remove own model (already sent) and models coming from the
+                # neighbor
                 filtered_hist: list[HistoricModel] = [
                     hist
                     for hist in node.history.values()
@@ -104,17 +113,15 @@ class Sybilwall(Learning[SybilwallNode]):
         max_score: float = np.max(list(final_scores.values()))
         for key in final_scores.keys():
             final_scores[key] /= max_score
-            # The log of 0 and negative numbers is not defined.
-            if final_scores[key] > 0:
-                # This will prevent zero division
-                if final_scores[key] == 1:
-                    final_scores[key] = 0.99999
+            # The log of 0 and negative numbers is not defined and 1 would
+            # produce zero division
+            final_scores[key] = np.clip(final_scores[key], 0.000001, 0.999999)
 
-                final_scores[key] = (
-                    self.confidence
-                    * np.log(final_scores[key] / (1 - final_scores[key]))
-                    + 0.5
-                )
+            final_scores[key] = (
+                self.confidence
+                * (np.log(final_scores[key] / (1 - final_scores[key]))
+                   + 0.5)
+            )
 
             final_scores[key] = np.clip(final_scores[key], 0, 1)
 
@@ -157,6 +164,7 @@ class Sybilwall(Learning[SybilwallNode]):
             fed_avg(np.array([
                 node.get_flatten_model_params()
                 for node in self.nodes
+                if not node.is_malicious
             ])),
             self.global_model
         )

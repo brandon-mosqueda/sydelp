@@ -18,12 +18,12 @@ class SybilwallNode(Node):
         super().__init__(*args, **kwargs)
         self.history = {}
 
-    def add_in_history(self, model: HistoricModel):
+    def add_in_history(self, model: HistoricModel) -> None:
         hist: Union[None, HistoricModel] = self.history.get(model['node_id'],
                                                             None)
         if hist is None:
             self.history[model['node_id']] = model
-        else:
+        elif model['iteration_num'] > hist['iteration_num']:
             model['model'] += hist['model']
             self.history[model['node_id']] = model
 
