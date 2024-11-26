@@ -3,7 +3,7 @@ import numpy as np
 from random import choices
 from networkx import Graph
 from learning.learning import Learning
-from utils.utils import NumArray, flatten_to_original, MyProgressBar, progress_bar
+from utils.utils import NumArray
 from nodes.sybilwall_node import SybilwallNode, HistoricModel
 from sklearn.metrics.pairwise import cosine_similarity
 from pandas import DataFrame, Series
@@ -22,7 +22,7 @@ class Sybilwall(Learning[SybilwallNode]):
                  *args,
                  **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        if sorted(list(graph.nodes)) != np.arange(len(self.nodes)):
+        if sorted(list(graph.nodes)) != np.arange(len(self.nodes)).tolist():
             raise ValueError("graph.nodes is not equal to nodes")
 
         self.graph = graph
@@ -103,18 +103,23 @@ class Sybilwall(Learning[SybilwallNode]):
         max_score: float = np.max(list(final_scores.values()))
         for key in final_scores.keys():
             final_scores[key] /= max_score
-            final_scores[key] = (
-                self.confidence
-                * np.log(final_scores[key] / (1 - final_scores[key]))
-                + 0.5
-            )
+            # The log of 0 and negative numbers is not defined.
+            if final_scores[key] > 0:
+                # This will prevent zero division
+                if final_scores[key] == 1:
+                    final_scores[key] = 0.99999
+
+                final_scores[key] = (
+                    self.confidence
+                    * np.log(final_scores[key] / (1 - final_scores[key]))
+                    + 0.5
+                )
+
             final_scores[key] = np.clip(final_scores[key], 0, 1)
 
         return final_scores
 
     def aggregation(self, iteration_num: int) -> None:
-        print("\t+ Aggregating")
-
         # Update own local model histories
         for i, node in enumerate(self.nodes):
             model: HistoricModel = {
@@ -128,12 +133,8 @@ class Sybilwall(Learning[SybilwallNode]):
 
         self.gossiping()
 
-        bar: MyProgressBar = progress_bar(len(self.nodes))
-
         # Aggregation
         for i, node in enumerate(self.nodes):
-            bar.next()
-
             scores: dict[int, float] = self.compute_scores(node, i)
             # Own model always has the highest score
             scores[i] = 1
@@ -149,5 +150,3 @@ class Sybilwall(Learning[SybilwallNode]):
             )
 
             node.set_flatten_model_params(update)
-
-        bar.finish()

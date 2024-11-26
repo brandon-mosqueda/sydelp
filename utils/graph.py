@@ -1,15 +1,11 @@
 from typing import Union
 
-import numpy as np
 import networkx as nx
-
 
 def create_random_geometric_graph(nodes_num: int,
                                   max_degree: int,
                                   edge_prob: float = 0.5,
                                   seed: Union[None, int] = None):
-    rng = np.random.default_rng(seed)
-
     # Create a random geometric graph
     graph: nx.Graph = nx.random_geometric_graph(nodes_num, edge_prob, seed=seed)
     mst: nx.Graph = nx.minimum_spanning_tree(graph)

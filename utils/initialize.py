@@ -2,6 +2,8 @@ import keras
 import pandas as pd
 import requests as rq
 import re
+import networkx as nx
+
 
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
@@ -22,12 +24,16 @@ from typing import TypedDict, Union
 from utils.utils import NumArray, IntArray, as_name
 from utils.split import Split, balanced_split, dirichlet_split
 from keras.src.models import Model as KerasModel
+from utils.metrics import f1_score, label_flipping_success_rate, label_recall
+from sklearn.metrics import accuracy_score
+from utils.graph import create_random_geometric_graph
+from random import shuffle
+
 from learning.learning import MetricParams, Learning
 from learning.federated import FederatedLearning
 from learning.sydelp import Sydelp
 from learning.mab import Mab
-from utils.metrics import f1_score, label_flipping_success_rate, label_recall
-from sklearn.metrics import accuracy_score
+from learning.sybilwall import Sybilwall
 
 from attack.attacker import Attacker
 from attack.random_attacker import RandomAttacker
@@ -40,7 +46,9 @@ from nodes.random_node import RandomNode
 from nodes.targeted_label_flipping_node import TargetedLabelFlippingNode
 from nodes.sign_flipping_node import SignFlippingNode
 from nodes.mab_malicious_nodes import *
+from nodes.sybilwall_malicious_nodes import *
 from nodes.mab_node import MabNode
+from nodes.sybilwall_node import SybilwallNode
 
 load_mnist = keras.datasets.mnist.load_data
 
@@ -296,6 +304,35 @@ def get_controller_by_protocol(params: dict,
             pca_components=params['pca_components'],
             **base_params
         )
+    elif protocol == "sybilwall":
+        graph_type: str = as_name(params['graph_type'])
+
+        if graph_type == "random_geometric":
+            graph: nx.Graph = create_random_geometric_graph(
+                nodes_num=params['nodes_num'],
+                max_degree=params['max_degree'],
+                edge_prob=params['edge_prob'],
+                seed=params['seed'],
+            )
+        elif graph_type == "random_regular":
+            graph: nx.Graph = nx.random_regular_graph(
+                d=params['degree'],
+                n=params['nodes_num'],
+                seed=params['seed'],
+            )
+        else:
+            raise ValueError('Graph type %s not recognized' %
+                             params["graph_type"])
+
+        if not nx.is_connected(graph):
+            raise ValueError("The generated graph is not connected")
+
+        return Sybilwall(
+            graph=graph,
+            distant_propagation_relevance=params['distant_propagation_relevance'],
+            confidence=params['confidence'],
+            **base_params
+        )
     else:
         raise ValueError(f'Protocol "{params["protocol"]}" not recognized')
 
@@ -334,6 +371,7 @@ def get_nodes_by_protocol(params: dict,
     if params['nodes_num'] != len(models):
         raise ValueError("params['nodes_num'] != len(models)")
 
+    protocol = as_name(params['protocol'])
     base_node_params: dict = {
         'epochs': params['local_epochs_num'],
         'batch_size': params['batch_size']
@@ -344,11 +382,18 @@ def get_nodes_by_protocol(params: dict,
     SignClass = SignFlippingNode
     TarLabelClass = TargetedLabelFlippingNode
 
-    if as_name(params['protocol']) == "mab-fl":
+    if protocol == "mab-fl":
         NodeClass = MabNode
         RandomClass = MabRandomNode
         SignClass = MabSignFlippingNode
         TarLabelClass = MabTargetedLabelFlippingNode
+    elif protocol == "sybilwall":
+        NodeClass = SybilwallNode
+        RandomClass = SybilwallRandomNode
+        SignClass = SybilwallSignFlippingNode
+        TarLabelClass = SybilwallTargetedLabelFlippingNode
+    elif protocol not in ["dl", "baseline", "sydelp"]:
+        raise ValueError(f'Protocol "{params["protocol"]}" not recognized')
 
     malicious_num: int = (
         params.get('random_malicious_num', 0)
@@ -429,6 +474,9 @@ def get_nodes_by_protocol(params: dict,
                                y=split['y'],
                                model=models.pop(),
                                **base_node_params))
+
+    if protocol == "sybilwall":
+        shuffle(nodes)
 
     return nodes
 

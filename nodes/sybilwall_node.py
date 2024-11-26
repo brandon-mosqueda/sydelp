@@ -4,11 +4,11 @@ from nodes.node import Node
 
 
 class HistoricModel(TypedDict):
-    node_id: int # p
-    model: NumArray # h
+    node_id: int       # p
+    model: NumArray    # h
     iteration_num: int # r
-    distance: int # d
-    sender_id: int # f
+    distance: int      # d
+    sender_id: int     # f
 
 
 class SybilwallNode(Node):
