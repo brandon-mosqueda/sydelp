@@ -1,11 +1,12 @@
 import numpy as np
+import pandas as pd
 
 from random import choices
 from networkx import Graph
 from learning.learning import Learning
-from utils.utils import NumArray, flatten_to_original
-from nodes.sybilwall_node import SybilwallNode, HistoricModel
 from utils.aggregation import fed_avg
+from utils.utils import NumArray, Float
+from nodes.sybilwall_node import SybilwallNode, HistoricModel
 from sklearn.metrics.pairwise import cosine_similarity
 from pandas import DataFrame, Series
 from copy import deepcopy
@@ -92,7 +93,7 @@ class Sybilwall(Learning[SybilwallNode]):
         for i in similarities.columns:
             similarities.loc[i, i] = -1
 
-        max_scores: Series[float] = similarities.max(axis=0)
+        max_scores: Series[float] = similarities.max(axis=0) + 1e-5
         final_scores: dict[int, float] = {}
 
         for i in similarities.index:
@@ -108,7 +109,7 @@ class Sybilwall(Learning[SybilwallNode]):
 
                 scores_i.append(similarity)
 
-            final_scores[i] = 1 - np.max(scores_i)
+            final_scores[i] = np.clip(1 - np.max(scores_i), 0, 1)
 
         max_score: float = np.max(list(final_scores.values()))
         for key in final_scores.keys():
@@ -124,6 +125,10 @@ class Sybilwall(Learning[SybilwallNode]):
             )
 
             final_scores[key] = np.clip(final_scores[key], 0, 1)
+
+        total_sum: float = np.sum(list(final_scores.values()))
+        for key in final_scores.keys():
+            final_scores[key] /= total_sum
 
         return final_scores
 
@@ -149,24 +154,50 @@ class Sybilwall(Learning[SybilwallNode]):
 
             neighbors: list[int] = list(self.graph.neighbors(i))
             neighbors.append(i)
+            weights: NumArray = np.array([score for score in scores])
+            models: NumArray = np.array([
+                self.nodes[j].get_flatten_model_params()
+                for j in scores.keys()
+            ])
 
-            update: NumArray = np.sum([
-                    self.nodes[j].get_flatten_model_params() * scores[j]
-                    for j in neighbors
-                ],
-                axis=0
-            )
+            node.set_flatten_model_params(fed_avg(models, weights))
 
-            node.set_flatten_model_params(update)
+    def round_predictions(self) -> DataFrame:
+        all_predictions: list[DataFrame] = []
 
-        # Global model computation (just to compute accuracy each round)
-        avg_model: list[NumArray] = flatten_to_original(
-            fed_avg(np.array([
-                node.get_flatten_model_params()
-                for node in self.nodes
-                if not node.is_malicious
-            ])),
-            self.global_model
+        for i, node in enumerate(self.nodes):
+            if not node.is_malicious:
+                preds: DataFrame = node.predict(self.x_testing)
+                preds['observed'] = self.y_testing
+                preds['node'] = i
+
+                all_predictions.append(preds)
+
+        return pd.concat(all_predictions, ignore_index=True)
+
+    def node_metrics(self, node_preds: DataFrame) -> DataFrame:
+        node_i: int = node_preds['node'].iloc[0]
+
+        loss: float = self.nodes[node_i].model.evaluate(self.x_testing,
+                                                        self.y_testing,
+                                                        verbose=0)
+
+        metrics: dict[str, Float] = {
+            metric: self.metrics_params[metric]['function'](
+                y_true=node_preds['observed'].to_numpy().astype("int"),
+                y_pred=node_preds['predicted'].to_numpy().astype("int"),
+                **self.metrics_params[metric]['params']
+            ) for metric in self.metrics_params
+        }
+        metrics['loss'] = loss
+
+        return DataFrame([metrics])
+
+    def round_metrics(self, predictions: DataFrame) -> dict[str, Float]:
+        metrics_by_node = (
+            predictions.groupby('node')
+            .apply(self.node_metrics, include_groups=True)
+            .reset_index(level=1, drop=True)
         )
 
-        self.global_model.set_weights(avg_model)
+        return dict(metrics_by_node.mean(axis=0)) # type: ignore

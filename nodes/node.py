@@ -1,3 +1,5 @@
+from pandas import DataFrame, concat
+from numpy import argmax
 from utils.utils import NumArray, IntArray, get_flatten_weights, flatten_to_original
 from keras.src.models import Model as KerasModel
 
@@ -43,3 +45,15 @@ class Node:
                        epochs=self.epochs,
                        batch_size=self.batch_size,
                        verbose=0)
+
+    def predict(self, x: NumArray) -> DataFrame:
+        preds: DataFrame = DataFrame(self.model.predict(x, verbose=0))
+
+        # For binary classification
+        if preds.shape[1] == 1:
+            preds = concat([1 - preds[0], preds], axis=1)
+            preds.columns = [0, 1]
+
+        preds['predicted'] = argmax(preds, axis=1)
+
+        return preds
