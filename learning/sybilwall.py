@@ -126,10 +126,6 @@ class Sybilwall(Learning[SybilwallNode]):
 
             final_scores[key] = np.clip(final_scores[key], 0, 1)
 
-        total_sum: float = np.sum(list(final_scores.values()))
-        for key in final_scores.keys():
-            final_scores[key] /= total_sum
-
         return final_scores
 
     def aggregation(self, iteration_num: int) -> None:
@@ -152,12 +148,18 @@ class Sybilwall(Learning[SybilwallNode]):
             # Own model always has the highest score
             scores[i] = 1
 
+            # Weight normalization (sum of weights is 1)
+            total_sum: float = np.sum(list(scores.values()))
+            for key in scores.keys():
+                scores[key] /= total_sum
+
             neighbors: list[int] = list(self.graph.neighbors(i))
             neighbors.append(i)
-            weights: NumArray = np.array([score for score in scores])
+
+            weights: NumArray = np.array([scores[key] for key in scores.keys()])
             models: NumArray = np.array([
-                self.nodes[j].get_flatten_model_params()
-                for j in scores.keys()
+                self.nodes[key].get_flatten_model_params()
+                for key in scores.keys()
             ])
 
             node.set_flatten_model_params(fed_avg(models, weights))
