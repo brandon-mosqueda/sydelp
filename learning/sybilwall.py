@@ -3,8 +3,9 @@ import numpy as np
 from random import choices
 from networkx import Graph
 from learning.learning import Learning
-from utils.utils import NumArray
+from utils.utils import NumArray, flatten_to_original
 from nodes.sybilwall_node import SybilwallNode, HistoricModel
+from utils.aggregation import fed_avg
 from sklearn.metrics.pairwise import cosine_similarity
 from pandas import DataFrame, Series
 from copy import deepcopy
@@ -150,3 +151,14 @@ class Sybilwall(Learning[SybilwallNode]):
             )
 
             node.set_flatten_model_params(update)
+
+        # Global model computation (just to compute accuracy each round)
+        avg_model: list[NumArray] = flatten_to_original(
+            fed_avg(np.array([
+                node.get_flatten_model_params()
+                for node in self.nodes
+            ])),
+            self.global_model
+        )
+
+        self.global_model.set_weights(avg_model)
