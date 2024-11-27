@@ -1,15 +1,13 @@
 import numpy as np
-import pandas as pd
 
 from random import choices
 from networkx import Graph
 from learning.learning import Learning
 from utils.utils import MyProgressBar, progress_bar
 from utils.aggregation import fed_avg
-from utils.typing import NumArray, Float
+from utils.typing import NumArray, Float, IntArray, FloatArray
 from nodes.sybilwall_node import SybilwallNode, HistoricModel
 from sklearn.metrics.pairwise import cosine_similarity
-from pandas import DataFrame
 
 
 class Sybilwall(Learning[SybilwallNode]):
@@ -158,44 +156,41 @@ class Sybilwall(Learning[SybilwallNode]):
 
         bar.finish()
 
-    def round_predictions(self) -> DataFrame:
-        all_predictions: list[DataFrame] = []
-
-        for i, node in enumerate(self.nodes):
-            if not node.is_malicious:
-                preds: DataFrame = node.predict(self.x_testing)
-                preds['observed'] = self.y_testing
-                preds['node'] = i
-
-                all_predictions.append(preds)
-
-        return pd.concat(all_predictions, ignore_index=True)
-
-    def node_metrics(self, node_preds: DataFrame) -> DataFrame:
-        node_i: int = node_preds['node'].iloc[0]
-
-        loss: float = self.nodes[node_i].model.evaluate(self.x_testing,
+    def node_metrics(self,
+                     observed: IntArray,
+                     predicted: IntArray,
+                     node_i: int) -> FloatArray:
+        loss: Float = self.nodes[node_i].model.evaluate(self.x_testing,
                                                         self.y_testing,
                                                         verbose=0)
 
-        metrics: dict[str, Float] = {
-            metric: self.metrics_params[metric]['function'](
-                y_true=node_preds['observed'].to_numpy().astype("int"),
-                y_pred=node_preds['predicted'].to_numpy().astype("int"),
+        metrics: list[Float] = [
+            self.metrics_params[metric]['function'](
+                y_true=observed,
+                y_pred=predicted,
                 **self.metrics_params[metric]['params']
             ) for metric in self.metrics_params
-        }
-        metrics['loss'] = loss
+        ]
+        metrics.append(loss)
 
-        return DataFrame([metrics])
+        return np.array(metrics)
 
     def round_metrics(self) -> dict[str, Float]:
-        predictions: DataFrame = self.round_predictions()
+        bar: MyProgressBar = progress_bar(len(self.nodes))
+        values: FloatArray = np.zeros(len(self.metrics_params) + 1)
 
-        metrics_by_node = (
-            predictions.groupby('node')
-            .apply(self.node_metrics, include_groups=True)
-            .reset_index(level=1, drop=True)
-        )
+        for i, node in enumerate(self.nodes):
+            bar.next()
 
-        return dict(metrics_by_node.mean(axis=0)) # type: ignore
+            if not node.is_malicious:
+                predicted: IntArray = node.predict(self.x_testing)
+                values += self.node_metrics(self.y_testing, predicted, i)
+
+        bar.finish()
+        metrics: list = list(self.metrics_params.keys()) + ['loss']
+        values /= len(self.nodes)
+
+        return {
+            metric: values[i]
+            for i, metric in enumerate(metrics)
+        }

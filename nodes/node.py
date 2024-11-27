@@ -1,7 +1,6 @@
 import numpy as np
 import utils.utils as utils
 
-from pandas import DataFrame, concat
 from utils.typing import NumArray, IntArray, KerasModel, WeightsShapes, Int
 
 
@@ -64,15 +63,3 @@ class Node:
 
         utils.set_weights_to_array(self.model.get_weights(),
                                    self.flat_weights)
-
-    def predict(self, x: NumArray) -> DataFrame:
-        preds: DataFrame = DataFrame(self.model.predict(x, verbose=0))
-
-        # For binary classification
-        if preds.shape[1] == 1:
-            preds = concat([1 - preds[0], preds], axis=1)
-            preds.columns = [0, 1]
-
-        preds['predicted'] = np.argmax(preds, axis=1)
-
-        return preds
