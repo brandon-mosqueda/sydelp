@@ -19,7 +19,6 @@ from keras.models import Model # type: ignore
 
 import utils.initialize as init
 from utils.split import dirichlet_split, Split
-from utils.utils import get_flatten_weights
 from utils.typing import Float, NumArray, KerasModel
 from utils.metrics import cos_similarity
 from sklearn.metrics import accuracy_score
@@ -51,6 +50,23 @@ c_min = 0.1
 alpha = 0
 
 X_train, X_test, y_train, y_test = init.mnist_data()
+
+
+def get_flatten_weights(model: KerasModel) -> NumArray:
+    weights = model.get_weights()
+    total_size = sum(w.size for w in weights)
+
+    # Pre-allocate a single array with the necessary size
+    flat_weights = np.empty(total_size, dtype="float32")
+
+    # Fill the flat_weights array in place
+    idx = 0
+    for w in weights:
+        flat_size = w.size
+        flat_weights[idx:idx + flat_size] = w.flatten()
+        idx += flat_size
+
+    return flat_weights
 
 
 def flatten_to_original(weights: NumArray,

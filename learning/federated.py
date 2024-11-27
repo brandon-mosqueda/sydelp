@@ -1,7 +1,7 @@
 import numpy as np
 
 from learning.learning import Learning
-from utils.utils import flatten_to_original
+from utils.utils import flat_weights_to_original
 from utils.typing import NumArray
 from utils.aggregation import fed_avg
 
@@ -16,8 +16,9 @@ class FederatedLearning(Learning):
                  **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-        model_size = sum(w.size for w in self.nodes[0].get_model_params())
-        self.models_matrix = np.empty((len(self.nodes), model_size))
+        self.models_matrix = np.empty((len(self.nodes),
+                                       self.nodes[0].flat_weights.size),
+                                      dtype="float32")
 
         if weighting_mode == "uniform":
             self.weights = (np.repeat(1/len(self.nodes), len(self.nodes))
@@ -29,22 +30,19 @@ class FederatedLearning(Learning):
         else:
             raise ValueError(f"{weighting_mode} is not a valid weighting mode")
 
-    def iteration_setup(self, iteration_num: int) -> None:
-        pass
-
     def update_models_matrix(self) -> None:
-        for i in range(len(self.nodes)):
-            self.models_matrix[i] = self.nodes[i].get_flatten_model_params()
+        for i, node in enumerate(self.nodes):
+            self.models_matrix[i] = node.get_flat_model_weights()
 
     def aggregation(self, iteration_num: int) -> None:
         self.update_models_matrix()
 
-        avg_model: list[NumArray] = flatten_to_original(
+        avg_model: list[NumArray] = flat_weights_to_original(
             fed_avg(self.models_matrix, self.weights),
-            self.global_model
+            self.weights_shapes
         )
 
         self.global_model.set_weights(avg_model)
 
         for node in self.nodes:
-            node.set_model_params(avg_model)
+            node.set_model_weights(avg_model)

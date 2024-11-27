@@ -111,7 +111,10 @@ class Mab(Learning[MabNode]):
             self.selected_idx = np.delete(self.selected_idx, remove_idx)
 
     def aggregation(self, iteration_num: int) -> None:
-        global_weights: NumArray = utils.get_flatten_weights(self.global_model)
+        global_weights: NumArray = np.empty(self.nodes[0].flat_weights.size,
+                                            dtype="float32")
+        utils.set_weights_to_array(self.global_model.get_weights(),
+                                   global_weights)
 
         # self.selected_idx is update before training in iteration_setup
         for i in self.selected_idx:
@@ -186,11 +189,9 @@ class Mab(Learning[MabNode]):
             axis=0
         )
 
-        aggregated_weights: list[NumArray] = utils.flatten_to_original(
-            utils.get_flatten_weights(self.global_model)
-                + lr
-                * global_update,
-            self.global_model
+        aggregated_weights: list[NumArray] = utils.flat_weights_to_original(
+            global_weights + lr * global_update,
+            self.weights_shapes
         )
 
         self.global_model.set_weights(aggregated_weights)

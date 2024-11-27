@@ -10,7 +10,7 @@ from nodes.node import Node
 from attack.attacker import Attacker
 from utils.utils import MyProgressBar
 from pandas import DataFrame
-from utils.typing import NumArray, Float, IntArray, KerasModel
+from utils.typing import NumArray, Float, IntArray, KerasModel, WeightsShapes
 from typing import TypedDict, Protocol, TypeVar, Generic, Union
 
 
@@ -32,6 +32,7 @@ class Learning(ABC, Generic[NodeType]):
     nodes: list[NodeType]
     honest_num: int
     global_model: KerasModel
+    weights_shapes: WeightsShapes
     x_testing: NumArray
     y_testing: IntArray
     iterations: int
@@ -45,6 +46,7 @@ class Learning(ABC, Generic[NodeType]):
                  iterations: int,
                  nodes: list[NodeType],
                  global_model: KerasModel,
+                 weights_shapes: WeightsShapes,
                  x_testing: NumArray,
                  y_testing: IntArray,
                  metrics_params: dict[str, MetricParams],
@@ -53,13 +55,13 @@ class Learning(ABC, Generic[NodeType]):
         self.x_testing = x_testing
         self.y_testing = y_testing
         self.global_model = global_model
+        self.weights_shapes = weights_shapes
         self.iterations = iterations
         self.metrics_params = metrics_params
         self.execution_time = 0
         self.honest_num = sum(not node.is_malicious for node in self.nodes)
         self.attacker = attacker
 
-    @abstractmethod
     def iteration_setup(self, iteration_num: int) -> None:
         pass
 

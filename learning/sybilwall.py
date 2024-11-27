@@ -31,9 +31,6 @@ class Sybilwall(Learning[SybilwallNode]):
         self.distant_propagation_relevance = distant_propagation_relevance
         self.confidence = confidence
 
-    def iteration_setup(self, iteration_num: int) -> None:
-        pass
-
     def gossiping(self) -> None:
         # First share the most recent version of own models with neighborhood
         for node_i, node in enumerate(self.nodes):

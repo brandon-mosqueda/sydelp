@@ -182,39 +182,6 @@ def as_name(x: Any):
     return str(x).lower().replace(' ', '_')
 
 
-def get_flatten_weights(model: KerasModel) -> NumArray:
-    weights = model.get_weights()
-    total_size = sum(w.size for w in weights)
-
-    # Pre-allocate a single array with the necessary size
-    flat_weights = np.empty(total_size, dtype="float32")
-
-    # Fill the flat_weights array in place
-    idx = 0
-    for w in weights:
-        flat_size = w.size
-        flat_weights[idx:idx + flat_size] = w.flatten()
-        idx += flat_size
-
-    return flat_weights
-
-
-def flatten_to_original(weights: NumArray,
-                        ref_model: KerasModel) -> list[NumArray]:
-    ref_weights: list[NumArray] = ref_model.get_weights()
-    new_weights: list[NumArray] = []
-    index = 0
-
-    # Directly reshape each section of `weights` without additional slicing
-    for layer in ref_weights:
-        num_elements = layer.size
-        new_weights.append(weights[index:index + num_elements]
-                           .reshape(layer.shape))
-        index += num_elements
-
-    return new_weights
-
-
 # Weights are flatten by reference
 def set_weights_to_array(weights: list[NumArray], ref_array: NumArray) -> None:
     idx = 0

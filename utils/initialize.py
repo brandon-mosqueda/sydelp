@@ -24,7 +24,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
 from typing import TypedDict, Union
-from utils.typing import NumArray, IntArray, KerasModel
+from utils.typing import NumArray, IntArray, KerasModel, WeightsShapes
 from utils.utils import as_name
 from utils.split import Split, balanced_split, dirichlet_split
 from utils.metrics import f1_score, label_flipping_success_rate, label_recall
@@ -272,10 +272,14 @@ def get_controller_by_protocol(params: dict,
                                                     MetricParams],
                                attacker: Union[Attacker,
                                                None] = None) -> Learning:
+    weights_shapes: WeightsShapes = [layer.shape
+                                     for layer in global_model.get_weights()]
+
     base_params: dict = {
         'iterations': params['iterations_num'],
         'nodes': nodes,
         'global_model': global_model,
+        'weights_shapes': weights_shapes,
         'x_testing': x_testing,
         'y_testing': y_testing,
         'metrics_params': metrics_params,
@@ -372,8 +376,11 @@ def get_nodes_by_protocol(params: dict,
     if params['nodes_num'] != len(models):
         raise ValueError("params['nodes_num'] != len(models)")
 
+    weights_shapes: WeightsShapes = [layer.shape
+                                     for layer in models[0].get_weights()]
     protocol = as_name(params['protocol'])
     base_node_params: dict = {
+        'weights_shapes': weights_shapes,
         'epochs': params['local_epochs_num'],
         'batch_size': params['batch_size']
     }
