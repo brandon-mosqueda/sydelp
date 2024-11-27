@@ -12,4 +12,4 @@ class RandomAttacker(Attacker[RandomNodeType]):
                           attacking_nodes: list[RandomNodeType]) -> list[NumArray]:
         # The attack generates the random vector of parameters
         attacking_nodes[0].attack()
-        return attacking_nodes[0].get_model_params()
+        return attacking_nodes[0].get_model_weights()

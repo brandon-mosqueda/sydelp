@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import TypedDict, Union
 from utils.typing import NumArray
 from nodes.node import Node
@@ -22,8 +23,9 @@ class SybilwallNode(Node):
         hist: Union[None, HistoricModel] = self.history.get(model['node_id'],
                                                             None)
         if hist is None:
-            self.history[model['node_id']] = model
+            self.history[model['node_id']] = deepcopy(model)
         elif model['iteration_num'] > hist['iteration_num']:
+            model = deepcopy(model)
             model['model'] += hist['model']
             self.history[model['node_id']] = model
 
@@ -34,4 +36,4 @@ class SybilwallNode(Node):
         # If it has no previous information of that node or it is a more updated
         # version
         if hist is None or model['iteration_num'] > hist['iteration_num']:
-            self.history[model['node_id']] = model
+            self.history[model['node_id']] = deepcopy(model)

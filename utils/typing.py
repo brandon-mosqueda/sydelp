@@ -5,7 +5,7 @@ from typing import Union, Tuple
 from keras.src.models import Model as KerasModel
 
 
-ModelSizes = list[Tuple[int, ...]]
+WeightsShapes = list[Tuple[int, ...]]
 
 NNumeric = Union[
     np.uint, np.uint8, np.uint16, np.uint32, np.uint64,

@@ -196,4 +196,4 @@ class Mab(Learning[MabNode]):
         self.global_model.set_weights(aggregated_weights)
 
         for node in self.nodes:
-            node.set_model_params(aggregated_weights)
+            node.set_model_weights(aggregated_weights)

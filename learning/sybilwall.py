@@ -133,7 +133,7 @@ class Sybilwall(Learning[SybilwallNode]):
         for i, node in enumerate(self.nodes):
             model: HistoricModel = {
                 'node_id': i,
-                'model': node.get_flatten_model_params(),
+                'model': node.get_flat_model_weights(),
                 'iteration_num': iteration_num,
                 'distance': 0,
                 'sender_id': i,
@@ -158,11 +158,11 @@ class Sybilwall(Learning[SybilwallNode]):
 
             weights: NumArray = np.array([scores[key] for key in scores.keys()])
             models: NumArray = np.array([
-                self.nodes[key].get_flatten_model_params()
+                self.nodes[key].get_flat_model_weights()
                 for key in scores.keys()
             ])
 
-            node.set_flatten_model_params(fed_avg(models, weights))
+            node.set_flat_model_weights(fed_avg(models, weights))
 
     def round_predictions(self) -> DataFrame:
         all_predictions: list[DataFrame] = []

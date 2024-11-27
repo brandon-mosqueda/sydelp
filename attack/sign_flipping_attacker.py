@@ -34,4 +34,4 @@ class SignFlippingAttacker(Attacker[SignFlippingNodeType]):
         node.x = original_x
         node.y = original_y
 
-        return node.get_model_params()
+        return node.get_model_weights()

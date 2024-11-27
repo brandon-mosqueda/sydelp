@@ -7,7 +7,7 @@ from keras import models
 from typing import Union, Any
 from json import load as load_json
 from numpy.typing import NDArray
-from utils.typing import NumArray, IntArray, KerasModel
+from utils.typing import NumArray, IntArray, KerasModel, WeightsShapes, Int
 
 
 def print_array(x: NDArray, n: int = 5, digits: int = 4) -> None:
@@ -182,15 +182,6 @@ def as_name(x: Any):
     return str(x).lower().replace(' ', '_')
 
 
-def set_list_weights_in_array(weights: list[NumArray], arr: NumArray) -> None:
-    idx = 0
-    for layer in weights:
-        flat_size = layer.size
-        # Fill the array in place
-        arr[idx:idx + flat_size] = layer.flatten()
-        idx += flat_size
-
-
 def get_flatten_weights(model: KerasModel) -> NumArray:
     weights = model.get_weights()
     total_size = sum(w.size for w in weights)
@@ -224,8 +215,27 @@ def flatten_to_original(weights: NumArray,
     return new_weights
 
 
-def set_flatten_weights(model: KerasModel, weights: NumArray) -> None:
-    model.set_weights(flatten_to_original(weights, model))
+# Weights are flatten by reference
+def set_weights_to_array(weights: list[NumArray], ref_array: NumArray) -> None:
+    idx = 0
+    for layer in weights:
+        flat_size = layer.size
+        ref_array[idx:idx + flat_size] = layer.flatten()
+        idx += flat_size
+
+
+def flat_weights_to_original(flat_weights: NumArray,
+                             weights_shapes: WeightsShapes) -> list[NumArray]:
+    new_weights: list[NumArray] = []
+    index: Int = 0
+
+    for layer_shape in weights_shapes:
+        num_elements: Int = np.prod(layer_shape)
+        new_weights.append(flat_weights[index:index + num_elements]
+                           .reshape(layer_shape))
+        index += num_elements
+
+    return new_weights
 
 
 def replace_by(x: Union[NDArray, list],

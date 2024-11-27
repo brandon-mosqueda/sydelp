@@ -1,7 +1,6 @@
 import numpy as np
 
-from utils.utils import get_flatten_weights
-from utils.typing import NumArray
+from utils.typing import NumArray, Int
 from nodes.node import Node
 
 
@@ -18,9 +17,8 @@ class MabNode(Node):
         self.fail_prob = 1
         self.seleted_epoch = 0
 
-        total_size: int = sum(w.size for w in self.model.get_weights())
-        self.momentum = np.zeros(total_size)
-        self.update = np.zeros(total_size)
+        self.momentum = np.zeros(self.flat_weights.size)
+        self.update = np.zeros(self.flat_weights.size)
 
     def set_update(self, global_weights: NumArray) -> None:
-        self.update = get_flatten_weights(self.model) - global_weights
+        self.update = self.flat_weights - global_weights

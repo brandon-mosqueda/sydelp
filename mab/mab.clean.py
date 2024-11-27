@@ -19,7 +19,8 @@ from keras.models import Model # type: ignore
 
 import utils.initialize as init
 from utils.split import dirichlet_split, Split
-from utils.utils import remove_indices, get_flatten_weights, set_flatten_weights, Float
+from utils.utils import get_flatten_weights
+from utils.typing import Float, NumArray, KerasModel
 from utils.metrics import cos_similarity
 from sklearn.metrics import accuracy_score
 
@@ -51,6 +52,24 @@ alpha = 0
 
 X_train, X_test, y_train, y_test = init.mnist_data()
 
+
+def flatten_to_original(weights: NumArray,
+                        ref_model: KerasModel) -> list[NumArray]:
+    ref_weights: list[NumArray] = ref_model.get_weights()
+    new_weights: list[NumArray] = []
+    index = 0
+
+    # Directly reshape each section of `weights` without additional slicing
+    for layer in ref_weights:
+        num_elements = layer.size
+        new_weights.append(weights[index:index + num_elements]
+                           .reshape(layer.shape))
+        index += num_elements
+
+    return new_weights
+
+def set_flatten_weights(model: KerasModel, weights: NumArray) -> None:
+    model.set_weights(flatten_to_original(weights, model))
 
 class Client:
     x: NDArray

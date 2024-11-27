@@ -49,7 +49,7 @@ class Attacker(ABC, Generic[MalNodeType]):
                 attacking_nodes)
 
             for node in attacking_nodes:
-                node.set_model_params(attack_params)
+                node.set_model_weights(attack_params)
                 bar.next()
         else:
             for node in attacking_nodes:
