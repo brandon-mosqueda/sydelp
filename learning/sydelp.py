@@ -47,4 +47,4 @@ class Sydelp(Learning):
         self.global_model.set_weights(avg_model)
 
         for node in self.nodes:
-            node.set_model_params(avg_model)
+            node.set_model_weights(avg_model)
