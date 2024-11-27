@@ -4,6 +4,7 @@ import pandas as pd
 from random import choices
 from networkx import Graph
 from learning.learning import Learning
+from utils.utils import MyProgressBar, progress_bar
 from utils.aggregation import fed_avg
 from utils.typing import NumArray, Float
 from nodes.sybilwall_node import SybilwallNode, HistoricModel
@@ -31,8 +32,12 @@ class Sybilwall(Learning[SybilwallNode]):
         self.confidence = confidence
 
     def gossiping(self) -> None:
+        print("\t+ Gossiping")
+        bar: MyProgressBar = progress_bar(len(self.nodes) * 2)
+
         # First share the most recent version of own models with neighborhood
         for node_i, node in enumerate(self.nodes):
+            bar.next()
             node_model: HistoricModel = node.history[node_i]
             node_model['distance'] = 1
 
@@ -45,6 +50,7 @@ class Sybilwall(Learning[SybilwallNode]):
         # Both sharings are separated to first have the updated models of
         # neighbors before the random selection.
         for node_i, node in enumerate(self.nodes):
+            bar.next()
             for neighbor_i in self.graph.neighbors(node_i):
                 neighbor: SybilwallNode = self.nodes[neighbor_i]
 
@@ -74,6 +80,8 @@ class Sybilwall(Learning[SybilwallNode]):
                     neighbor.replace_in_history(**selected_model)
                     selected_model['distance'] -= 1
                     selected_model['sender_id'] = prev_sender
+
+        bar.finish()
 
     def compute_scores(self,
                        node: SybilwallNode,
@@ -130,8 +138,12 @@ class Sybilwall(Learning[SybilwallNode]):
 
         self.gossiping()
 
+        print("\t+ Aggregating")
+        bar: MyProgressBar = progress_bar(len(self.nodes) * 2)
+
         # Aggregation
         for i, node in enumerate(self.nodes):
+            bar.next()
             scores: dict[int, Float] = self.compute_scores(node, i)
             neighbors: list[int] = list(self.graph.neighbors(i)) + [i]
 
@@ -143,6 +155,8 @@ class Sybilwall(Learning[SybilwallNode]):
             ])
 
             node.set_flat_model_weights(fed_avg(models, weights))
+
+        bar.finish()
 
     def round_predictions(self) -> DataFrame:
         all_predictions: list[DataFrame] = []

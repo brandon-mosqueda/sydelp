@@ -131,8 +131,8 @@ class Learning(ABC, Generic[NodeType]):
 
             self.aggregation(i)
 
-            metrics_i: dict[str, Float] = self.round_metrics()
             print("\t+ Metrics:")
+            metrics_i: dict[str, Float] = self.round_metrics()
             [print("\t\t- %s: %.4f" % item) for item in metrics_i.items()]
 
             metrics_i['round'] = i
