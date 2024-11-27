@@ -188,7 +188,7 @@ class Sybilwall(Learning[SybilwallNode]):
 
         bar.finish()
         metrics: list = list(self.metrics_params.keys()) + ['loss']
-        values /= len(self.nodes)
+        values /= sum([not node.is_malicious for node in self.nodes])
 
         return {
             metric: values[i]
