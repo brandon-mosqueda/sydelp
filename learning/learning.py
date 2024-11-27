@@ -38,7 +38,6 @@ class Learning(ABC, Generic[NodeType]):
     iterations: int
     execution_time: float
     metrics: DataFrame
-    predictions: DataFrame
     metrics_params: dict[str, MetricParams]
     attacker: Union[Attacker, None]
 
@@ -95,7 +94,9 @@ class Learning(ABC, Generic[NodeType]):
 
         return preds
 
-    def round_metrics(self, predictions: DataFrame) -> dict[str, Float]:
+    def round_metrics(self) -> dict[str, Float]:
+        predictions: DataFrame = self.round_predictions()
+
         loss: float = self.global_model.evaluate(self.x_testing,
                                                  self.y_testing,
                                                  verbose=0)
@@ -115,7 +116,6 @@ class Learning(ABC, Generic[NodeType]):
     def start(self) -> DataFrame:
         start: float = time()
         metrics: list[dict] = []
-        predictions: list[DataFrame] = []
 
         for i in range(self.iterations):
             print(f'* Iteration {i + 1}/{self.iterations}')
@@ -131,10 +131,7 @@ class Learning(ABC, Generic[NodeType]):
 
             self.aggregation(i)
 
-            predictions_i: DataFrame = self.round_predictions()
-            predictions_i['round'] = i
-
-            metrics_i: dict[str, Float] = self.round_metrics(predictions_i)
+            metrics_i: dict[str, Float] = self.round_metrics()
             print("\t+ Metrics:")
             [print("\t\t- %s: %.4f" % item) for item in metrics_i.items()]
 
@@ -142,10 +139,8 @@ class Learning(ABC, Generic[NodeType]):
             metrics_i['time'] = utils.elapsed_time(start, time())
 
             metrics.append(metrics_i)
-            predictions.append(predictions_i)
 
         self.metrics = pd.DataFrame(metrics)
-        self.predictions = pd.concat(predictions)
 
         # Set the execution time in minutes
         self.execution_time = utils.elapsed_time(start, time())
@@ -157,12 +152,8 @@ class Learning(ABC, Generic[NodeType]):
 
         for key in metadata:
             self.metrics[key] = metadata[key]
-            self.predictions[key] = metadata[key]
 
         self.metrics.to_csv(os.path.join(dir, "metrics.csv"), index=False)
-
-        self.predictions.to_csv(os.path.join(dir, "predictions.csv"),
-                                index=False)
 
         if all:
             self.global_model.save(os.path.join(dir, "global_model.keras"))

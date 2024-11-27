@@ -8,8 +8,7 @@ from utils.aggregation import fed_avg
 from utils.typing import NumArray, Float
 from nodes.sybilwall_node import SybilwallNode, HistoricModel
 from sklearn.metrics.pairwise import cosine_similarity
-from pandas import DataFrame, Series
-from copy import deepcopy
+from pandas import DataFrame
 
 
 class Sybilwall(Learning[SybilwallNode]):
@@ -89,8 +88,7 @@ class Sybilwall(Learning[SybilwallNode]):
         n: int = len(idx)
 
         # Set the diagonal with lowest similarity
-        for i in range(n):
-            similarities[i, i] = -1
+        np.fill_diagonal(similarities, -1)
 
         # Apply pardoning
         max_simils: NumArray = np.max(similarities, axis=1) + 1e-5
@@ -103,12 +101,13 @@ class Sybilwall(Learning[SybilwallNode]):
                     similarities[i, j] *= max_simils[i] / max_simils[j]
 
         # Compute new maximum weights
-        weights: NumArray = 1 - np.max(similarities, axis=1)
-        weights.clip(0, 1)
-        weights /= np.max(weights)
+        weights: NumArray = 1 - similarities.max(axis=1)
+        # Prevent zero division
+        np.clip(weights, 0.000001, 0.999999, out=weights)
+        weights /= weights.max()
+        np.clip(weights, 0.000001, 0.999999, out=weights)
         weights[:] = self.confidence * (np.log(weights / (1 - weights)) + 0.5)
-        # Note that np.clip handles +inf and -inf.
-        weights.clip(0, 1)
+        np.clip(weights, 0, 1, out=weights)
 
         # Add 1 for the current index that always have the maximum score
         total: Float = weights.sum() + 1
@@ -176,7 +175,9 @@ class Sybilwall(Learning[SybilwallNode]):
 
         return DataFrame([metrics])
 
-    def round_metrics(self, predictions: DataFrame) -> dict[str, Float]:
+    def round_metrics(self) -> dict[str, Float]:
+        predictions: DataFrame = self.round_predictions()
+
         metrics_by_node = (
             predictions.groupby('node')
             .apply(self.node_metrics, include_groups=True)
