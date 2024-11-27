@@ -1,4 +1,3 @@
-from copy import deepcopy
 from typing import TypedDict, Union
 from utils.typing import NumArray
 from nodes.node import Node
@@ -19,21 +18,48 @@ class SybilwallNode(Node):
         super().__init__(*args, **kwargs)
         self.history = {}
 
-    def add_in_history(self, model: HistoricModel) -> None:
-        hist: Union[None, HistoricModel] = self.history.get(model['node_id'],
-                                                            None)
+    # model should be a copy, not a reference
+    def add_in_history(self,
+                       node_id: int,
+                       model: NumArray,
+                       iteration_num: int,
+                       distance: int,
+                       sender_id: int) -> None:
+        hist: Union[None, HistoricModel] = self.history.get(node_id, None)
+
         if hist is None:
-            self.history[model['node_id']] = deepcopy(model)
-        elif model['iteration_num'] > hist['iteration_num']:
-            model = deepcopy(model)
-            model['model'] += hist['model']
-            self.history[model['node_id']] = model
+            self.history[node_id] = {
+                'node_id': node_id,
+                'model': model.copy(),
+                'iteration_num': iteration_num,
+                'distance': distance,
+                'sender_id': sender_id,
+            }
+        elif iteration_num > hist['iteration_num']:
+            hist['model'] += model
+            hist['iteration_num'] = iteration_num
+            hist['distance'] = distance
+            hist['sender_id'] = sender_id
 
-    def replace_in_history(self, model: HistoricModel):
-        hist: Union[None, HistoricModel] = self.history.get(model['node_id'],
-                                                            None)
+    # model should be a copy, not a reference
+    def replace_in_history(self,
+                           node_id: int,
+                           model: NumArray,
+                           iteration_num: int,
+                           distance: int,
+                           sender_id: int):
+        hist: Union[None, HistoricModel] = self.history.get(node_id, None)
 
-        # If it has no previous information of that node or it is a more updated
-        # version
-        if hist is None or model['iteration_num'] > hist['iteration_num']:
-            self.history[model['node_id']] = deepcopy(model)
+        if hist is None:
+            self.history[node_id] = {
+                'node_id': node_id,
+                'model': model.copy(),
+                'iteration_num': iteration_num,
+                'distance': distance,
+                'sender_id': sender_id,
+            }
+        elif iteration_num > hist['iteration_num']:
+            hist['model'][:] = model
+            hist['iteration_num'] = iteration_num
+            hist['distance'] = distance
+            hist['sender_id'] = sender_id

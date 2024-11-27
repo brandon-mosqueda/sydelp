@@ -34,17 +34,17 @@ class Sybilwall(Learning[SybilwallNode]):
     def gossiping(self) -> None:
         # First share the most recent version of own models with neighborhood
         for node_i, node in enumerate(self.nodes):
+            node_model: HistoricModel = node.history[node_i]
+            node_model['distance'] = 1
+
             for neighbor_i in self.graph.neighbors(node_i):
-                neighbor: SybilwallNode = self.nodes[neighbor_i]
+                self.nodes[neighbor_i].replace_in_history(**node_model)
 
-                # Send a deep copy of his model
-                send_model: HistoricModel = deepcopy(node.history[node_i])
-                send_model['distance'] = 1
-                neighbor.replace_in_history(send_model)
+            node_model['distance'] = 0
 
-        # Now shared a randomly selected model from the historic database.
+        # Then shared a randomly selected model from the historic database.
         # Both sharings are separated to first have the updated models of
-        # neighbors.
+        # neighbors before the random selection.
         for node_i, node in enumerate(self.nodes):
             for neighbor_i in self.graph.neighbors(node_i):
                 neighbor: SybilwallNode = self.nodes[neighbor_i]
@@ -67,96 +67,80 @@ class Sybilwall(Learning[SybilwallNode]):
                         for hist in filtered_hist
                     ]
 
-                    selected_model: HistoricModel = deepcopy(
-                        choices(filtered_hist, weights=probs)[0])
+                    selected_model: HistoricModel = choices(filtered_hist,
+                                                            weights=probs)[0]
+                    prev_sender: int = selected_model['sender_id']
                     selected_model['sender_id'] = node_i
                     selected_model['distance'] += 1
-                    neighbor.replace_in_history(selected_model)
+                    neighbor.replace_in_history(**selected_model)
+                    selected_model['distance'] -= 1
+                    selected_model['sender_id'] = prev_sender
 
     def compute_scores(self,
                        node: SybilwallNode,
-                       current_idx: int) -> dict[int, float]:
-        similarities: DataFrame = DataFrame(cosine_similarity(
-            np.array([hist['model'] for hist in node.history.values()])
-        ))
-        similarities.columns = list(node.history.keys())
-        similarities.set_index(similarities.columns, inplace=True)
-
-        # The current node does not enter in the scoring
-        similarities.drop(columns=[current_idx], inplace=True)
-        similarities.drop(index=[current_idx], inplace=True)
+                       current_idx: int) -> dict[int, Float]:
+        similarities: NumArray = cosine_similarity(
+            np.array([hist['model']
+                      for hist in node.history.values()
+                      if hist['node_id'] != current_idx])
+        )
+        idx: list[int] = list(node.history.keys())
+        idx.remove(current_idx)
+        n: int = len(idx)
 
         # Set the diagonal with lowest similarity
-        for i in similarities.columns:
-            similarities.loc[i, i] = -1
+        for i in range(n):
+            similarities[i, i] = -1
 
-        max_scores: Series[float] = similarities.max(axis=0) + 1e-5
-        final_scores: dict[int, float] = {}
-
-        for i in similarities.index:
-            scores_i: list[float] = []
-            for j in similarities.columns:
+        # Apply pardoning
+        max_simils: NumArray = np.max(similarities, axis=1) + 1e-5
+        for i in range(n):
+            for j in range(n):
                 if i == j:
                     continue
 
-                similarity: float = similarities.loc[i, j] # type: ignore
-                # Pardoning
-                if max_scores[j] > max_scores[i]:
-                    similarity *= max_scores[i] / max_scores[j]
+                if max_simils[i] < max_simils[j]:
+                    similarities[i, j] *= max_simils[i] / max_simils[j]
 
-                scores_i.append(similarity)
+        # Compute new maximum weights
+        weights: NumArray = 1 - np.max(similarities, axis=1)
+        weights.clip(0, 1)
+        weights /= np.max(weights)
+        weights[:] = self.confidence * (np.log(weights / (1 - weights)) + 0.5)
+        # Note that np.clip handles +inf and -inf.
+        weights.clip(0, 1)
 
-            final_scores[i] = np.clip(1 - np.max(scores_i), 0, 1)
+        # Add 1 for the current index that always have the maximum score
+        total: Float = weights.sum() + 1
+        weights /= total
+        scores: dict[int, Float] = {idx[i]: weights[i] for i in range(n)}
+        scores[current_idx] = 1 / total
 
-        max_score: float = np.max(list(final_scores.values()))
-        for key in final_scores.keys():
-            final_scores[key] /= max_score
-            # The log of 0 and negative numbers is not defined and 1 would
-            # produce zero division
-            final_scores[key] = np.clip(final_scores[key], 0.000001, 0.999999)
-
-            final_scores[key] = (
-                self.confidence
-                * (np.log(final_scores[key] / (1 - final_scores[key]))
-                   + 0.5)
-            )
-
-            final_scores[key] = np.clip(final_scores[key], 0, 1)
-
-        return final_scores
+        return scores
 
     def aggregation(self, iteration_num: int) -> None:
         # Update own local model histories
         for i, node in enumerate(self.nodes):
-            model: HistoricModel = {
-                'node_id': i,
-                'model': node.get_flat_model_weights(),
-                'iteration_num': iteration_num,
-                'distance': 0,
-                'sender_id': i,
-            }
-            node.add_in_history(model)
+            node.add_in_history(
+                node_id=i,
+                model=node.get_flat_model_weights(),
+                iteration_num=iteration_num,
+                distance=0,
+                sender_id=i,
+            )
 
         self.gossiping()
 
         # Aggregation
         for i, node in enumerate(self.nodes):
-            scores: dict[int, float] = self.compute_scores(node, i)
-            # Own model always has the highest score
-            scores[i] = 1
+            scores: dict[int, Float] = self.compute_scores(node, i)
+            neighbors: list[int] = list(self.graph.neighbors(i)) + [i]
 
-            # Weight normalization (sum of weights is 1)
-            total_sum: float = np.sum(list(scores.values()))
-            for key in scores.keys():
-                scores[key] /= total_sum
-
-            neighbors: list[int] = list(self.graph.neighbors(i))
-            neighbors.append(i)
-
-            weights: NumArray = np.array([scores[key] for key in scores.keys()])
+            weights: NumArray = np.array([scores[neigh_i]
+                                          for neigh_i in neighbors])
             models: NumArray = np.array([
-                self.nodes[key].get_flat_model_weights()
-                for key in scores.keys()
+                self.nodes[neigh_i].get_flat_model_weights()
+                for neigh_i in neighbors
             ])
 
             node.set_flat_model_weights(fed_avg(models, weights))
