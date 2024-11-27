@@ -5,13 +5,13 @@ import numpy as np
 import pandas as pd
 
 from time import time
-from typing import TypedDict, Protocol, TypeVar, Generic, Union
 from abc import ABC, abstractmethod
 from nodes.node import Node
 from attack.attacker import Attacker
-from utils.utils import MyProgressBar, NumArray, Float, IntArray
-from keras.src.models import Model as KerasModel
+from utils.utils import MyProgressBar
 from pandas import DataFrame
+from utils.typing import NumArray, Float, IntArray, KerasModel
+from typing import TypedDict, Protocol, TypeVar, Generic, Union
 
 
 class MetricFunction(Protocol):

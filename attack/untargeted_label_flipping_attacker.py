@@ -1,7 +1,7 @@
 from numpy import concatenate
 from attack.attacker import Attacker
 from nodes.untargeted_label_flipping_node import UntargetedLabelFlippingNode
-from utils.utils import NumArray, IntArray
+from utils.typing import NumArray, IntArray
 from typing import TypeVar
 
 

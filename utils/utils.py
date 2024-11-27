@@ -3,27 +3,12 @@ import progressbar
 import keras
 import numpy as np
 
-from json import load as load_json
 from keras import models
-from keras.src.models import Model as KerasModel
-from numpy.typing import NDArray
 from typing import Union, Any
+from json import load as load_json
+from numpy.typing import NDArray
+from utils.typing import NumArray, IntArray, KerasModel
 
-NNumeric = Union[
-    np.uint, np.uint8, np.uint16, np.uint32, np.uint64,
-    np.int8, np.int16, np.int32, np.int64,
-    np.float16, np.float32, np.float64, np.float128
-]
-
-Int = Union[np.uint, np.uint8, np.uint16, np.uint32, np.uint64,
-            np.int8, np.int16, np.int32, np.int64, np.int_, int]
-
-Float = Union[float, np.float_, np.float16, np.float32, np.float64, np.float128]
-
-NumArray = NDArray[NNumeric]
-IntArray = NDArray[np.int_]
-FloatArray = NDArray[np.float_]
-BoolArray = NDArray[np.bool_]
 
 def print_array(x: NDArray, n: int = 5, digits: int = 4) -> None:
     if np.issubdtype(x.dtype, np.number):
@@ -197,6 +182,15 @@ def as_name(x: Any):
     return str(x).lower().replace(' ', '_')
 
 
+def set_list_weights_in_array(weights: list[NumArray], arr: NumArray) -> None:
+    idx = 0
+    for layer in weights:
+        flat_size = layer.size
+        # Fill the array in place
+        arr[idx:idx + flat_size] = layer.flatten()
+        idx += flat_size
+
+
 def get_flatten_weights(model: KerasModel) -> NumArray:
     weights = model.get_weights()
     total_size = sum(w.size for w in weights)
@@ -221,10 +215,10 @@ def flatten_to_original(weights: NumArray,
     index = 0
 
     # Directly reshape each section of `weights` without additional slicing
-    for w in ref_weights:
-        num_elements = w.size
+    for layer in ref_weights:
+        num_elements = layer.size
         new_weights.append(weights[index:index + num_elements]
-                           .reshape(w.shape))
+                           .reshape(layer.shape))
         index += num_elements
 
     return new_weights

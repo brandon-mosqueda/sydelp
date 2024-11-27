@@ -1,6 +1,6 @@
 import numpy as np
 
-from utils.utils import NumArray, IntArray, FloatArray, BoolArray
+from utils.typing import NumArray, IntArray, FloatArray, BoolArray
 from typing import TypedDict, Union, Any
 
 

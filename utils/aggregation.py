@@ -2,7 +2,8 @@ import numpy as np
 
 from scipy.spatial.distance import cdist
 from typing import Union
-from utils.utils import NumArray, bottom_indices, bottom_n, IntArray, FloatArray
+from utils.utils import bottom_indices, bottom_n
+from utils.typing import NumArray, IntArray, FloatArray
 
 
 def fed_avg(models_params: NumArray,

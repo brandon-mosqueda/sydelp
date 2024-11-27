@@ -1,14 +1,14 @@
 import numpy as np
 
 from nodes.malicious_node import MaliciousNode
-from numpy.typing import NDArray
+from utils.typing import IntArray
 
 
 # When attacking the model is normally trained but using the flipped labels
 class TargetedLabelFlippingNode(MaliciousNode):
     source: int
     target: int
-    source_indices: NDArray[np.int64]
+    source_indices: IntArray
 
     def __init__(self,
                  source: int,

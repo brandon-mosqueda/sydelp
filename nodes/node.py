@@ -1,13 +1,16 @@
+import utils.utils as utils
+
 from pandas import DataFrame, concat
 from numpy import argmax
-from utils.utils import NumArray, IntArray, get_flatten_weights, flatten_to_original
-from keras.src.models import Model as KerasModel
+from utils.typing import NumArray, IntArray, KerasModel, ModelSizes
 
 
 class Node:
     x: NumArray
     y: IntArray
     model: KerasModel
+    flatten_weights: NumArray
+    model_sizes: ModelSizes
     epochs: int
     batch_size: int
     rows_num: int
@@ -18,26 +21,31 @@ class Node:
                  y: IntArray,
                  model: KerasModel,
                  epochs: int,
-                 batch_size: int) -> None:
+                 batch_size: int,
+                 model_sizes: ModelSizes) -> None:
         self.x = x
         self.y = y
         self.model = model
         self.epochs = epochs
         self.batch_size = batch_size
+        self.model_sizes = model_sizes
 
         self.rows_num = x.shape[0]
+        self.flatten_weights = utils.get_flatten_weights(self.model)
 
     def set_model_params(self, model_params: list[NumArray]) -> None:
         self.model.set_weights(model_params)
+        utils.set_list_weights_in_array(model_params, self.flatten_weights)
 
     def set_flatten_model_params(self, model_params: NumArray) -> None:
-        self.model.set_weights(flatten_to_original(model_params, self.model))
+        self.flatten_weights[:] = model_params
+        self.model.set_weights(utils.flatten_to_original(model_params, self.model))
 
     def get_model_params(self) -> list[NumArray]:
         return self.model.get_weights()
 
     def get_flatten_model_params(self) -> NumArray:
-        return get_flatten_weights(self.model)
+        return utils.get_flatten_weights(self.model)
 
     def train(self) -> None:
         self.model.fit(self.x,

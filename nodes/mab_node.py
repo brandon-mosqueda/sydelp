@@ -1,6 +1,7 @@
 import numpy as np
 
-from utils.utils import NumArray, get_flatten_weights
+from utils.utils import get_flatten_weights
+from utils.typing import NumArray
 from nodes.node import Node
 
 

@@ -5,7 +5,7 @@ from random import choices
 from networkx import Graph
 from learning.learning import Learning
 from utils.aggregation import fed_avg
-from utils.utils import NumArray, Float
+from utils.typing import NumArray, Float
 from nodes.sybilwall_node import SybilwallNode, HistoricModel
 from sklearn.metrics.pairwise import cosine_similarity
 from pandas import DataFrame, Series

@@ -1,6 +1,6 @@
 from attack.attacker import Attacker
 from nodes.random_node import RandomNode
-from utils.utils import NumArray
+from utils.typing import NumArray
 from typing import TypeVar
 
 

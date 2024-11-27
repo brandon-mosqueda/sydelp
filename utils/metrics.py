@@ -1,7 +1,7 @@
 import numpy as np
 
 from sklearn.metrics import recall_score, f1_score as _f1_score
-from utils.utils import Float, FloatArray, IntArray, Int, NumArray
+from utils.typing import Float, FloatArray, IntArray, Int, NumArray
 
 
 def label_flipping_success_rate(y_true: IntArray,

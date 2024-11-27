@@ -1,7 +1,7 @@
 from numpy import concatenate
 from attack.attacker import Attacker
 from nodes.sign_flipping_node import SignFlippingNode
-from utils.utils import NumArray, IntArray
+from utils.typing import NumArray, IntArray
 from typing import TypeVar
 
 

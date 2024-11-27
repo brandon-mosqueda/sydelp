@@ -1,5 +1,5 @@
 from typing import TypedDict, Union
-from utils.utils import NumArray
+from utils.typing import NumArray
 from nodes.node import Node
 
 

@@ -1,7 +1,8 @@
 import numpy as np
 
 from learning.learning import Learning
-from utils.utils import NumArray, flatten_to_original
+from utils.utils import flatten_to_original
+from utils.typing import NumArray
 from utils.aggregation import krum
 
 

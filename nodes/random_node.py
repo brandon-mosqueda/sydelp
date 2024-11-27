@@ -1,6 +1,7 @@
 from numpy.random import normal as random_gauss
 from nodes.malicious_node import MaliciousNode
-from utils.utils import NumArray, flatten_to_original
+from utils.utils import flatten_to_original
+from utils.typing import NumArray
 
 
 # This attacks consist on skipping the train phase and send random gaussian

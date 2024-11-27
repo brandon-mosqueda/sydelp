@@ -4,7 +4,8 @@ import utils.utils as utils
 from sklearn.decomposition import PCA
 from sklearn.cluster import AgglomerativeClustering
 from networkx import Graph, connected_components
-from utils.utils import IntArray, MyProgressBar, NumArray, Float
+from utils.utils import MyProgressBar
+from utils.typing import IntArray, NumArray, Float
 from utils.metrics import cos_similarity
 from learning.learning import Learning
 from nodes.mab_node import MabNode

@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from nodes.malicious_node import MaliciousNode
+from utils.utils import MyProgressBar, progress_bar
 from typing import Generic, TypeVar
-from utils.utils import MyProgressBar, progress_bar, NumArray
+from utils.typing import NumArray
 
 
 MalNodeType = TypeVar('MalNodeType', bound='MaliciousNode')
