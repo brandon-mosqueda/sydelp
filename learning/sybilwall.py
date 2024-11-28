@@ -112,7 +112,7 @@ class Sybilwall(Learning[SybilwallNode]):
         # Prevent zero division
         weights[weights == 1] = 0.999999
         # Log is not defined for numbers < 0
-        weights[weights < 1] = 0.000001
+        weights[weights < 0] = 0.000001
         weights[:] = self.confidence * (np.log(weights / (1 - weights)) + 0.5)
         np.clip(weights, 0, 1, out=weights)
 
