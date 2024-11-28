@@ -47,8 +47,9 @@ class Sybilwall(Gossip[SybilwallNode]):
             for neighbor_i in self.graph.neighbors(node_i):
                 neighbor: SybilwallNode = self.nodes[neighbor_i]
 
-                # Remove own model (already sent) and models coming from the
-                # neighbor
+                # Remove models originated or coming from neighbor, this
+                # prevents to include in their histories information about
+                # themselves
                 filtered_hist: list[HistoricModel] = [
                     hist
                     for hist in node.history.values()
@@ -102,7 +103,7 @@ class Sybilwall(Gossip[SybilwallNode]):
         # Prevent zero division
         weights[weights == 1] = 0.999999
         # Log is not defined for numbers < 0
-        weights[weights < 0] = 0.000001
+        weights[weights <= 0] = 0.000001
         weights[:] = self.confidence * (np.log(weights / (1 - weights)) + 0.5)
         np.clip(weights, 0, 1, out=weights)
 
@@ -116,7 +117,7 @@ class Sybilwall(Gossip[SybilwallNode]):
         self.gossiping(iteration_num)
 
         print("\t+ Aggregating")
-        bar: MyProgressBar = progress_bar(len(self.nodes) * 2)
+        bar: MyProgressBar = progress_bar(len(self.nodes))
 
         # Aggregation
         for i, node in enumerate(self.nodes):

@@ -1,6 +1,6 @@
 import numpy as np
 from typing import TypedDict, Union
-from utils.typing import NumArray, IntArray, FloatArray
+from utils.typing import FloatArray
 from nodes.node import Node
 
 
