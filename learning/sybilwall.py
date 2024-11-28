@@ -97,7 +97,7 @@ class Sybilwall(Learning[SybilwallNode]):
         np.fill_diagonal(similarities, -1)
 
         # Apply pardoning
-        max_simils: NumArray = np.max(similarities, axis=1) + 1e-5
+        max_simils: NumArray = np.max(similarities, axis=1)
         for i in range(n):
             for j in range(n):
                 if i == j:
@@ -108,10 +108,11 @@ class Sybilwall(Learning[SybilwallNode]):
 
         # Compute new maximum weights
         weights: NumArray = 1 - similarities.max(axis=1)
-        # Prevent zero division
-        np.clip(weights, 0.000001, 0.999999, out=weights)
         weights /= weights.max()
-        np.clip(weights, 0.000001, 0.999999, out=weights)
+        # Prevent zero division
+        weights[weights == 1] = 0.999999
+        # Log is not defined for numbers < 0
+        weights[weights < 1] = 0.000001
         weights[:] = self.confidence * (np.log(weights / (1 - weights)) + 0.5)
         np.clip(weights, 0, 1, out=weights)
 
@@ -147,6 +148,9 @@ class Sybilwall(Learning[SybilwallNode]):
 
             weights: NumArray = np.array([scores[neigh_i]
                                           for neigh_i in neighbors])
+            no_zero_weights: int = sum(w != 0 for w in weights)
+            print(f"\t\t- No zero weights: {no_zero_weights} / {weights.size}")
+
             models: NumArray = np.array([
                 self.nodes[neigh_i].get_flat_model_weights()
                 for neigh_i in neighbors
@@ -177,6 +181,7 @@ class Sybilwall(Learning[SybilwallNode]):
 
     def round_metrics(self) -> dict[str, Float]:
         bar: MyProgressBar = progress_bar(len(self.nodes))
+        # Loss is added by default on metrics
         values: FloatArray = np.zeros(len(self.metrics_params) + 1)
 
         for i, node in enumerate(self.nodes):
