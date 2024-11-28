@@ -22,20 +22,22 @@ class Sybilwall(Gossip[SybilwallNode]):
         self.distant_propagation_relevance = distant_propagation_relevance
         self.confidence = confidence
 
-    def gossiping(self) -> None:
+    def gossiping(self, iteration_num: int) -> None:
         print("\t+ Gossiping")
         bar: MyProgressBar = progress_bar(len(self.nodes) * 2)
 
         # First share the most recent version of own models with neighborhood
         for node_i, node in enumerate(self.nodes):
             bar.next()
-            node_model: HistoricModel = node.history[node_i]
-            node_model['distance'] = 1
 
             for neighbor_i in self.graph.neighbors(node_i):
-                self.nodes[neighbor_i].replace_in_history(**node_model)
-
-            node_model['distance'] = 0
+                self.nodes[neighbor_i].replace_in_history(
+                    node_id=node_i,
+                    iteration_num=iteration_num,
+                    distance=1,
+                    model=node.own_history_weights,
+                    sender_id=node_i,
+                )
 
         # Then shared a randomly selected model from the historic database.
         # Both sharings are separated to first have the updated models of
@@ -50,7 +52,7 @@ class Sybilwall(Gossip[SybilwallNode]):
                 filtered_hist: list[HistoricModel] = [
                     hist
                     for hist in node.history.values()
-                    if hist['node_id'] not in [node_i, neighbor_i]
+                    if hist['node_id'] != neighbor_i
                         and hist['sender_id'] != neighbor_i
                 ]
 
@@ -74,16 +76,11 @@ class Sybilwall(Gossip[SybilwallNode]):
 
         bar.finish()
 
-    def compute_scores(self,
-                       node: SybilwallNode,
-                       current_idx: int) -> dict[int, Float]:
+    def compute_scores(self, node: SybilwallNode) -> dict[int, Float]:
         similarities: FloatArray = cosine_similarity(
-            np.array([hist['model']
-                      for hist in node.history.values()
-                      if hist['node_id'] != current_idx])
+            np.array([hist['model'] for hist in node.history.values()])
         )
         idx: list[int] = list(node.history.keys())
-        idx.remove(current_idx)
         n: int = len(idx)
 
         # Set the diagonal with lowest similarity
@@ -109,26 +106,14 @@ class Sybilwall(Gossip[SybilwallNode]):
         weights[:] = self.confidence * (np.log(weights / (1 - weights)) + 0.5)
         np.clip(weights, 0, 1, out=weights)
 
-        # Add 1 for the current index that always have the maximum score
-        total: Float = weights.sum() + 1
-        weights /= total
-        scores: dict[int, Float] = {idx[i]: weights[i] for i in range(n)}
-        scores[current_idx] = 1 / total
-
-        return scores
+        return {idx[i]: weights[i] for i in range(n)}
 
     def aggregation(self, iteration_num: int) -> None:
         # Update own local model histories
         for i, node in enumerate(self.nodes):
-            node.add_in_history(
-                node_id=i,
-                model=node.get_flat_model_weights(),
-                iteration_num=iteration_num,
-                distance=0,
-                sender_id=i,
-            )
+            node.update_own_history()
 
-        self.gossiping()
+        self.gossiping(iteration_num)
 
         print("\t+ Aggregating")
         bar: MyProgressBar = progress_bar(len(self.nodes) * 2)
@@ -136,11 +121,15 @@ class Sybilwall(Gossip[SybilwallNode]):
         # Aggregation
         for i, node in enumerate(self.nodes):
             bar.next()
-            scores: dict[int, Float] = self.compute_scores(node, i)
+            scores: dict[int, Float] = self.compute_scores(node)
+            # Own score has always the highest value
+            scores[i] = 1
             neighbors: list[int] = list(self.graph.neighbors(i)) + [i]
 
             weights: FloatArray = np.array([scores[neigh_i]
                                             for neigh_i in neighbors])
+            # Normalize the final weights
+            weights /= weights.sum()
 
             models: FloatArray = np.array([
                 self.nodes[neigh_i].get_flat_model_weights()
