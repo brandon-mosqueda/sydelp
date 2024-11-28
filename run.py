@@ -1,8 +1,8 @@
 import sys
 import os
 
-os.chdir("/home/bmosqueda/doctorado/experiments/decentralized_learning")
-sys.path.append("/home/bmosqueda/doctorado/experiments/decentralized_learning")
+os.chdir("/home/bmosqueda/doctorado/experiments/decentralized_learning_run")
+sys.path.append("/home/bmosqueda/doctorado/experiments/decentralized_learning_run")
 
 import utils.initialize as init
 import utils.utils as utils
