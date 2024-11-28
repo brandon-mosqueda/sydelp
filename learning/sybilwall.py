@@ -3,7 +3,7 @@ import numpy as np
 from random import choices
 from networkx import Graph
 from learning.learning import Learning
-from utils.utils import MyProgressBar, progress_bar
+from utils.utils import MyProgressBar, progress_bar, flat_weights_to_original
 from utils.aggregation import fed_avg
 from utils.typing import NumArray, Float, IntArray, FloatArray
 from nodes.sybilwall_node import SybilwallNode, HistoricModel
@@ -148,8 +148,6 @@ class Sybilwall(Learning[SybilwallNode]):
 
             weights: NumArray = np.array([scores[neigh_i]
                                           for neigh_i in neighbors])
-            no_zero_weights: int = sum(w != 0 for w in weights)
-            print(f"\t\t- No zero weights: {no_zero_weights} / {weights.size}")
 
             models: NumArray = np.array([
                 self.nodes[neigh_i].get_flat_model_weights()
@@ -159,6 +157,13 @@ class Sybilwall(Learning[SybilwallNode]):
             node.set_flat_model_weights(fed_avg(models, weights))
 
         bar.finish()
+
+        self.global_model.set_weights(flat_weights_to_original(
+            fed_avg(np.array([node.get_flat_model_weights()
+                              for node in self.nodes
+                              if not node.is_malicious])),
+            self.weights_shapes
+        ))
 
     def node_metrics(self,
                      observed: IntArray,
@@ -195,7 +200,13 @@ class Sybilwall(Learning[SybilwallNode]):
         metrics: list = list(self.metrics_params.keys()) + ['loss']
         values /= sum([not node.is_malicious for node in self.nodes])
 
-        return {
+        final_metrics: dict[str, Float] = {
             metric: values[i]
             for i, metric in enumerate(metrics)
         }
+
+        global_metrics: dict[str, Float] = super().round_metrics()
+        for key, value in global_metrics.items():
+            final_metrics['global_' + key] = value
+
+        return final_metrics
