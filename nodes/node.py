@@ -1,7 +1,7 @@
 import numpy as np
 import utils.utils as utils
 
-from utils.typing import NumArray, IntArray, KerasModel, WeightsShapes, Int, FloatArray
+from utils.typing import *
 
 
 class Node:
@@ -12,6 +12,7 @@ class Node:
     weights_shapes: WeightsShapes
     epochs: int
     batch_size: int
+    predict_batch_size: int
     rows_num: int
     is_malicious: bool = False
 
@@ -21,13 +22,17 @@ class Node:
                  model: KerasModel,
                  weights_shapes: WeightsShapes,
                  epochs: int,
-                 batch_size: int) -> None:
+                 batch_size: int,
+                 predict_batch_size: int = 252) -> None:
         self.x = x
         self.y = y
         self.model = model
         self.epochs = epochs
         self.batch_size = batch_size
         self.weights_shapes = weights_shapes
+        self.predict_batch_size = (batch_size
+                                   if predict_batch_size is None
+                                   else predict_batch_size)
 
         self.rows_num = x.shape[0]
 
@@ -63,3 +68,16 @@ class Node:
 
         utils.set_weights_to_array(self.model.get_weights(),
                                    self.flat_weights)
+
+    def predict(self, x: NumArray) -> IntArray:
+        predicted: NumArray = self.model.predict(
+            x,
+            verbose=0,
+            batch_size=self.predict_batch_size
+        )
+
+        # For binary classification
+        if predicted.shape[1] == 1:
+            return (predicted > 0.5).flatten().astype(int)
+
+        return np.argmax(predicted, axis=1)

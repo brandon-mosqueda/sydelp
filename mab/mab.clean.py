@@ -114,8 +114,8 @@ class Client:
         self.seleted_epoch = 0
 
         total_size: int = sum(w.size for w in self.model.get_weights())
-        self.momentum = np.zeros(total_size)
-        self.update = np.zeros(total_size)
+        self.momentum = np.zeros(total_size, dtype="float")
+        self.update = np.zeros(total_size, dtype="float")
 
     def set_weights(self, weights: NDArray):
         set_flatten_weights(self.model, weights)

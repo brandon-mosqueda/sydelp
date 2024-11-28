@@ -14,12 +14,10 @@ class HistoricModel(TypedDict):
 
 class SybilwallNode(Node):
     history: dict[int, HistoricModel]
-    predict_batch_size: int
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.history = {}
-        self.predict_batch_size = 252
 
     # model should be a copy, not a reference
     def add_in_history(self,
@@ -66,16 +64,3 @@ class SybilwallNode(Node):
             hist['iteration_num'] = iteration_num
             hist['distance'] = distance
             hist['sender_id'] = sender_id
-
-    def predict(self, x: NumArray) -> IntArray:
-        predicted: NumArray = self.model.predict(
-            x,
-            verbose=0,
-            batch_size=self.predict_batch_size
-        )
-
-        # For binary classification
-        if predicted.shape[1] == 1:
-            return (predicted > 0.5).flatten().astype(int)
-
-        return np.argmax(predicted, axis=1)

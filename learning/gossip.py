@@ -1,25 +1,29 @@
 import numpy as np
 
 from networkx import Graph
-from learning.learning import Learning
+from learning.learning import Learning, NodeType
 from utils.utils import MyProgressBar, progress_bar, flat_weights_to_original
 from utils.aggregation import fed_avg
-from utils.typing import Float, IntArray, FloatArray, NumArray
-from nodes.node import Node
+from utils.typing import Float, IntArray, FloatArray
 
 
-class Gossip(Learning[Node]):
+class Gossip(Learning[NodeType]):
     graph: Graph
 
-    def __init__(self,
-                 graph: Graph,
-                 *args,
-                 **kwargs) -> None:
+    def __init__(self, graph: Graph, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         if sorted(list(graph.nodes)) != np.arange(len(self.nodes)).tolist():
             raise ValueError("graph.nodes is not equal to nodes")
 
         self.graph = graph
+
+    def global_model_aggregation(self) -> None:
+        self.global_model.set_weights(flat_weights_to_original(
+            fed_avg(np.array([node.get_flat_model_weights()
+                              for node in self.nodes
+                              if not node.is_malicious])),
+            self.weights_shapes
+        ))
 
     def aggregation(self, iteration_num: int) -> None:
         for i, node in enumerate(self.nodes):
@@ -32,12 +36,7 @@ class Gossip(Learning[Node]):
 
             node.set_flat_model_weights(fed_avg(models))
 
-        self.global_model.set_weights(flat_weights_to_original(
-            fed_avg(np.array([node.get_flat_model_weights()
-                              for node in self.nodes
-                              if not node.is_malicious])),
-            self.weights_shapes
-        ))
+        self.global_model_aggregation()
 
     def node_metrics(self,
                      observed: IntArray,
@@ -58,29 +57,17 @@ class Gossip(Learning[Node]):
 
         return np.array(metrics)
 
-    def node_predict(self, node: Node) -> IntArray:
-        predicted: NumArray = node.model.predict(
-            self.x_testing,
-            verbose=0,
-            batch_size=252
-        )
-
-        # For binary classification
-        if predicted.shape[1] == 1:
-            return (predicted > 0.5).flatten().astype(int)
-
-        return np.argmax(predicted, axis=1)
-
     def round_metrics(self) -> dict[str, Float]:
         bar: MyProgressBar = progress_bar(len(self.nodes))
         # Loss is added by default on metrics
-        values: FloatArray = np.zeros(len(self.metrics_params) + 1)
+        values: FloatArray = np.zeros(len(self.metrics_params) + 1,
+                                      dtype="float")
 
         for i, node in enumerate(self.nodes):
             bar.next()
 
             if not node.is_malicious:
-                predicted: IntArray = self.node_predict(node)
+                predicted: IntArray = node.predict(self.x_testing)
                 values += self.node_metrics(self.y_testing, predicted, i)
 
         bar.finish()
