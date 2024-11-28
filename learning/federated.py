@@ -2,13 +2,13 @@ import numpy as np
 
 from learning.learning import Learning
 from utils.utils import flat_weights_to_original
-from utils.typing import NumArray
+from utils.typing import FloatArray
 from utils.aggregation import fed_avg
 
 
 class FederatedLearning(Learning):
-    weights: NumArray
-    models_matrix: NumArray
+    weights: FloatArray
+    models_matrix: FloatArray
 
     def __init__(self,
                  weighting_mode: str = "uniform",
@@ -18,7 +18,7 @@ class FederatedLearning(Learning):
 
         self.models_matrix = np.empty((len(self.nodes),
                                        self.nodes[0].flat_weights.size),
-                                      dtype="float32")
+                                      dtype="float")
 
         if weighting_mode == "uniform":
             self.weights = (np.repeat(1/len(self.nodes), len(self.nodes))
@@ -37,7 +37,7 @@ class FederatedLearning(Learning):
     def aggregation(self, iteration_num: int) -> None:
         self.update_models_matrix()
 
-        avg_model: list[NumArray] = flat_weights_to_original(
+        avg_model: list[FloatArray] = flat_weights_to_original(
             fed_avg(self.models_matrix, self.weights),
             self.weights_shapes
         )

@@ -1,7 +1,7 @@
 from numpy import concatenate
 from attack.attacker import Attacker
 from nodes.untargeted_label_flipping_node import UntargetedLabelFlippingNode
-from utils.typing import NumArray, IntArray
+from utils.typing import NumArray, IntArray, FloatArray
 from typing import TypeVar
 
 
@@ -22,7 +22,7 @@ class UntargetedLabelFlippingAttacker(Attacker[UntargetedLabelFlippingNodeType])
         self.y = concatenate([node.y for node in self.nodes])
 
     def get_attack_params(self,
-                          attacking_nodes: list[UntargetedLabelFlippingNodeType]) -> list[NumArray]:
+                          attacking_nodes: list[UntargetedLabelFlippingNodeType]) -> list[FloatArray]:
         node: UntargetedLabelFlippingNodeType = attacking_nodes[0]
 
         original_x: NumArray = node.x

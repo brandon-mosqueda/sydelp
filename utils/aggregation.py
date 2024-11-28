@@ -3,11 +3,11 @@ import numpy as np
 from scipy.spatial.distance import cdist
 from typing import Union
 from utils.utils import bottom_indices, bottom_n
-from utils.typing import NumArray, IntArray, FloatArray
+from utils.typing import IntArray, FloatArray
 
 
-def fed_avg(models_params: NumArray,
-            weights: Union[NumArray, None] = None) -> NumArray:
+def fed_avg(models_params: FloatArray,
+            weights: Union[FloatArray, None] = None) -> FloatArray:
     if len(models_params.shape) != 2:
         raise ValueError("models_params has to be a 2-D array")
 
@@ -28,10 +28,10 @@ def fed_avg(models_params: NumArray,
     return np.dot(weights, models_params)
 
 
-def krum(models_params: NumArray,
+def krum(models_params: FloatArray,
          m: Union[float, int] = 0.3,
          weighting_mode: str = "uniform",
-         data_sizes: Union[NumArray, None] = None) -> NumArray:
+         data_sizes: Union[IntArray, None] = None) -> FloatArray:
     if len(models_params.shape) != 2:
         raise ValueError("models_params has to be a 2-D array")
 
@@ -50,9 +50,9 @@ def krum(models_params: NumArray,
     if kept_models_num < 1:
         raise ValueError("models_num - m - 2 yielded < 1")
 
-    distances: NumArray = cdist(models_params,
-                                models_params,
-                                metric='euclidean')
+    distances: FloatArray = cdist(models_params,
+                                  models_params,
+                                  metric='euclidean')
 
     scores: FloatArray = np.zeros(models_num, dtype="float")
 

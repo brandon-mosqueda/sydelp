@@ -2,15 +2,15 @@ import numpy as np
 
 from learning.learning import Learning
 from utils.utils import flat_weights_to_original
-from utils.typing import NumArray
+from utils.typing import FloatArray, IntArray
 from utils.aggregation import krum
 
 
 class Sydelp(Learning):
     weighting_mode: str
     expected_malicious_num: int
-    data_sizes: NumArray
-    models_matrix: NumArray
+    data_sizes: IntArray
+    models_matrix: FloatArray
 
     def __init__(self,
                  expected_malicious_num: int,
@@ -27,7 +27,7 @@ class Sydelp(Learning):
         self.data_sizes = np.array([node.rows_num for node in self.nodes])
         self.models_matrix = np.empty((len(self.nodes),
                                        self.nodes[0].flat_weights.size),
-                                      dtype="float32")
+                                      dtype="float")
 
     def update_models_matrix(self) -> None:
         for i, node in enumerate(self.nodes):
@@ -36,7 +36,7 @@ class Sydelp(Learning):
     def aggregation(self, iteration_num: int) -> None:
         self.update_models_matrix()
 
-        avg_model: list[NumArray] = flat_weights_to_original(
+        avg_model: list[FloatArray] = flat_weights_to_original(
             krum(self.models_matrix,
                  m=self.expected_malicious_num,
                  weighting_mode=self.weighting_mode,

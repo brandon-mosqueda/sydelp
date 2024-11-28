@@ -1,12 +1,12 @@
 import numpy as np
 from typing import TypedDict, Union
-from utils.typing import NumArray, IntArray
+from utils.typing import NumArray, IntArray, FloatArray
 from nodes.node import Node
 
 
 class HistoricModel(TypedDict):
     node_id: int       # p
-    model: NumArray    # h
+    model: FloatArray  # h
     iteration_num: int # r
     distance: int      # d
     sender_id: int     # f
@@ -24,7 +24,7 @@ class SybilwallNode(Node):
     # model should be a copy, not a reference
     def add_in_history(self,
                        node_id: int,
-                       model: NumArray,
+                       model: FloatArray,
                        iteration_num: int,
                        distance: int,
                        sender_id: int) -> None:
@@ -47,7 +47,7 @@ class SybilwallNode(Node):
     # model should be a copy, not a reference
     def replace_in_history(self,
                            node_id: int,
-                           model: NumArray,
+                           model: FloatArray,
                            iteration_num: int,
                            distance: int,
                            sender_id: int):

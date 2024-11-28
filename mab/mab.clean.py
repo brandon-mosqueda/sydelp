@@ -57,7 +57,7 @@ def get_flatten_weights(model: KerasModel) -> NumArray:
     total_size = sum(w.size for w in weights)
 
     # Pre-allocate a single array with the necessary size
-    flat_weights = np.empty(total_size, dtype="float32")
+    flat_weights = np.empty(total_size, dtype="float")
 
     # Fill the flat_weights array in place
     idx = 0
@@ -212,7 +212,7 @@ def MAB_FL(clients: list[Client],
            selected_ids: list[int],
            iteration_num: int,
            c_max: float,
-           c_min: float) -> tuple[np.float32, NDArray]:
+           c_min: float) -> tuple[np.float_, NDArray]:
     for i in selected_ids:
         clients[i].momentum = (clients[i].update
                                + miu**(iteration_num - clients[i].seleted_epoch)
@@ -272,7 +272,7 @@ def MAB_FL(clients: list[Client],
 
     print("* Final aggregation:", selected_ids)
 
-    lr: np.float32 = np.median(
+    lr: np.float_ = np.median(
         [np.linalg.norm(clients[i].update) for i in selected_ids])
 
     return lr, np.mean([clients[i].momentum for i in selected_ids], axis=0)

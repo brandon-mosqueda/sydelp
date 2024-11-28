@@ -8,7 +8,7 @@ from unittest import TestCase
 from typing import Union
 from numpy.typing import NDArray
 from utils.split import Split
-from utils.utils import NNumeric
+from utils.typing import NNumeric
 from sklearn.datasets import load_iris, load_digits
 from numpy.testing import assert_array_equal
 

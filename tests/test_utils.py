@@ -1,7 +1,9 @@
 from utils.utils import *
 
 import numpy as np
-from numpy.testing import assert_array_equal
+from numpy import array
+from numpy.testing import assert_array_equal, assert_array_almost_equal
+from utils.typing import FloatArray
 
 from unittest import TestCase
 
@@ -60,3 +62,60 @@ class TestUtils(TestCase):
         self.assertEqual(remove_indices([1, 2, 3], [0, 2]), [2])
         self.assertEqual(remove_indices(['a', 'b', 'c'], [2]), ['a', 'b'])
         self.assertEqual(remove_indices(['a', 'b', 'c'], [2, 5]), ['a', 'b'])
+
+    def assert_original_weights(self, x: list[FloatArray], y: list[FloatArray]):
+        self.assertEqual(len(x), len(y), "x and y have not the same length")
+
+        for i, j in zip(x, y):
+            assert_array_almost_equal(i, j)
+
+    def test_set_weights_to_array(self):
+        arr: FloatArray = np.arange(3, dtype="float")
+        weights: list[FloatArray] = [array([8, 9, 10])]
+
+        set_weights_to_array(weights, arr)
+        assert_array_equal(arr, array([8, 9, 10]))
+
+        self.assert_original_weights(
+            flat_weights_to_original(arr, weights_shapes=[(3,)]),
+            weights
+        )
+
+
+        arr = np.arange(6, dtype="float")
+        weights = [array([8, 9, 10]), array([93, 5, 8])]
+        set_weights_to_array(weights, arr)
+        assert_array_equal(arr, ([8, 9, 10, 93, 5, 8]))
+
+        self.assert_original_weights(
+            flat_weights_to_original(arr, weights_shapes=[(3,), (3,)]),
+            weights
+        )
+
+        arr = np.arange(6, dtype="float")
+        weights = [array([2]), array([3]), array([8]),
+                   array([2]), array([3]), array([8])]
+        set_weights_to_array(weights, arr)
+        assert_array_equal(arr, ([2, 3, 8, 2, 3, 8]))
+
+        self.assert_original_weights(
+            flat_weights_to_original(arr, weights_shapes=[(1,), (1,), (1,),
+                                                          (1,), (1,), (1,)]),
+            weights
+        )
+
+        arr = np.arange(100, dtype="float")
+        weights = [np.random.random((5, 5)),
+                   np.random.random((5, 5)),
+                   np.random.random((5, 5)),
+                   np.random.random((5, 5)),]
+
+        set_weights_to_array(weights, arr)
+        assert_array_almost_equal(arr,np.concatenate([w.flatten()
+                                                      for w in weights]))
+
+        self.assert_original_weights(
+            flat_weights_to_original(arr, weights_shapes=[(5, 5), (5, 5),
+                                                          (5, 5), (5, 5),]),
+            weights
+        )

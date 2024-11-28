@@ -76,8 +76,8 @@ def mnist_data() -> tuple[NumArray, NumArray, IntArray, IntArray]:
     y_test: IntArray
     (X_train, y_train), (X_test, y_test) = load_mnist()
 
-    X_train = X_train.reshape(60000, 784).astype("float32") / 255
-    X_test = X_test.reshape(10000, 784).astype("float32") / 255
+    X_train = X_train.reshape(60000, 784).astype("float") / 255
+    X_test = X_test.reshape(10000, 784).astype("float") / 255
 
     return X_train, X_test, y_train, y_test
 

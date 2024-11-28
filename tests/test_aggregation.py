@@ -2,25 +2,25 @@ import numpy as np
 
 from numpy import array
 from utils.aggregation import *
-from utils.utils import NumArray
+from utils.typing import FloatArray
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 from unittest import TestCase
 
 
 class TestAggregation(TestCase):
-    x: NumArray = array([
+    x: FloatArray = array([
         0.08, 0.72, 0.67,
         0.01, 0.53, 0.24,
         0.42, 0.42,
         0.35, 0.64
     ])
-    y: NumArray = array([
+    y: FloatArray = array([
         0.82, 0.88, 0.02,
         0.27, 0.37, 0.11,
         0.84, 0.76,
         0.02, 0.34
     ])
-    z: NumArray = array([
+    z: FloatArray = array([
         0.45, 0.30, 0.55,
         0.21, 0.43, 0.17,
         0.12, 0.45,

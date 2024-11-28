@@ -7,7 +7,7 @@ from keras import models
 from typing import Union, Any
 from json import load as load_json
 from numpy.typing import NDArray
-from utils.typing import NumArray, IntArray, KerasModel, WeightsShapes, Int
+from utils.typing import NumArray, IntArray, KerasModel, WeightsShapes, Int, FloatArray
 
 
 def print_array(x: NDArray, n: int = 5, digits: int = 4) -> None:
@@ -183,17 +183,19 @@ def as_name(x: Any):
 
 
 # Weights are flatten by reference
-def set_weights_to_array(weights: list[NumArray], ref_array: NumArray) -> None:
+def set_weights_to_array(weights: list[FloatArray],
+                         ref_array: FloatArray) -> None:
     idx = 0
     for layer in weights:
         flat_size = layer.size
-        ref_array[idx:idx + flat_size] = layer.flatten()
+        # In-place flattening
+        ref_array[idx:idx + flat_size] = layer.ravel()
         idx += flat_size
 
 
-def flat_weights_to_original(flat_weights: NumArray,
-                             weights_shapes: WeightsShapes) -> list[NumArray]:
-    new_weights: list[NumArray] = []
+def flat_weights_to_original(flat_weights: FloatArray,
+                             weights_shapes: WeightsShapes) -> list[FloatArray]:
+    new_weights: list[FloatArray] = []
     index: Int = 0
 
     for layer_shape in weights_shapes:

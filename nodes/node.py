@@ -1,14 +1,14 @@
 import numpy as np
 import utils.utils as utils
 
-from utils.typing import NumArray, IntArray, KerasModel, WeightsShapes, Int
+from utils.typing import NumArray, IntArray, KerasModel, WeightsShapes, Int, FloatArray
 
 
 class Node:
     x: NumArray
     y: IntArray
     model: KerasModel
-    flat_weights: NumArray
+    flat_weights: FloatArray
     weights_shapes: WeightsShapes
     epochs: int
     batch_size: int
@@ -32,15 +32,15 @@ class Node:
         self.rows_num = x.shape[0]
 
         total_size: Int = sum(np.prod(shape) for shape in weights_shapes)
-        self.flat_weights = np.empty(total_size, dtype="float32")
+        self.flat_weights = np.empty(total_size, dtype="float")
         utils.set_weights_to_array(self.model.get_weights(),
                                    self.flat_weights)
 
-    def set_model_weights(self, weights: list[NumArray]) -> None:
+    def set_model_weights(self, weights: list[FloatArray]) -> None:
         self.model.set_weights(weights)
         utils.set_weights_to_array(weights, self.flat_weights)
 
-    def set_flat_model_weights(self, flat_weights: NumArray) -> None:
+    def set_flat_model_weights(self, flat_weights: FloatArray) -> None:
         self.flat_weights[:] = flat_weights
 
         self.model.set_weights(utils.flat_weights_to_original(
@@ -48,10 +48,10 @@ class Node:
             self.weights_shapes
         ))
 
-    def get_model_weights(self) -> list[NumArray]:
+    def get_model_weights(self) -> list[FloatArray]:
         return self.model.get_weights()
 
-    def get_flat_model_weights(self) -> NumArray:
+    def get_flat_model_weights(self) -> FloatArray:
         return self.flat_weights
 
     def train(self) -> None:

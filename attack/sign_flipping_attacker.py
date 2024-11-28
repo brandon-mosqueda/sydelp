@@ -1,7 +1,7 @@
 from numpy import concatenate
 from attack.attacker import Attacker
 from nodes.sign_flipping_node import SignFlippingNode
-from utils.typing import NumArray, IntArray
+from utils.typing import NumArray, IntArray, FloatArray
 from typing import TypeVar
 
 
@@ -21,7 +21,7 @@ class SignFlippingAttacker(Attacker[SignFlippingNodeType]):
         self.y = concatenate([node.y for node in self.nodes])
 
     def get_attack_params(self,
-                          attacking_nodes: list[SignFlippingNodeType]) -> list[NumArray]:
+                          attacking_nodes: list[SignFlippingNodeType]) -> list[FloatArray]:
         node: SignFlippingNodeType = attacking_nodes[0]
 
         original_x: NumArray = node.x

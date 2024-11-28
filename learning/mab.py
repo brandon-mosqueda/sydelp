@@ -5,7 +5,7 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import AgglomerativeClustering
 from networkx import Graph, connected_components
 from utils.utils import MyProgressBar
-from utils.typing import IntArray, NumArray, Float
+from utils.typing import IntArray, Float, FloatArray
 from utils.metrics import cos_similarity
 from learning.learning import Learning
 from nodes.mab_node import MabNode
@@ -111,8 +111,8 @@ class Mab(Learning[MabNode]):
             self.selected_idx = np.delete(self.selected_idx, remove_idx)
 
     def aggregation(self, iteration_num: int) -> None:
-        global_weights: NumArray = np.empty(self.nodes[0].flat_weights.size,
-                                            dtype="float32")
+        global_weights: FloatArray = np.empty(self.nodes[0].flat_weights.size,
+                                              dtype="float")
         utils.set_weights_to_array(self.global_model.get_weights(),
                                    global_weights)
 
@@ -133,7 +133,7 @@ class Mab(Learning[MabNode]):
         # Remove sybils
         self.remove_sybils_idx(iteration_num)
 
-        selected_updates: NumArray = np.array(
+        selected_updates: FloatArray = np.array(
             [self.nodes[i].momentum for i in self.selected_idx])
 
         pca: PCA = PCA(n_components=self.pca_components)
@@ -152,11 +152,11 @@ class Mab(Learning[MabNode]):
             np.where(cluster_labels == 1)[0]
         ]
 
-        mean_cluster1: NumArray = np.mean(
+        mean_cluster1: FloatArray = np.mean(
             [self.nodes[i].momentum for i in ids_cluster1],
             axis=0
         )
-        mean_cluster2: NumArray = np.mean(
+        mean_cluster2: FloatArray = np.mean(
             [self.nodes[i].momentum for i in ids_cluster2],
             axis=0
         )
@@ -180,16 +180,16 @@ class Mab(Learning[MabNode]):
         for i in self.selected_idx:
             self.nodes[i].success_prob += 1
 
-        lr: np.float32 = np.median(
+        lr: np.float_ = np.median(
             [np.linalg.norm(self.nodes[i].update) for i in self.selected_idx]
         )
 
-        global_update: NumArray = np.mean(
+        global_update: FloatArray = np.mean(
             [self.nodes[i].momentum for i in self.selected_idx],
             axis=0
         )
 
-        aggregated_weights: list[NumArray] = utils.flat_weights_to_original(
+        aggregated_weights: list[FloatArray] = utils.flat_weights_to_original(
             global_weights + lr * global_update,
             self.weights_shapes
         )

@@ -5,7 +5,7 @@ from networkx import Graph
 from learning.learning import Learning
 from utils.utils import MyProgressBar, progress_bar, flat_weights_to_original
 from utils.aggregation import fed_avg
-from utils.typing import NumArray, Float, IntArray, FloatArray
+from utils.typing import Float, IntArray, FloatArray
 from nodes.sybilwall_node import SybilwallNode, HistoricModel
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -84,7 +84,7 @@ class Sybilwall(Learning[SybilwallNode]):
     def compute_scores(self,
                        node: SybilwallNode,
                        current_idx: int) -> dict[int, Float]:
-        similarities: NumArray = cosine_similarity(
+        similarities: FloatArray = cosine_similarity(
             np.array([hist['model']
                       for hist in node.history.values()
                       if hist['node_id'] != current_idx])
@@ -97,7 +97,7 @@ class Sybilwall(Learning[SybilwallNode]):
         np.fill_diagonal(similarities, -1)
 
         # Apply pardoning
-        max_simils: NumArray = np.max(similarities, axis=1)
+        max_simils: FloatArray = np.max(similarities, axis=1)
         for i in range(n):
             for j in range(n):
                 if i == j:
@@ -107,7 +107,7 @@ class Sybilwall(Learning[SybilwallNode]):
                     similarities[i, j] *= max_simils[i] / max_simils[j]
 
         # Compute new maximum weights
-        weights: NumArray = 1 - similarities.max(axis=1)
+        weights: FloatArray = 1 - similarities.max(axis=1)
         weights /= weights.max()
         # Prevent zero division
         weights[weights == 1] = 0.999999
@@ -146,10 +146,10 @@ class Sybilwall(Learning[SybilwallNode]):
             scores: dict[int, Float] = self.compute_scores(node, i)
             neighbors: list[int] = list(self.graph.neighbors(i)) + [i]
 
-            weights: NumArray = np.array([scores[neigh_i]
-                                          for neigh_i in neighbors])
+            weights: FloatArray = np.array([scores[neigh_i]
+                                            for neigh_i in neighbors])
 
-            models: NumArray = np.array([
+            models: FloatArray = np.array([
                 self.nodes[neigh_i].get_flat_model_weights()
                 for neigh_i in neighbors
             ])
