@@ -17,6 +17,7 @@ from learning.federated import FederatedLearning
 from learning.sydelp import Sydelp
 from learning.mab import Mab
 from learning.sybilwall import Sybilwall
+from learning.gossip import Gossip
 
 from attack.attacker import Attacker
 from attack.random_attacker import RandomAttacker
@@ -114,6 +115,14 @@ def get_controller_by_protocol(params: dict,
             pca_components=params['pca_components'],
             **base_params
         )
+    elif protocol == "gossip":
+        graph: nx.Graph = nx.random_regular_graph(
+            d=params['degree'],
+            n=params['nodes_num'],
+            seed=params['seed'],
+        )
+
+        return Gossip(graph=graph, **base_params)
     elif protocol == "sybilwall":
         graph_type: str = as_name(params['graph_type'])
 
@@ -205,7 +214,7 @@ def get_nodes_by_protocol(params: dict,
         RandomClass = SybilwallRandomNode
         SignClass = SybilwallSignFlippingNode
         TarLabelClass = SybilwallTargetedLabelFlippingNode
-    elif protocol not in ["dl", "baseline", "sydelp"]:
+    elif protocol not in ["dl", "baseline", "sydelp", "gossip"]:
         raise ValueError(f'Protocol "{params["protocol"]}" not recognized')
 
     malicious_num: int = (

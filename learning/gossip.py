@@ -1,0 +1,99 @@
+import numpy as np
+
+from networkx import Graph
+from learning.learning import Learning
+from utils.utils import MyProgressBar, progress_bar, flat_weights_to_original
+from utils.aggregation import fed_avg
+from utils.typing import Float, IntArray, FloatArray, NumArray
+from nodes.node import Node
+
+
+class Gossip(Learning[Node]):
+    graph: Graph
+
+    def __init__(self,
+                 graph: Graph,
+                 *args,
+                 **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        if sorted(list(graph.nodes)) != np.arange(len(self.nodes)).tolist():
+            raise ValueError("graph.nodes is not equal to nodes")
+
+        self.graph = graph
+
+    def aggregation(self, iteration_num: int) -> None:
+        for i, node in enumerate(self.nodes):
+            neighbors: list[int] = list(self.graph.neighbors(i)) + [i]
+
+            models: FloatArray = np.array([
+                self.nodes[neigh_i].get_flat_model_weights()
+                for neigh_i in neighbors
+            ])
+
+            node.set_flat_model_weights(fed_avg(models))
+
+        self.global_model.set_weights(flat_weights_to_original(
+            fed_avg(np.array([node.get_flat_model_weights()
+                              for node in self.nodes
+                              if not node.is_malicious])),
+            self.weights_shapes
+        ))
+
+    def node_metrics(self,
+                     observed: IntArray,
+                     predicted: IntArray,
+                     node_i: int) -> FloatArray:
+        loss: Float = self.nodes[node_i].model.evaluate(self.x_testing,
+                                                        self.y_testing,
+                                                        verbose=0)
+
+        metrics: list[Float] = [
+            self.metrics_params[metric]['function'](
+                y_true=observed,
+                y_pred=predicted,
+                **self.metrics_params[metric]['params']
+            ) for metric in self.metrics_params
+        ]
+        metrics.append(loss)
+
+        return np.array(metrics)
+
+    def node_predict(self, node: Node) -> IntArray:
+        predicted: NumArray = node.model.predict(
+            self.x_testing,
+            verbose=0,
+            batch_size=252
+        )
+
+        # For binary classification
+        if predicted.shape[1] == 1:
+            return (predicted > 0.5).flatten().astype(int)
+
+        return np.argmax(predicted, axis=1)
+
+    def round_metrics(self) -> dict[str, Float]:
+        bar: MyProgressBar = progress_bar(len(self.nodes))
+        # Loss is added by default on metrics
+        values: FloatArray = np.zeros(len(self.metrics_params) + 1)
+
+        for i, node in enumerate(self.nodes):
+            bar.next()
+
+            if not node.is_malicious:
+                predicted: IntArray = self.node_predict(node)
+                values += self.node_metrics(self.y_testing, predicted, i)
+
+        bar.finish()
+        metrics: list = list(self.metrics_params.keys()) + ['loss']
+        values /= sum([not node.is_malicious for node in self.nodes])
+
+        final_metrics: dict[str, Float] = {
+            metric: values[i]
+            for i, metric in enumerate(metrics)
+        }
+
+        global_metrics: dict[str, Float] = super().round_metrics()
+        for key, value in global_metrics.items():
+            final_metrics['global_' + key] = value
+
+        return final_metrics
