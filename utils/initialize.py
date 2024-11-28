@@ -46,6 +46,7 @@ def get_dataset(params: dict) -> tuple[NumArray, NumArray, IntArray, IntArray]:
             testing_proportion=params['testing_proportion'],
             vocabulary_size=params['vocabulary_size'],
             max_sequence_length=params['max_sequence_length'],
+            seed=params['seed']
         )
     else:
         raise ValueError(f"{params['dataset']} is not a valid dataset")
@@ -232,7 +233,8 @@ def get_nodes_by_protocol(params: dict,
             X_train,
             y_train,
             stratify=y_train,
-            test_size=malicious_num/params['nodes_num']
+            test_size=malicious_num/params['nodes_num'],
+            random_state=params['seed']
         )
 
         mal_splits: list[Split] = balanced_split(

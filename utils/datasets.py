@@ -18,6 +18,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.datasets import load_iris
 from sklearn.preprocessing import StandardScaler
 
+from typing import Union
 from utils.typing import NumArray, IntArray
 
 load_mnist = keras.datasets.mnist.load_data
@@ -84,7 +85,8 @@ def mnist_data() -> tuple[NumArray, NumArray, IntArray, IntArray]:
 
 def spam_data(testing_proportion: float = 0.2,
               vocabulary_size: int = 1000,
-              max_sequence_length: int = 50) -> tuple[NumArray, NumArray,
+              max_sequence_length: int = 50,
+              seed: Union[int, None] = None) -> tuple[NumArray, NumArray,
                                                       IntArray, IntArray]:
     file_path: str = "data/sms_spam_collection/SMSSpamCollection"
 
@@ -101,14 +103,21 @@ def spam_data(testing_proportion: float = 0.2,
             raise ConnectionError("Failed to download file. Status code: %s" %
                                   response.status_code)
 
-    Data: pd.DataFrame = pd.read_csv(file_path,
-                                     sep='\t',
-                                     header=None,
-                                     names=['label', 'text'],
-                                     encoding='latin-1')
-    Data['label'] = LabelEncoder().fit_transform(Data['label'])
-    cleaner: TextCleaner = TextCleaner()
-    Data['text'] = Data['text'].apply(cleaner.clean)
+        Data: pd.DataFrame = pd.read_csv(file_path,
+                                         sep='\t',
+                                         header=None,
+                                         names=['label', 'text'],
+                                         encoding='latin-1')
+        Data['label'] = LabelEncoder().fit_transform(Data['label'])
+        cleaner: TextCleaner = TextCleaner()
+        Data['text'] = Data['text'].apply(cleaner.clean)
+        Data.to_csv("data/sms_spam_collection/SPAMcleaned.csv",
+                    index=False,
+                    header=True)
+    else:
+        Data: pd.DataFrame = pd.read_csv(
+            "data/sms_spam_collection/SPAMcleaned.csv")
+        Data['text'] = Data['text'].apply(str)
 
     X_train: NumArray
     X_test: NumArray
@@ -119,7 +128,8 @@ def spam_data(testing_proportion: float = 0.2,
         Data['text'],
         Data['label'].to_numpy(),
         stratify=Data['label'],
-        test_size=testing_proportion
+        test_size=testing_proportion,
+        random_state=seed
     )
 
     tokenizer = Tokenizer(num_words=vocabulary_size, oov_token="<OOV>")
