@@ -7,81 +7,79 @@ library(ggbasic)
 library(SKM)
 
 source("~/Desktop/notes/utils.R")
+source("plots_utils.R")
 
-Metrics <- merge_results("results", "/metrics.csv")
-
-Duplicate <- Metrics %>%
-  filter(
-    !IdenticalAttack & (Protocol == "Baseline" | Attack == "No Attack")
-  ) %>%
-  mutate(IdenticalAttack = TRUE)
-
-Metrics <- bind_rows(Metrics, Duplicate) %>%
+Metrics <- merge_results("results", "/metrics.csv") %>%
   mutate(IdenticalAttack = factor(
-    ifelse(IdenticalAttack, "Identical", "No identical")
+    ifelse(IdenticalAttack, "Uniform", "Diverse")
   ))
 
 write_csv(Metrics, "results/all_metrics.csv")
 
-plot_results <- function(data, group) {
-  plot <- line_plot(
-    data,
-    x = "round",
-    y = "Value",
-    facet_col = "Metric",
-    facet_row = "IdenticalAttack",
-    fill_by = "Protocol",
-    line_width = 0.5,
-    with_points = FALSE,
-    font_size = 8,
-    theme = "paper",
-    y_breaks_num = 5,
-    x_breaks_num = 5
-  )
-
-  plot_dir <- file.path("plots", group$Dataset)
-  mkdir(plot_dir)
-
-  ggsave(
-    file.path(plot_dir, sprintf("%s.png", group$Attack)),
-    plot,
-    width = 2400,
-    height = 1200,
-    units = "px"
-  )
-
-  return(1)
-}
-
 Metrics %>%
-  select(-IdenticalAttack) %>%
   pivot_longer(
-    cols = c(
-      "accuracy", "f1_score", "attack_success_rate", "label_recall"
-    ),
+    cols = c("accuracy", "f1_score", "attack_success_rate", "label_recall"),
     names_to = "Metric",
     values_to = "Value"
   ) %>%
   na.omit() %>%
   droplevels() %>%
   group_by(Dataset, Attack) %>%
-  group_map(plot_results, .keep = TRUE)
+  group_map(plot_by_round, .keep = TRUE)
+
+# For paper --------------------------------------------------------------------
+new_attacks <- c(
+  "No attack", "Label flipping", "Random", "Sign flipping",
+  "Solitary targeted", "Solitary random"
+)
+names(new_attacks) <- c(
+  "No attack", "Label flipping", "Random", "Sign flipping",
+  "Solitary targeted", "Solitary untargeted"
+)
 
 Final <- Metrics %>%
-  group_by(Dataset, Protocol, Attack, WeightingMode) %>%
-  filter(round == 99)
+  group_by(Dataset, Protocol, Attack, IdenticalAttack) %>%
+  filter(round == 99) %>%
+  filter(Attack != "Solitary targeted") %>%
+  ungroup() %>%
+  mutate(
+    Attack = factor(
+      new_attacks[as.character(Attack)],
+      new_attacks
+    )
+  ) %>%
+  select(
+    Dataset, Protocol, Attack, IdenticalAttack,
+    accuracy, f1_score, attack_success_rate, label_recall
+  )
 
-bar_plot(
-  Final,
+Baseline <- Final %>%
+  filter(Protocol == "Baseline" & Attack == "No attack") %>%
+  group_by(Dataset) %>%
+  slice(1) %>%
+  select(-IdenticalAttack) %>%
+  droplevels()
+
+Final <- Final %>%
+  filter(Protocol != "Baseline") %>%
+  droplevels()
+
+Final %>%
+  group_by(Dataset) %>%
+  group_map(plot_results, .keep = TRUE)
+
+
+Temp <- Final %>%
+  filter(Dataset == "SMS Spam") %>%
+  droplevels()
+
+source("~/doctorado/experiments/decentralized_learning/plots_utils.R")
+
+temp_plot <- plot_xy(
+  Temp,
   x = "Attack",
-  # y = "attack_success_rate",
-  # y = "f1_score",
   y = "accuracy",
-
-  fill_by = "Protocol",
-  facet_col = "Dataset",
-
-  font_size = 8,
-  theme = "paper",
-  x_angle = 45
+  dataset = "SMS Spam"
 )
+
+save_plot(temp_plot, sprintf("plots/temp.pdf"))
