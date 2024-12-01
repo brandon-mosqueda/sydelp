@@ -24,7 +24,10 @@ class SybilwallNode(Node):
 
     # model should be a copy, not a reference
     def update_own_history(self) -> None:
-        self.own_history_weights += self.flat_weights
+        # In the original paper the weights are not normalized but this prevents
+        # overflows
+        self.own_history_weights += (self.flat_weights
+                                     / np.linalg.norm(self.flat_weights))
 
     # model should be a copy, not a reference
     def replace_in_history(self,
