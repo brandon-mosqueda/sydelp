@@ -147,12 +147,7 @@ def get_controller_by_protocol(params: dict,
         if not nx.is_connected(graph):
             raise ValueError("The generated graph is not connected")
 
-        return Sybilwall(
-            graph=graph,
-            distant_propagation_relevance=params['distant_propagation_relevance'],
-            confidence=params['confidence'],
-            **base_params
-        )
+        return Sybilwall(graph=graph, **base_params)
     else:
         raise ValueError(f'Protocol "{params["protocol"]}" not recognized')
 
@@ -211,6 +206,9 @@ def get_nodes_by_protocol(params: dict,
         SignClass = MabSignFlippingNode
         TarLabelClass = MabTargetedLabelFlippingNode
     elif protocol == "sybilwall":
+        base_node_params['confidence'] = params['confidence']
+        base_node_params['distant_propagation_relevance'] = params['distant_propagation_relevance']
+
         NodeClass = SybilwallNode
         RandomClass = SybilwallRandomNode
         SignClass = SybilwallSignFlippingNode
