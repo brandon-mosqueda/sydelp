@@ -1,3 +1,7 @@
+from numpy import array
+from utils.aggregation import fed_avg
+from utils.typing import FloatArray
+
 from nodes.sybilwall_node import SybilwallNode
 from nodes.malicious_node import MaliciousNode
 from nodes.random_node import RandomNode
@@ -15,7 +19,17 @@ class SybilwallRandomNode(SybilwallNode, RandomNode):
 
 
 class SybilwallSignFlippingNode(SybilwallNode, SignFlippingNode):
-    pass
+    # This method is overwritten here because otherwise, the weights of
+    # malicious nodes become huge and end up overflowing
+    def aggregate(self):
+        models: FloatArray = array([
+            neighbor.current_weights
+            for neighbor in self.neighbors.values()
+            if not neighbor.is_malicious
+        ])
+
+        if len(models):
+            self.set_flat_model_weights(fed_avg(models))
 
 
 class SybilwallTargetedLabelFlippingNode(SybilwallNode,

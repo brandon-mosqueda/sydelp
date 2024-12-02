@@ -25,6 +25,11 @@ class SybilwallNode(Node):
     own_history_weights: FloatArray
     neighbors: dict[int, SybilwallNode]
 
+    # To store the current weights before aggregation, because the first nodes
+    # aggregating change their weights before the others have used them to
+    # aggregate theirs
+    current_weights: FloatArray
+
     def __init__(self,
                  confidence: float,
                  distant_propagation_relevance: float,
@@ -36,10 +41,18 @@ class SybilwallNode(Node):
         self.history = {}
         self.own_history_weights = np.zeros(self.flat_weights.size,
                                             dtype="float")
+        self.current_weights = np.empty(self.flat_weights.size, dtype="float")
+
+    def train(self) -> None:
+        super().train()
+
+        # flat_weights will be altered after aggregation but current_weights
+        # stays the same so the others can compute their own aggregations
+        self.current_weights[:] = self.flat_weights
 
     # model should be a copy, not a reference
     def update_own_history(self) -> None:
-        self.own_history_weights += self.flat_weights
+        self.own_history_weights += self.current_weights
 
     # model should be a copy, not a reference
     def replace_in_history(self,
@@ -98,7 +111,6 @@ class SybilwallNode(Node):
                 selected_model['distance'] -= 1
                 selected_model['sender_id'] = prev_sender
 
-
     def compute_scores(self) -> dict[int, Float]:
         similarities: FloatArray = cosine_similarity(
             np.array([hist['model'] for hist in self.history.values()])
@@ -143,8 +155,8 @@ class SybilwallNode(Node):
         weights /= weights.sum()
 
         models: FloatArray = np.array([
-            self.neighbors[neigh_i].get_flat_model_weights()
+            self.neighbors[neigh_i].current_weights
             for neigh_i in neighbors_idx
-        ] + [self.get_flat_model_weights()])
+        ] + [self.current_weights])
 
         self.set_flat_model_weights(fed_avg(models, weights))
