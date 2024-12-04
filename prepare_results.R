@@ -22,20 +22,11 @@ Metrics %>%
     names_to = "Metric",
     values_to = "Value"
   ) %>%
-  na.omit() %>%
-  droplevels() %>%
   group_by(Dataset, Attack) %>%
   group_map(plot_by_round, .keep = TRUE)
 
 # For paper --------------------------------------------------------------------
-new_attacks <- c(
-  "No attack", "Label flipping", "Random", "Sign flipping",
-  "Solitary targeted", "Solitary random"
-)
-names(new_attacks) <- c(
-  "No attack", "Label flipping", "Random", "Sign flipping",
-  "Solitary targeted", "Solitary untargeted"
-)
+source("~/doctorado/experiments/decentralized_learning/plots_utils.R")
 
 Final <- Metrics %>%
   group_by(Dataset, Protocol, Attack, IdenticalAttack) %>%
@@ -44,21 +35,22 @@ Final <- Metrics %>%
   ungroup() %>%
   mutate(
     Attack = factor(
-      new_attacks[as.character(Attack)],
-      new_attacks
-    )
+      replace(
+        as.character(Attack),
+        Attack == "Solitary untargeted",
+        "Solitary random"
+      ),
+      levels = c(
+        "No attack", "Label flipping", "Sign flipping",
+        "Random", "Solitary random"
+      )
+    ),
+    Protocol = fct_recode(Protocol, `No defense` = "DL")
   ) %>%
   select(
     Dataset, Protocol, Attack, IdenticalAttack,
     accuracy, f1_score, attack_success_rate, label_recall
   )
-
-Baseline <- Final %>%
-  filter(Protocol == "Baseline" & Attack == "No attack") %>%
-  group_by(Dataset) %>%
-  slice(1) %>%
-  select(-IdenticalAttack) %>%
-  droplevels()
 
 Final <- Final %>%
   filter(Protocol != "Baseline") %>%
@@ -67,7 +59,6 @@ Final <- Final %>%
 Final %>%
   group_by(Dataset) %>%
   group_map(plot_results, .keep = TRUE)
-
 
 Temp <- Final %>%
   filter(Dataset == "SMS Spam") %>%
