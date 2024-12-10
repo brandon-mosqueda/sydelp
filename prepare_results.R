@@ -7,7 +7,8 @@ library(ggbasic)
 library(SKM)
 
 source("~/Desktop/notes/utils.R")
-source("plots_utils.R")
+source("~/doctorado/experiments/decentralized_learning/plots_utils.R")
+# source("plots_utils.R")
 
 Metrics <- merge_results("results", "/metrics.csv") %>%
   mutate(IdenticalAttack = factor(
@@ -72,5 +73,16 @@ temp_plot <- plot_xy(
   y = "accuracy",
   dataset = "SMS Spam"
 )
+temp_plot
 
 save_plot(temp_plot, sprintf("plots/temp.pdf"))
+
+ggplot(Temp, aes(x = Attack, y = accuracy, color = Protocol)) +
+  geom_point(aes(shape = Protocol), alpha = 0.5) +
+  facet_grid(cols = vars(IdenticalAttack)) +
+  geom_vline(aes(xintercept = as.numeric(Protocol) + 0.5), color = "gray") +
+  theme(
+    axis.text.x = element_text(angle = 25, hjust = 1, vjust = 0.9),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+  )
