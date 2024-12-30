@@ -3,9 +3,12 @@ Author: francesco boldrin francesco.boldrin@studenti.unitn.it
 Date: 2024-12-22 15:42:13
 LastEditors: francesco boldrin francesco.boldrin@studenti.unitn.it
 LastEditTime: 2024-12-22 15:51:41
-FilePath: utils/verifier_node.py
+FilePath: utils/verifier_node_actor.py
 """
-class VerifierNode:
+from actors_nodes.node_actor import NodeActor
+
+
+class VerifierNodeActor(NodeActor):
     list_of_nodes: list
     list_of_public_keys: list
     list_of_signatures: list
@@ -13,13 +16,14 @@ class VerifierNode:
     round_finished: bool
     round: int
     
-    def __init__(self, list_of_nodes: list) -> None:
-        self.list_of_nodes = list_of_nodes
+    def __init__(self,  ID):
+        super().__init__( ID)
+        self.list_of_nodes = []
         self.list_of_public_keys = []
         self.list_of_signatures = []
+        self.list_of_scores = []
         self.round_finished = False
-        self.round = 0
-        
+
     def verify(self, public_key, signature):
         # mock function to verify the signature and the PoW
         return True
