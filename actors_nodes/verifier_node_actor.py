@@ -15,14 +15,54 @@ class VerifierNodeActor(NodeActor):
     list_of_scores: list
     round_finished: bool
     round: int
+    MIN_SCORE = 0
     
     def __init__(self,  ID):
-        super().__init__( ID)
+        super().__init__(ID)
         self.list_of_nodes = []
         self.list_of_public_keys = []
         self.list_of_signatures = []
         self.list_of_scores = []
+        self.list_of_models = []
         self.round_finished = False
+
+    def on_receive(self, message):
+        if message.get('command') == 'new_model':
+            # store the information from the trainers
+            self.store_model(message)
+            return
+
+        # THE ADDING OF A NEW NODE IS HANDLED BY THE VERIFIER
+        if message.get('command') == 'new_node':
+            # a new node is participating in the training we need to add it to the list of nodes
+            self.add_node(message)
+
+            # store the public key
+            self.store_public_key(message)
+
+            # add the maximum score to the list of scores
+            self.list_of_scores[message['node_id']] = VerifierNodeActor.MIN_SCORE
+
+            # send the message to the new node to start the training
+            self.send_start_training_new_node(message)
+
+            return
+
+        # handle the other messages
+        super().on_receive(message)
+
+    def add_node(self, message):
+        # add the node to the list of nodes and the list of partners
+
+        self.list_of_nodes.append(message['node_id']) # add the node to the list of nodes (the ID of the node)
+
+        new_partners = self.partners + [message['node']]
+
+        self.update_partners(new_partners)
+
+    def store_public_key(self, message):
+        # store the public key of the new node
+        self.list_of_public_keys.append(message['public_key'])
 
     def verify(self, public_key, signature):
         # mock function to verify the signature and the PoW
@@ -61,3 +101,33 @@ class VerifierNodeActor(NodeActor):
 
         pass
     
+    def send_start_training_new_node(self, message):
+        # send the start training message to the new node
+        new_message = {
+            "command": "start_training",
+            "scores": self.list_of_scores,
+            "round": self.round
+        }
+
+        message['node'].tell(new_message)
+
+
+    def store_model(self, message):
+        # store the model from the trainers
+        self.list_of_models.append(message['model'])
+
+        # store the signature
+        self.list_of_signatures.append(message['signature'])
+
+        # verify the signature TODO: implement the verification
+        if not self.verify(self.list_of_public_keys[-1], self.list_of_signatures[-1]):
+            print("The signature is not valid")
+            return
+
+        # check if the round is finished
+        if len(self.list_of_models) == len(self.list_of_nodes):
+            self.round_finished = True
+
+        # if the round is finished end the round
+        if self.round_finished:
+            self.end_round()
