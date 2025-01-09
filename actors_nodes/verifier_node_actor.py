@@ -48,6 +48,10 @@ class VerifierNodeActor(NodeActor):
 
             return
 
+        if message.get('command') == 'DEBUG':
+            self.print_list_of_nodes()
+            return
+
         # handle the other messages
         super().on_receive(message)
 
@@ -60,6 +64,10 @@ class VerifierNodeActor(NodeActor):
 
         self.update_partners(new_partners)
 
+
+    def print_list_of_nodes(self):
+        print(self.list_of_nodes)
+
     def store_public_key(self, message):
         # store the public key of the new node
         self.list_of_public_keys.append(message['public_key'])
@@ -70,8 +78,28 @@ class VerifierNodeActor(NodeActor):
     
     def create_block(self):
         # mock function to create a block of the blockchain
-        pass
-    
+
+        # aggregate the models
+        # TODO: implement the aggregation
+
+        # calculate the new scores and update the scores in the nodes
+        # TODO: implement the calculation of the new scores
+
+        # create Hash
+        # TODO: implement the creation of the hash
+
+        # create the block
+        message = {
+            "command": "new_block",
+            "model": "TODO",
+            "scores": {},
+            "round": self.round,
+            "hash": "TODO"
+        }
+
+        return message
+
+
     def aggregate(self):
         # use the aggregated functions in aggregation.py
         pass
@@ -86,25 +114,20 @@ class VerifierNodeActor(NodeActor):
     
     def end_round(self):
         # end the round
-        
-        # aggregate the models
-
-        # calculate the new scores
-        
-        # update the scores in the nodes
 
         # create the block
+        new_block = self.create_block()
 
         # broadcast the block
+        self.broadcast(new_block)
 
-        # reset the round
+        # erase list of models and list of signatures
 
-        pass
     
     def send_start_training_new_node(self, message):
         # send the start training message to the new node
         new_message = {
-            "command": "start_training",
+            "command": "start",
             "scores": self.list_of_scores,
             "round": self.round
         }
@@ -126,8 +149,4 @@ class VerifierNodeActor(NodeActor):
 
         # check if the round is finished
         if len(self.list_of_models) == len(self.list_of_nodes):
-            self.round_finished = True
-
-        # if the round is finished end the round
-        if self.round_finished:
             self.end_round()

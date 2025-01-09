@@ -2,10 +2,11 @@
 Author: francesco boldrin francesco.boldrin@studenti.unitn.it
 Date: 2024-12-28 12:42:14
 LastEditors: francesco boldrin francesco.boldrin@studenti.unitn.it
-LastEditTime: 2025-01-02 12:53:03
+LastEditTime: 2025-01-06 10:54:01
 FilePath: actors_nodes/active_node_actor.py
-Description: 这是默认设置,可以在设置》工具》File Description中进行配置
 """
+from math import ceil
+
 # actor that participate in the training process, both honest and malicious trainers
 from actors_nodes.node_actor import NodeActor
 from nodes.node import Node
@@ -15,6 +16,7 @@ class ActiveNodeActor(NodeActor):
     # we will exploit the built-in functions, so we don't need to reimplement the functions for attacking and training
     public_key: str
     private_key: str
+    secret_key: str
     score: float # score to compute the difficulty of the PoW, range  [0, 1]
     first_round: bool # flag to check if it is the first round of the training
     
@@ -22,7 +24,8 @@ class ActiveNodeActor(NodeActor):
         super().__init__( node_id)
         self.node = node
         self.public_key = "public_key_placeholder"
-        self.score = 0 # the score is the difficulty of the PoW, maximum score means maximum difficulty
+        self.secret_key = "secret_key_placeholder"
+        self.score = 0. # the score is the difficulty of the PoW, maximum score means maximum difficulty
         self.first_round = True
 
     def on_receive(self, message: dict):        
@@ -32,16 +35,17 @@ class ActiveNodeActor(NodeActor):
                 self.first_round = False
                 try:
                     self.round = message['round']
+                    # if first round the model is not present in the message so we will use the init model
                 except KeyError:
                     print("The round is not present in the message")
                     self.round = 0
-            else:
-                try:
-                    # TODO: check the index of the ID
-                    self.update_score(message['scores'][self.ID])
-                except KeyError:
-                    print("The score is not present in the message")
-                    return
+            # else:
+            #     try:
+            #         # TODO: check the index of the ID
+            #         self.update_score(message['scores'][self.ID])
+            #     except KeyError:
+            #         print("The score is not present in the message")
+            #         return
             self.start_training()
             return
         
@@ -68,8 +72,31 @@ class ActiveNodeActor(NodeActor):
         if block['round'] == self.round:
             return
 
-        # update the round
-        self.round += 1
+
+
+        # update the round, should be the same for all the nodes
+        self.round = block['round']
+
+        # update the score
+        self.update_score(block['scores'][self.ID])
+
+        # update the model, check this function
+        self.node.set_model_weights(block['model'])
+
+
+    # FOR NOW WE WILL NOT IMPLEMENT THE FOLLOWING FUNCTIONS, WE WILL IMPLEMENT THEM LATER
+    def add_new_node(self, node):
+        # The idea is that the attacker when reaching a good score can add a new attacker node to the training process
+        # TODO: implement  the creation of a new node
+    
+        new_node = NodeActor.start(self.partners + 2, Node(), len(self.partners))
+        
+        self.partners.append(new_node)
+        
+        # REVISE THIS
+        
+        self.broadcast({"command": "new_node", "node": new_node, "public_key": new_node.public_key, "node_id": len(self.partners)})
+        
         
     def start_training(self):
         # do the new training, with the built-in node object
@@ -95,10 +122,27 @@ class ActiveNodeActor(NodeActor):
 
         self.broadcast(msg)
         
-    def calculate_PoW(self):
-        # calculate the proof of work
+    def calculate_VDP(self):
+        # calculate the Verifiable Delay Puzzle
+        # (y, pi) = VDP(public_key, signature, H  hash reference to the last block, Dc difficulty of the challenge)
+        # y is the result, pi is the proof
+        # calculate the proof of work with: the public key, the signature,
         return "Mock PoW"
+
+    def calculate_Dc(self):
+        # calculate the difficulty of the challenge
+        D = 100 # maximum difficulty (initial difficulty)
+        T = self.round
+        alpha = 1.5 # this is an hyperparameter to be chosen by the experimenter
+        f_score = ((T-alpha)/(T-1))**self.score
+
+        return ceil(D*f_score)
     
     def generate_signature(self):
-        # generate the signature
+        # generate the signature with: the model, the secret key, the public key
         return "Mock signature"
+
+    def update_score(self, score):
+        # update the score
+        self.score = score
+        return
