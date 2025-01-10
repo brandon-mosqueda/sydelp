@@ -6,6 +6,11 @@ LastEditTime: 2024-12-22 15:51:41
 FilePath: utils/verifier_node_actor.py
 """
 from actors_nodes.node_actor import NodeActor
+from learning.sydelp import Sydelp
+from utils.aggregation import krum
+from utils.typing import FloatArray
+from utils.utils import flat_weights_to_original
+from keras.src.models import Model as KerasModel
 
 
 class VerifierNodeActor(NodeActor):
@@ -13,8 +18,15 @@ class VerifierNodeActor(NodeActor):
     list_of_public_keys: list
     list_of_signatures: list
     list_of_scores: list
+    list_of_models: list[KerasModel]
     round_finished: bool
-    round: int
+
+    # ALL THE FOLLOWING VALUES ARE PLACEHOLDERS, THEY NEED TO BE INPUTTED BY PARAMETERS
+    expected_malicious_num: int = 2 # todo: revise this value
+    weighting_mode: str = "uniform" # todo: revise this value
+    data_sizes: list = [] # todo: revise this value
+    weights_shapes: list = [] # todo: revise this value
+
     MIN_SCORE = 0
     
     def __init__(self,  ID):
@@ -25,6 +37,7 @@ class VerifierNodeActor(NodeActor):
         self.list_of_scores = []
         self.list_of_models = []
         self.round_finished = False
+
 
     def on_receive(self, message):
         if message.get('command') == 'new_model':
@@ -100,9 +113,26 @@ class VerifierNodeActor(NodeActor):
         return message
 
 
-    def aggregate(self):
-        # use the aggregated functions in aggregation.py
-        pass
+    def aggregation(self):
+        # updated version of the aggregation function in the sydelp class
+
+        # step 1: update model matrix
+        # list of models is a list of keras models
+        matrix_of_models = [model.flatten() for model in self.list_of_models]
+
+        # step 2: compute the avg model
+        new_model: list[FloatArray] = flat_weights_to_original(
+            krum(matrix_of_models,
+                 m=self.expected_malicious_num,
+                 weighting_mode=self.weighting_mode,
+                 data_sizes=self.data_sizes),
+            self.weights_shapes
+        )
+
+        # we just need to exchange the model weights since the trainers nodes can update the model easily
+        return new_model
+
+
     
     def add_model(self):
         # add the model to the list of models
@@ -122,6 +152,12 @@ class VerifierNodeActor(NodeActor):
         self.broadcast(new_block)
 
         # erase list of models and list of signatures
+        self.list_of_models = []
+        self.list_of_signatures = []
+
+        # update the round
+        self.round += 1
+
 
     
     def send_start_training_new_node(self, message):

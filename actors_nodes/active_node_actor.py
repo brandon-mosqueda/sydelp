@@ -21,7 +21,7 @@ class ActiveNodeActor(NodeActor):
     first_round: bool # flag to check if it is the first round of the training
     
     def __init__(self, node: Node, node_id: int) -> None:
-        super().__init__( node_id)
+        super().__init__(node_id)
         self.node = node
         self.public_key = "public_key_placeholder"
         self.secret_key = "secret_key_placeholder"
@@ -69,10 +69,8 @@ class ActiveNodeActor(NodeActor):
 
 
         # corner case there are two or more verifiers, so check if the block is already processed by checking the round
-        if block['round'] == self.round:
+        if block['round'] <= self.round:
             return
-
-
 
         # update the round, should be the same for all the nodes
         self.round = block['round']
@@ -88,7 +86,7 @@ class ActiveNodeActor(NodeActor):
     def add_new_node(self, node):
         # The idea is that the attacker when reaching a good score can add a new attacker node to the training process
         # TODO: implement  the creation of a new node
-    
+
         new_node = NodeActor.start(self.partners + 2, Node(), len(self.partners))
         
         self.partners.append(new_node)
@@ -103,7 +101,7 @@ class ActiveNodeActor(NodeActor):
         # TODO: with the built-in node object
 
         # calculate the proof of work
-        PoW = self.calculate_PoW()
+        (y, pi) = self.calculate_VDP()
 
         # generate the signature
         signature = self.generate_signature()
@@ -114,7 +112,7 @@ class ActiveNodeActor(NodeActor):
             "command": "new_model",
             "model": self.node.get_model_weights(), # dont know if this is the correct function CHECK IT
             "signature": signature,
-            "proof_of_work": PoW,
+            "proof_of_work": (y, pi),
             "public_key": self.public_key,
             "ID": self.ID,
             "round": self.round
@@ -127,7 +125,7 @@ class ActiveNodeActor(NodeActor):
         # (y, pi) = VDP(public_key, signature, H  hash reference to the last block, Dc difficulty of the challenge)
         # y is the result, pi is the proof
         # calculate the proof of work with: the public key, the signature,
-        return "Mock PoW"
+        return ("Mock y", "Mock pi")
 
     def calculate_Dc(self):
         # calculate the difficulty of the challenge
