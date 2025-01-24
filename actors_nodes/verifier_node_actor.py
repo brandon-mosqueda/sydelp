@@ -24,11 +24,11 @@ class VerifierNodeActor(NodeActor):
     The verifier node is also responsible for creating the blocks of the blockchain.
     """
 
-    list_of_nodes: list
-    list_of_public_keys: list
-    list_of_signatures: list
-    list_of_scores: list
-    list_of_models: list[KerasModel]
+    number_of_nodes: list
+    public_keys: dict # {node_id: public_key}
+    signatures: dict # {node_id: signature}
+    scores: dict # {node_id: score}
+    models: dict # {node_id: model}
     round_finished: bool
     last_block_hash: str
 
@@ -42,18 +42,24 @@ class VerifierNodeActor(NodeActor):
     
     def __init__(self,  ID):
         super().__init__(ID)
-        self.list_of_nodes = []
-        self.list_of_public_keys = []
-        self.list_of_signatures = []
-        self.list_of_scores = []
-        self.list_of_models = []
+        self.signatures = {}
+        self.models = {}
+        self.public_keys = {}
+        self.scores = {}
         self.round_finished = False
 
 
     def on_receive(self, message):
+        # print(f"Node {self.ID} received a message: {message['command']}")
+
         if message.get('command') == 'new_model':
             # store the information from the trainers
-            self.store_model(message)
+            print(f"Node {self.ID} received a new model")
+            try:
+                self.store_model(message)
+            except KeyError:
+                print("The model is not present in the message")
+
             return
 
         # THE ADDING OF A NEW NODE IS HANDLED BY THE VERIFIER
@@ -65,7 +71,7 @@ class VerifierNodeActor(NodeActor):
             self.store_public_key(message)
 
             # add the maximum score to the list of scores
-            self.list_of_scores[message['node_id']] = VerifierNodeActor.MIN_SCORE
+            self.list_of_scores[message['ID']] = VerifierNodeActor.MIN_SCORE
 
             # send the message to the new node to start the training
             self.send_start_training_new_node(message)
@@ -104,7 +110,7 @@ class VerifierNodeActor(NodeActor):
         # mock function to create a block of the blockchain
 
         # aggregate the models
-        # TODO: implement the aggregation
+        self.aggregation()
 
         # calculate the new scores and update the scores in the nodes
         # TODO: implement the calculation of the new scores
@@ -113,6 +119,10 @@ class VerifierNodeActor(NodeActor):
         # TODO: implement the creation of the hash
 
         # add last block Hash
+        if self.round == 0:
+            self.last_block_hash = "genesis"
+        else:
+            self.last_block_hash = "TODO"
 
         # create the block
         message = {
@@ -132,7 +142,7 @@ class VerifierNodeActor(NodeActor):
 
         # step 1: update model matrix
         # list of models is a list of keras models
-        matrix_of_models = [model.flatten() for model in self.list_of_models]
+        matrix_of_models = [model.flatten() for model in self.models]
 
         # step 2: get krums result and labels (+1, -1)
         # the result is the weights of the model
@@ -171,12 +181,17 @@ class VerifierNodeActor(NodeActor):
         # broadcast the block
         self.broadcast(new_block)
 
-        # erase list of models and list of signatures
-        self.list_of_models = []
-        self.list_of_signatures = []
-
         # update the round
         self.round += 1
+
+        # reset the round finished flag
+        self.round_finished = False
+
+        # reset the list of scores
+        self.list_of_scores = [VerifierNodeActor.MIN_SCORE for _ in range(len(self.list_of_nodes))]
+
+        # send the message to the trainers to start the new round
+        self.broadcast({"command": "start", "round": self.round})
 
 
     
@@ -193,16 +208,24 @@ class VerifierNodeActor(NodeActor):
 
     def store_model(self, message):
         # store the model from the trainers
-        self.list_of_models.append(message['model'])
+        try:
+            self.models[message['ID']] = message['model']
+        except KeyError:
+            print("The model is not present in the message")
+            return
 
         # store the signature
-        self.list_of_signatures.append(message['signature'])
+        try:
+            self.signatures[message['ID']] = message['signature']
+        except KeyError:
+            print("The signature is not present in the message")
+            return
 
         # verify the signature TODO: implement the verification
-        if not self.verify(self.list_of_public_keys[-1], self.list_of_signatures[-1]):
+        if not self.verify(0, 0):
             print("The signature is not valid")
             return
 
         # check if the round is finished
-        if len(self.list_of_models) == len(self.list_of_nodes):
+        if len(self.list_of_models) == len(self.partners) - 2 :
             self.end_round()

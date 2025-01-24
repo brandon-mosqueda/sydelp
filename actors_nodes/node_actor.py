@@ -2,7 +2,7 @@
 Author: francesco boldrin francesco.boldrin@studenti.unitn.it
 Date: 2024-12-28 12:37:50
 LastEditors: francesco boldrin francesco.boldrin@studenti.unitn.it
-LastEditTime: 2025-01-24 15:53:34
+LastEditTime: 2025-01-24 17:16:50
 FilePath: actors_nodes/node_actor.py
 Description: 这是默认设置,可以在设置》工具》File Description中进行配置
 """
@@ -40,7 +40,7 @@ class NodeActor(pykka.ThreadingActor):
         # print(f"{self.ID} is setting partners: {partners}\n")
         try:
             self.partners = partners
-            print(f"{self.ID} set partners: {self.partners}")
+            print(f"\n\n{self.ID} set partners: {self.partners}\n\n")
         except Exception as e:
             print(f"{self.ID} failed to set partner: {e}")
             return

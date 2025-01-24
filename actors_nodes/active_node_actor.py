@@ -55,13 +55,13 @@ class ActiveNodeActor(NodeActor):
                     self.round = 0
 
             # TODO: check if the same round (in case of more then one verifier
-            # else:
-            #     try:
-            #         # TODO: check the index of the ID
-            #         self.update_score(message['scores'][self.ID])
-            #     except KeyError:
-            #         print("The score is not present in the message")
-            #         return
+            else:
+                try:
+                    # TODO: check the index of the ID
+                    self.update_score(message['scores'][self.ID])
+                except KeyError:
+                    print("The score is not present in the message")
+                    return
             self.start_training()
             return
         
@@ -82,6 +82,7 @@ class ActiveNodeActor(NodeActor):
     # only the active nodes should read the new block, in fact for the verifiers the new block is already processed and the UI should not read the new block
     def read_new_block(self, block):
         """Read the new block from the blockchain."""
+        print(f"Node {self.ID} received a new block: {block}")
 
         # corner case there are two or more verifiers, so check if the block is already processed by checking the round
         if block['round'] <= self.round:

@@ -46,7 +46,6 @@ def network_implementation(params):
 
     for i, node_h in enumerate(nodes[:3]):
         list_of_partners = [node for node in nodes if node != node_h]
-        print(f"sending partners for node {i}: {node_h}")
         try:
             node_h.tell({"command": "set_partners", "partners": list_of_partners})
             # node_h.tell({"command": "debug"})
@@ -54,7 +53,7 @@ def network_implementation(params):
             print(f"Failed to send partners to node {i}: {e}")
             return
 
-    for i, node_h in enumerate(nodes[2:]):
+    for i, node_h in enumerate(nodes[3:]):
         list_of_partners = [nodes[0], nodes[1], nodes[2]]
         print(f"sending partners for node {i}: {node_h}")
         try:
