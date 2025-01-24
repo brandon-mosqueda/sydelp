@@ -46,6 +46,7 @@ class VerifierNodeActor(NodeActor):
         self.models = {}
         self.public_keys = {}
         self.scores = {}
+        self.list_of_nodes = []
         self.round_finished = False
 
 
@@ -110,7 +111,7 @@ class VerifierNodeActor(NodeActor):
         # mock function to create a block of the blockchain
 
         # aggregate the models
-        self.aggregation()
+        # self.aggregation()
 
         # calculate the new scores and update the scores in the nodes
         # TODO: implement the calculation of the new scores
@@ -122,7 +123,7 @@ class VerifierNodeActor(NodeActor):
         if self.round == 0:
             self.last_block_hash = "genesis"
         else:
-            self.last_block_hash = "TODO"
+            self.last_block_hash = "MockHash"
 
         # create the block
         message = {
@@ -130,7 +131,7 @@ class VerifierNodeActor(NodeActor):
             "model": "TODO",
             "scores": {},
             "round": self.round,
-            "hash": "TODO",
+            "hash": "MockHash",
             "last_block_hash": self.last_block_hash
         }
 
@@ -142,22 +143,23 @@ class VerifierNodeActor(NodeActor):
 
         # step 1: update model matrix
         # list of models is a list of keras models
+        # get the list of models from the dictionary
+        list_of_models = [self.models[id_node] for id_node in self.models.keys()]
         matrix_of_models = [model.flatten() for model in self.models]
 
         # step 2: get krums result and labels (+1, -1)
         # the result is the weights of the model
         # TODO: modify the krum function to return the weights of the model and the labels [(id_node, label)]
-        krum_result, labels =  krum(self.models_matrix,
+        krum_result =  krum(self.models_matrix,
                  m=self.expected_malicious_num,
                  weighting_mode=self.weighting_mode,
                  data_sizes=self.data_sizes)
 
+        print("Krum results: ", krum_result)
+
         # step 3: get the weights of the model
         avg_model = flat_weights_to_original(krum_result, self.weights_shapes)
 
-        # step 4: update the scores of the nodes
-        for (id_node, label) in labels:
-            self.list_of_scores[id_node] = label
 
         # we just need to exchange the model weights since the trainers nodes can update the model easily
         return avg_model
@@ -184,13 +186,7 @@ class VerifierNodeActor(NodeActor):
         # update the round
         self.round += 1
 
-        # reset the round finished flag
-        self.round_finished = False
-
-        # reset the list of scores
-        self.list_of_scores = [VerifierNodeActor.MIN_SCORE for _ in range(len(self.list_of_nodes))]
-
-        # send the message to the trainers to start the new round
+        # # send the message to the trainers to start the new round
         self.broadcast({"command": "start", "round": self.round})
 
 
@@ -199,7 +195,6 @@ class VerifierNodeActor(NodeActor):
         # send the start training message to the new node
         new_message = {
             "command": "start",
-            "scores": self.list_of_scores,
             "round": self.round
         }
 
@@ -227,5 +222,5 @@ class VerifierNodeActor(NodeActor):
             return
 
         # check if the round is finished
-        if len(self.list_of_models) == len(self.partners) - 2 :
+        if len(self.models.keys()) >= len(self.partners) - 1 :
             self.end_round()

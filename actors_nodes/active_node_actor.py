@@ -54,14 +54,14 @@ class ActiveNodeActor(NodeActor):
                     print("\nThe round is not present in the message, it is the first round\n")
                     self.round = 0
 
-            # TODO: check if the same round (in case of more then one verifier
-            else:
-                try:
-                    # TODO: check the index of the ID
-                    self.update_score(message['scores'][self.ID])
-                except KeyError:
-                    print("The score is not present in the message")
-                    return
+            # # TODO: check if the same round (in case of more then one verifier
+            # else:
+            #     try:
+            #         # TODO: check the index of the ID
+            #         self.update_score(message['scores'][self.ID])
+            #     except KeyError:
+            #         print("The score is not present in the message")
+            #         return
             self.start_training()
             return
         
@@ -92,10 +92,10 @@ class ActiveNodeActor(NodeActor):
         self.round = block['round']
 
         # update the score
-        self.update_score(block['scores'][self.ID])
+        # self.update_score(block['scores'][self.ID])
 
         # update the model, check this function
-        self.node.set_model_weights(block['model'])
+        # self.node.set_model_weights(block['model'])
 
 
     # FOR NOW WE WILL NOT IMPLEMENT THE FOLLOWING FUNCTIONS, WE WILL IMPLEMENT THEM LATER
@@ -157,6 +157,6 @@ class ActiveNodeActor(NodeActor):
         return "Mock signature"
 
     def update_score(self, score):
-        # update the score
-        self.score = score
+        # # update the score
+        # self.score = score
         return

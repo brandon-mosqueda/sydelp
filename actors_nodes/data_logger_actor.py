@@ -83,26 +83,25 @@ class DataLoggerActor(NodeActor):
         # print(f"{self.ID} received message: {message}")
 
         # Record the message based on command
-        # if message.get('command') == 'new_model':
-        #     round = message['round']
-        #     # Ensure lists have enough space
-        #     while len(self.messsages_from_trainers) <= round:
-        #         self.messsages_from_trainers.append(None)
-        #         self.num_participants.append(None)
-        #         self.num_malicious_participants.append(None)
-        #         self.quality.append(None)
-        #
-        #     if self.messsages_from_trainers[round] is None:
-        #         self.messsages_from_trainers[round] = 0
-        #         self.num_participants[round] = self.node.num_participants
-        #         self.num_malicious_participants[round] = self.node.num_malicious_participants
-        #
-        #     self.messsages_from_trainers[round] += 1
+        if message.get('command') == 'new_model':
+            round = message['round']
+            # Ensure lists have enough space
+            while len(self.messsages_from_trainers) <= round:
+                self.messsages_from_trainers.append(None)
+                self.num_participants.append(None)
+                self.num_malicious_participants.append(None)
+                self.quality.append(None)
 
-        if message.get('command') == 'new_block':
-            # TODO: revise this for coherence with the other functions, not [] but .get()
-            if self.quality[message['round']] is None:
-                self.quality[message['round']] = self.calculate_quality(message['model'])
+            if self.messsages_from_trainers[round] is None:
+                self.messsages_from_trainers[round] = 0
+                self.quality[round] = 1.0  # Default quality
+
+            self.messsages_from_trainers[round] += 1
+
+        # if message.get('command') == 'new_block':
+        #     # TODO: revise this for coherence with the other functions, not [] but .get()
+        #     if self.quality[message['round']] is None:
+        #         self.quality[message['round']] = self.calculate_quality(message['model'])
         
         # self.update_plot()
 
