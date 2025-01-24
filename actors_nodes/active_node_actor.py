@@ -12,6 +12,20 @@ from actors_nodes.node_actor import NodeActor
 from nodes.node import Node
 
 class ActiveNodeActor(NodeActor):
+    """
+    Active Node Actor class
+
+    *Description*
+
+    This class is used to implement the active node actor in the federated learning process. (both honest and malicious)
+
+    The active node is responsible for training the model and for attacking the system.
+
+    The main function of the training process is directly retireved from the "./nodes" package, so we don't need to reimplement it.
+
+    The functionality are transposed by using the node attribute of the class as a reference to the node object in the nodes package.
+    """
+
     node: Node # this node refers to the node object in the nodes package, the implementation is already done,
     # we will exploit the built-in functions, so we don't need to reimplement the functions for attacking and training
     public_key: str
@@ -20,7 +34,7 @@ class ActiveNodeActor(NodeActor):
     score: float # score to compute the difficulty of the PoW, range  [0, 1]
     first_round: bool # flag to check if it is the first round of the training
     
-    def __init__(self, node: Node, node_id: int) -> None:
+    def __init__(self,  node_id: int, node: Node) -> None:
         super().__init__(node_id)
         self.node = node
         self.public_key = "public_key_placeholder"
@@ -37,8 +51,10 @@ class ActiveNodeActor(NodeActor):
                     self.round = message['round']
                     # if first round the model is not present in the message so we will use the init model
                 except KeyError:
-                    print("The round is not present in the message")
+                    print("\nThe round is not present in the message, it is the first round\n")
                     self.round = 0
+
+            # TODO: check if the same round (in case of more then one verifier
             # else:
             #     try:
             #         # TODO: check the index of the ID
@@ -66,7 +82,6 @@ class ActiveNodeActor(NodeActor):
     # only the active nodes should read the new block, in fact for the verifiers the new block is already processed and the UI should not read the new block
     def read_new_block(self, block):
         """Read the new block from the blockchain."""
-
 
         # corner case there are two or more verifiers, so check if the block is already processed by checking the round
         if block['round'] <= self.round:
@@ -98,7 +113,7 @@ class ActiveNodeActor(NodeActor):
         
     def start_training(self):
         # do the new training, with the built-in node object
-        # TODO: with the built-in node object
+        self.node.train()
 
         # calculate the proof of work
         (y, pi) = self.calculate_VDP()

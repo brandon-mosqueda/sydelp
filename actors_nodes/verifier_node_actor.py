@@ -14,12 +14,23 @@ from keras.src.models import Model as KerasModel
 
 
 class VerifierNodeActor(NodeActor):
+    """
+    Verifier Node Actor class
+
+    This class is used to implement the verifier node actor in the federated learning process.
+
+    The verifier node is responsible for aggregating the models from the trainers and for verifying the signatures, and verifying the PoW.
+
+    The verifier node is also responsible for creating the blocks of the blockchain.
+    """
+
     list_of_nodes: list
     list_of_public_keys: list
     list_of_signatures: list
     list_of_scores: list
     list_of_models: list[KerasModel]
     round_finished: bool
+    last_block_hash: str
 
     # ALL THE FOLLOWING VALUES ARE PLACEHOLDERS, THEY NEED TO BE INPUTTED BY PARAMETERS
     expected_malicious_num: int = 2 # todo: revise this value
@@ -101,13 +112,16 @@ class VerifierNodeActor(NodeActor):
         # create Hash
         # TODO: implement the creation of the hash
 
+        # add last block Hash
+
         # create the block
         message = {
             "command": "new_block",
             "model": "TODO",
             "scores": {},
             "round": self.round,
-            "hash": "TODO"
+            "hash": "TODO",
+            "last_block_hash": self.last_block_hash
         }
 
         return message
@@ -120,20 +134,26 @@ class VerifierNodeActor(NodeActor):
         # list of models is a list of keras models
         matrix_of_models = [model.flatten() for model in self.list_of_models]
 
-        # step 2: compute the avg model
-        new_model: list[FloatArray] = flat_weights_to_original(
-            krum(matrix_of_models,
+        # step 2: get krums result and labels (+1, -1)
+        # the result is the weights of the model
+        # TODO: modify the krum function to return the weights of the model and the labels [(id_node, label)]
+        krum_result, labels =  krum(self.models_matrix,
                  m=self.expected_malicious_num,
                  weighting_mode=self.weighting_mode,
-                 data_sizes=self.data_sizes),
-            self.weights_shapes
-        )
+                 data_sizes=self.data_sizes)
+
+        # step 3: get the weights of the model
+        avg_model = flat_weights_to_original(krum_result, self.weights_shapes)
+
+        # step 4: update the scores of the nodes
+        for (id_node, label) in labels:
+            self.list_of_scores[id_node] = label
 
         # we just need to exchange the model weights since the trainers nodes can update the model easily
-        return new_model
+        return avg_model
 
 
-    
+
     def add_model(self):
         # add the model to the list of models
         pass

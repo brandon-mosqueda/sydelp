@@ -6,6 +6,18 @@ from actors_nodes.node_actor import NodeActor  # Assuming NodeActor is defined e
 
 
 class DataLoggerActor(NodeActor):
+    """
+    Data Logger Actor class
+
+    This class is used to implement the data logger actor in the federated learning process.
+
+    The idea is that this class is passive and only records the data from the trainers and the user interface.
+
+    At the end of the process, the data logger can be queried to get the statistics of the process.
+
+    The plot part is not already finished, but the idea is to have a dynamic plot that shows the number of messages
+    """
+
     messsages_from_trainers: list  # List of messages received per round
     num_participants: list  # List of participants per round
     num_malicious_participants: list  # List of malicious participants per round
@@ -68,24 +80,24 @@ class DataLoggerActor(NodeActor):
 
     def record_messages(self, message):
         """Record the messages and update data."""
-        print(f"{self.ID} received message: {message}")
+        # print(f"{self.ID} received message: {message}")
 
         # Record the message based on command
-        if message.get('command') == 'new_model':
-            round = message['round']
-            # Ensure lists have enough space
-            while len(self.messsages_from_trainers) <= round:
-                self.messsages_from_trainers.append(None)
-                self.num_participants.append(None)
-                self.num_malicious_participants.append(None)
-                self.quality.append(None)
-            
-            if self.messsages_from_trainers[round] is None:
-                self.messsages_from_trainers[round] = 0
-                self.num_participants[round] = self.node.num_participants
-                self.num_malicious_participants[round] = self.node.num_malicious_participants
-            
-            self.messsages_from_trainers[round] += 1
+        # if message.get('command') == 'new_model':
+        #     round = message['round']
+        #     # Ensure lists have enough space
+        #     while len(self.messsages_from_trainers) <= round:
+        #         self.messsages_from_trainers.append(None)
+        #         self.num_participants.append(None)
+        #         self.num_malicious_participants.append(None)
+        #         self.quality.append(None)
+        #
+        #     if self.messsages_from_trainers[round] is None:
+        #         self.messsages_from_trainers[round] = 0
+        #         self.num_participants[round] = self.node.num_participants
+        #         self.num_malicious_participants[round] = self.node.num_malicious_participants
+        #
+        #     self.messsages_from_trainers[round] += 1
 
         if message.get('command') == 'new_block':
             # TODO: revise this for coherence with the other functions, not [] but .get()
@@ -129,3 +141,18 @@ class DataLoggerActor(NodeActor):
         while True:
             plt.pause(0.01)  # Allows the GUI event loop to update the plot
             time.sleep(0.01)  # Prevents excessive CPU usage
+
+    def on_stop(self):
+        """Stop the actor."""
+        # print the quality of the model
+        try:
+            print(f"\n\nQuality of the model: {self.quality}\n\n")
+        except IndexError:
+            print("No model quality recorded.")
+
+        # # Stop the plot
+        # plt.ioff()
+        # plt.show()
+
+        # Stop the actor
+        super().on_stop()

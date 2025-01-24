@@ -2,7 +2,7 @@
 Author: francesco boldrin francesco.boldrin@studenti.unitn.it
 Date: 2024-12-28 12:39:50
 LastEditors: francesco boldrin francesco.boldrin@studenti.unitn.it
-LastEditTime: 2024-12-30 13:56:27
+LastEditTime: 2025-01-24 15:37:51
 FilePath: actors_nodes/user_interface_actor.py
 Description: 这是默认设置,可以在设置》工具》File Description中进行配置
 """
@@ -13,6 +13,17 @@ from nodes.node import Node
 
 
 class UserInterfaceActor(NodeActor):
+    """
+    User Interface Actor class
+    
+    *Description*
+    
+    This class is used to implement the user interface actor in the federated learning process.
+    
+    This actor is responsible for the UI of the process (console based).
+    
+    This class enables creating new nodes, starting the training process, stopping the training process, and stopping the nodes.
+    """
     def __init__(self, node_id: int) -> None:
         super().__init__(node_id)
 
@@ -71,7 +82,7 @@ class UserInterfaceActor(NodeActor):
 
                 self.broadcast("update_partners", self.partners)
             elif command == "6":
-                print("Number of active nodes: ", len(self.partners) - 3)
+                print("Number of active nodes: ", len(self.partners) - 2)
             elif command == "7":
                 # find data logger and ask for the stats
                 self.partners[0].tell({"command": "print_messages_stats"})
