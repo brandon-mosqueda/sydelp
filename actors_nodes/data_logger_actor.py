@@ -1,8 +1,14 @@
 import threading
 import time
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from matplotlib.animation import FuncAnimation
+from pandas import DataFrame
+
 from actors_nodes.node_actor import NodeActor  # Assuming NodeActor is defined elsewhere
+from nodes.node import Node
+from utils.typing import Float
 
 
 class DataLoggerActor(NodeActor):
@@ -21,14 +27,25 @@ class DataLoggerActor(NodeActor):
     messsages_from_trainers: list  # List of messages received per round
     num_participants: list  # List of participants per round
     num_malicious_participants: list  # List of malicious participants per round
-    quality: list  # List of model quality per round
+    quality: dict  # Dictionary of the quality of the model per round
+    util_node: Node  # Reference to the utility node used for simplicity in the quality calculation
+    X_test: DataFrame
+    y_test: DataFrame
 
-    def __init__(self, node_id: int) -> None:
+    def __init__(self, node_id: int, util_node, X_test, y_test, metrics_params) -> None:
         super().__init__(node_id)
         self.messsages_from_trainers = []
         self.num_participants = []
         self.num_malicious_participants = []
-        self.quality = []
+        self.quality = {}
+        self.util_node = util_node
+        self.X_test = X_test
+        self.y_test = y_test
+        self.metrics_params = metrics_params
+
+        print("X_test: ", X_test)
+        print("y_test: ", y_test)
+
 
         # # Initialize Matplotlib figure
         # self.fig, (self.ax1, self.ax3) = plt.subplots(2, 1, figsize=(10, 8))
@@ -73,36 +90,34 @@ class DataLoggerActor(NodeActor):
         # Handle primitive messages [stop, hello, set_partner, update_partners]
         super().on_receive(message)
 
-    def calculate_quality(self, model):
-        """Mock function to calculate the quality of the model."""
-        # TODO: Implement a real function to calculate model quality
-        return 1.0
-
     def record_messages(self, message):
         """Record the messages and update data."""
         # print(f"{self.ID} received message: {message}")
 
         # Record the message based on command
-        if message.get('command') == 'new_model':
-            round = message['round']
-            # Ensure lists have enough space
-            while len(self.messsages_from_trainers) <= round:
-                self.messsages_from_trainers.append(None)
-                self.num_participants.append(None)
-                self.num_malicious_participants.append(None)
-                self.quality.append(None)
+        # if message.get('command') == 'new_model':
+        #     round = message['round']
+        #     # Ensure lists have enough space
+        #     while len(self.messsages_from_trainers) <= round:
+        #         self.messsages_from_trainers.append(None)
+        #         self.num_participants.append(None)
+        #         self.num_malicious_participants.append(None)
+        #         self.quality.append(None)
+        #
+        #     if self.messsages_from_trainers[round] is None:
+        #         self.messsages_from_trainers[round] = 0
+        #         # self.quality[round] = 1.0  # Default quality
+        #
+        #     self.messsages_from_trainers[round] += 1
 
-            if self.messsages_from_trainers[round] is None:
-                self.messsages_from_trainers[round] = 0
-                self.quality[round] = 1.0  # Default quality
+        if message.get('command') == 'new_block':
+            # TODO: revise this for coherence with the other functions, not [] but .get()
 
-            self.messsages_from_trainers[round] += 1
-
-        # if message.get('command') == 'new_block':
-        #     # TODO: revise this for coherence with the other functions, not [] but .get()
-        #     if self.quality[message['round']] is None:
-        #         self.quality[message['round']] = self.calculate_quality(message['model'])
-        
+            print(f"New block received for round {message['round']}")
+            self.util_node.set_model_weights(message['model'])
+            print(f"Model updated for round {message['round']}")
+            self.quality[message['round']] = self.calculate_quality()
+            print(f"Quality calculated for round {message['round']}")
         # self.update_plot()
 
     def update_plot(self, frame=None):
@@ -155,3 +170,58 @@ class DataLoggerActor(NodeActor):
 
         # Stop the actor
         super().on_stop()
+
+    def round_prediction(self) -> DataFrame:
+        # This function is the adaptation of the round_prediction function in the Learning class
+        preds: DataFrame = DataFrame(self.util_node.model.predict(
+            self.X_test,
+            verbose=0
+        ))
+
+        # For binary classification
+        if preds.shape[1] == 1:
+            print("checkpoint 1.1 binary classification")
+            preds = pd.concat([1 - preds[0], preds], axis=1)
+            preds.columns = [0, 1]
+
+
+        preds['predicted'] = np.argmax(preds, axis=1)
+        preds['observed'] = self.y_test
+
+
+
+        return preds
+
+    def calculate_quality(self):
+        # This function is the adaptation of the round_metrics function in the Learning class
+        predictions = self.round_prediction()
+        print("predictions: ", predictions)
+
+        try:
+            loss = self.util_node.model.evaluate(
+                self.X_test,
+                self.y_test,
+                verbose=0
+            )
+        except Exception as e:
+            print(f"Error in the evaluation of the model: {e}")
+            return
+        print("loss: ", loss)
+
+        try:
+            round_metrics: dict[str, Float] = {
+                metric: self.metrics_params[metric]['function'](
+                    y_true=predictions['observed'].to_numpy().astype("int"),
+                    y_pred=predictions['predicted'].to_numpy().astype("int"),
+                    **self.metrics_params[metric]['params']
+                ) for metric in self.metrics_params
+            }
+        except Exception as e:
+            print(f"Error in the calculation of the metrics: {e}")
+            return
+
+        round_metrics['loss'] = loss
+
+        print("round_metrics: ", round_metrics)
+
+        return round_metrics['accuracy']

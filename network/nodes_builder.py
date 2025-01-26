@@ -2,7 +2,7 @@
 Author: francesco boldrin francesco.boldrin@studenti.unitn.it
 Date: 2025-01-21 18:41:51
 LastEditors: francesco boldrin francesco.boldrin@studenti.unitn.it
-LastEditTime: 2025-01-26 13:12:37
+LastEditTime: 2025-01-26 20:24:57
 FilePath: network/nodes_builder.py
 Description: 这是默认设置,可以在设置》工具》File Description中进行配置
 """
@@ -22,7 +22,7 @@ from keras.src.models import Model as KerasModel
 
 DEBUG = False
 
-def nodes_builder() -> tuple[list[Node], Union[Attacker, None], KerasModel, dict[str, MetricParams]]:
+def nodes_builder() -> list[list[Node], Union[Attacker, None], KerasModel, dict[str, MetricParams], NumArray, IntArray]:
     # we are going to use the same structure as in run.py to get the nodes
     # TODO roadmap:
     # 1. get the params from the file
@@ -57,6 +57,8 @@ def nodes_builder() -> tuple[list[Node], Union[Attacker, None], KerasModel, dict
         print("Getting metrics...")
 
     metrics_params: dict[str, MetricParams] = init.get_metrics(params)
+    
+    # nodes only gets the training dataset, the model and the metrics
     nodes: list[Node] = init.get_nodes_by_protocol(params,
                                                     X_train=X_train,
                                                     y_train=y_train,
@@ -64,7 +66,7 @@ def nodes_builder() -> tuple[list[Node], Union[Attacker, None], KerasModel, dict
 
     attacker: Union[Attacker, None] = init.get_attacker(nodes, params)
 
-    return [nodes, attacker, global_model, metrics_params]
+    return [nodes, attacker, global_model, metrics_params, X_test, y_test]
 
 def test_nodes_builder():
     print("Testing nodes_builder...")

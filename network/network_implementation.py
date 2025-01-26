@@ -19,7 +19,7 @@ from keras.src.models import Model as KerasModel
 
 # hyoerparameters
 HONEST_NODES = 5
-INIT_MALICIOUS_NODES = 1
+INIT_MALICIOUS_NODES = 3
 
 
 DEBUG = False
@@ -30,25 +30,27 @@ def network_implementation(params):
     if DEBUG:
         print(f"Starting the network, with mock structure")
 
-    nodes.extend(
-        [
-            UserInterfaceActor.start(0),
-            DataLoggerActor.start(1),
-            VerifierNodeActor.start(2)
-        ]
-    )
 
     results_nodes_builder = nodes_builder()
 
-    # print("results_nodes_builder: ", results_nodes_builder)
-    # exit()
-
     sydelp_nodes: list[Node] = results_nodes_builder[0]
     attacker: Union[Attacker, None] = results_nodes_builder[1]
+    (X_test, y_test) = (results_nodes_builder[4], results_nodes_builder[5])
+    metrics_params: dict[str, MetricParams] = results_nodes_builder[3]
     attacker_nodes = attacker.nodes
 
     print("attacker: ", attacker)
     print("attacker_nodes: ", attacker_nodes)
+
+    util_node_copy = sydelp_nodes[0]
+
+    nodes.extend(
+        [
+            UserInterfaceActor.start(0),
+            DataLoggerActor.start(1, util_node_copy, X_test, y_test, metrics_params),
+            VerifierNodeActor.start(2, util_node_copy)
+        ]
+    )
 
     OFFSET = 3
     for i in range(OFFSET, HONEST_NODES+OFFSET):

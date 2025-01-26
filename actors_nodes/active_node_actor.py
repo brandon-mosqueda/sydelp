@@ -56,6 +56,8 @@ class ActiveNodeActor(NodeActor):
                     print("\nThe round is not present in the message, it is the first round\n")
                     self.round = 0
 
+            print(f"training started for node {self.ID} in round {self.round}")
+
             # # TODO: check if the same round (in case of more then one verifier
             # else:
             #     try:
@@ -84,7 +86,7 @@ class ActiveNodeActor(NodeActor):
     # only the active nodes should read the new block, in fact for the verifiers the new block is already processed and the UI should not read the new block
     def read_new_block(self, block):
         """Read the new block from the blockchain."""
-        print(f"Node {self.ID} received a new block: {block}")
+        # print(f"Node {self.ID} received a new block: {block}")
 
         # corner case there are two or more verifiers, so check if the block is already processed by checking the round
         if block['round'] <= self.round:
@@ -97,7 +99,7 @@ class ActiveNodeActor(NodeActor):
         # self.update_score(block['scores'][self.ID])
 
         # update the model, check this function
-        # self.node.set_model_weights(block['model'])
+        self.node.set_model_weights(block['model'])
 
 
     # FOR NOW WE WILL NOT IMPLEMENT THE FOLLOWING FUNCTIONS, WE WILL IMPLEMENT THEM LATER
@@ -137,7 +139,7 @@ class ActiveNodeActor(NodeActor):
         # TODO: this is just the structure of the message, we need to implement the actual functions, like signature generation, proof of work, etc.
         msg = {
             "command": "new_model",
-            "model": self.node.get_model_weights(), # dont know if this is the correct function CHECK IT
+            "model": self.node.get_flat_model_weights(), # dont know if this is the correct function CHECK IT
             "signature": signature,
             "proof_of_work": (y, pi),
             "public_key": self.public_key,

@@ -5,13 +5,15 @@ LastEditors: francesco boldrin francesco.boldrin@studenti.unitn.it
 LastEditTime: 2024-12-22 15:51:41
 FilePath: utils/verifier_node_actor.py
 """
+import numpy as np
+
 from actors_nodes.node_actor import NodeActor
 from learning.sydelp import Sydelp
 from utils.aggregation import krum
 from utils.typing import FloatArray
 from utils.utils import flat_weights_to_original
 from keras.src.models import Model as KerasModel
-
+from nodes.node import Node
 
 class VerifierNodeActor(NodeActor):
     """
@@ -31,6 +33,7 @@ class VerifierNodeActor(NodeActor):
     models: dict # {node_id: model}
     round_finished: bool
     last_block_hash: str
+    util_node: Node # used to simplify the aggregation process, it is not a real node
 
     # ALL THE FOLLOWING VALUES ARE PLACEHOLDERS, THEY NEED TO BE INPUTTED BY PARAMETERS
     expected_malicious_num: int = 2 # todo: revise this value
@@ -40,7 +43,7 @@ class VerifierNodeActor(NodeActor):
 
     MIN_SCORE = 0
     
-    def __init__(self,  ID):
+    def __init__(self,  ID, node: Node):
         super().__init__(ID)
         self.signatures = {}
         self.models = {}
@@ -48,6 +51,9 @@ class VerifierNodeActor(NodeActor):
         self.scores = {}
         self.list_of_nodes = []
         self.round_finished = False
+        self.last_block_hash = "genesis"
+        self.util_node = node
+        self.weights_shapes = [weight.shape for weight in self.util_node.model.get_weights()]
 
 
     def on_receive(self, message):
@@ -106,12 +112,24 @@ class VerifierNodeActor(NodeActor):
     def verify(self, public_key, signature):
         # mock function to verify the signature and the PoW
         return True
-    
+
+    def update_global_model(self, new_model):
+        # update the global model with the new model
+        try:
+            self.util_node.model.set_weights(new_model)
+        except Exception as e:
+            print(f"Error in the update of the global model: {e}")
+            return
+
     def create_block(self):
         # mock function to create a block of the blockchain
 
         # aggregate the models
-        # self.aggregation()
+        print("Aggregating the models")
+        new_model = self.aggregation()
+
+        # update the global model
+        self.update_global_model(new_model)
 
         # calculate the new scores and update the scores in the nodes
         # TODO: implement the calculation of the new scores
@@ -128,14 +146,23 @@ class VerifierNodeActor(NodeActor):
         # create the block
         message = {
             "command": "new_block",
-            "model": "TODO",
+            "model": new_model,
             "scores": {},
             "round": self.round,
             "hash": "MockHash",
             "last_block_hash": self.last_block_hash
         }
+        print(f"Block {self.round} created")
 
         return message
+
+    def update_data_sizes(self):
+        # update the data sizes
+        # the data sizes are the number of rows of the data in the nodes
+        models_length = []
+        for id_node in self.models.keys():
+            models_length.append(len(self.models[id_node]))
+        self.data_sizes = np.array(models_length)
 
 
     def aggregation(self):
@@ -144,21 +171,48 @@ class VerifierNodeActor(NodeActor):
         # step 1: update model matrix
         # list of models is a list of keras models
         # get the list of models from the dictionary
+        # print("Getting the list of models")
+        # print("Models keys: ", self.models.keys())
+
         list_of_models = [self.models[id_node] for id_node in self.models.keys()]
-        matrix_of_models = [model.flatten() for model in self.models]
+        # print("List of models: ", list_of_models)
+        self.update_data_sizes()
+
+        # create the matrix of models
+        # print("Creating the models matrix")
+        try:
+            models_matrix = np.empty((len(self.models),
+                                      len(self.models[3])),
+                                     dtype="float")
+        except Exception as e:
+            print(f"Error in the creation of the models matrix: {e}")
+            return
+
+        for i, model in enumerate(list_of_models):
+            models_matrix[i] = model
+        # matrix_of_models = [model.flatten() for model in self.models]
+        # print("Models matrix: ", models_matrix)
 
         # step 2: get krums result and labels (+1, -1)
         # the result is the weights of the model
         # TODO: modify the krum function to return the weights of the model and the labels [(id_node, label)]
-        krum_result =  krum(self.models_matrix,
+        try:
+            print("Averaging with krum")
+            krum_result =  krum(models_matrix,
                  m=self.expected_malicious_num,
                  weighting_mode=self.weighting_mode,
                  data_sizes=self.data_sizes)
+        except Exception as e:
+            print(f"Error in the krum function: {e}")
+            return
 
-        print("Krum results: ", krum_result)
+        # print("Krum results: ", krum_result)
+
+        # print("Weights shapes: ", self.weights_shapes)
 
         # step 3: get the weights of the model
         avg_model = flat_weights_to_original(krum_result, self.weights_shapes)
+        # print("Aggregated model: ", avg_model)
 
 
         # we just need to exchange the model weights since the trainers nodes can update the model easily
@@ -179,6 +233,9 @@ class VerifierNodeActor(NodeActor):
 
         # create the block
         new_block = self.create_block()
+
+        # reset the models
+        self.models = {}
 
         # broadcast the block
         self.broadcast(new_block)
@@ -223,4 +280,7 @@ class VerifierNodeActor(NodeActor):
 
         # check if the round is finished
         if len(self.models.keys()) >= len(self.partners) - 1 :
+            print("Round finished: ", self.round)
+            print("Models length: ", len(self.models.keys()))
+            print("Partners length: ", len(self.partners))
             self.end_round()
