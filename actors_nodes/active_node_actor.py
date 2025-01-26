@@ -33,14 +33,16 @@ class ActiveNodeActor(NodeActor):
     secret_key: str
     score: float # score to compute the difficulty of the PoW, range  [0, 1]
     first_round: bool # flag to check if it is the first round of the training
+    is_attacker: bool # flag to check if the node is an attacker
     
-    def __init__(self,  node_id: int, node: Node) -> None:
+    def __init__(self,  node_id: int, node: Node, is_attacker_flag: bool) -> None:
         super().__init__(node_id)
         self.node = node
         self.public_key = "public_key_placeholder"
         self.secret_key = "secret_key_placeholder"
         self.score = 0. # the score is the difficulty of the PoW, maximum score means maximum difficulty
         self.first_round = True
+        self.is_attacker = is_attacker_flag
 
     def on_receive(self, message: dict):        
         # 2 handle the starting message, it will start the training process
@@ -115,6 +117,15 @@ class ActiveNodeActor(NodeActor):
     def start_training(self):
         # do the new training, with the built-in node object
         self.node.train()
+
+        if self.is_attacker:
+            # if the node is an attacker, generate a new model
+            try:
+                # TODO: we will change the if in to a more dynamic choice of the attack
+                self.node.attack()
+            except Exception as e:
+                print(f"Error in the attack: {e}")
+                return
 
         # calculate the proof of work
         (y, pi) = self.calculate_VDP()

@@ -18,7 +18,8 @@ from learning.learning import MetricParams
 from keras.src.models import Model as KerasModel
 
 # hyoerparameters
-MAX_NODES = 1
+HONEST_NODES = 5
+INIT_MALICIOUS_NODES = 1
 
 
 DEBUG = False
@@ -37,11 +38,24 @@ def network_implementation(params):
         ]
     )
 
-    sydelp_nodes = nodes_builder()[0]
+    results_nodes_builder = nodes_builder()
+
+    # print("results_nodes_builder: ", results_nodes_builder)
+    # exit()
+
+    sydelp_nodes: list[Node] = results_nodes_builder[0]
+    attacker: Union[Attacker, None] = results_nodes_builder[1]
+    attacker_nodes = attacker.nodes
+
+    print("attacker: ", attacker)
+    print("attacker_nodes: ", attacker_nodes)
 
     OFFSET = 3
-    for i in range(OFFSET, MAX_NODES+OFFSET):
-        nodes.append(ActiveNodeActor.start(i, sydelp_nodes[i-3]))
+    for i in range(OFFSET, HONEST_NODES+OFFSET):
+        nodes.append(ActiveNodeActor.start(i, sydelp_nodes[i-3], is_attacker_flag=False))
+
+    for i in range(HONEST_NODES+OFFSET, HONEST_NODES+OFFSET+INIT_MALICIOUS_NODES):
+        nodes.append(ActiveNodeActor.start(i, attacker_nodes[i-(OFFSET+HONEST_NODES)], is_attacker_flag=True))
 
 
     for i, node_h in enumerate(nodes[:3]):

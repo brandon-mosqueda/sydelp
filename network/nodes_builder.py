@@ -2,7 +2,7 @@
 Author: francesco boldrin francesco.boldrin@studenti.unitn.it
 Date: 2025-01-21 18:41:51
 LastEditors: francesco boldrin francesco.boldrin@studenti.unitn.it
-LastEditTime: 2025-01-21 20:11:34
+LastEditTime: 2025-01-26 13:12:37
 FilePath: network/nodes_builder.py
 Description: 这是默认设置,可以在设置》工具》File Description中进行配置
 """
@@ -32,7 +32,7 @@ def nodes_builder() -> tuple[list[Node], Union[Attacker, None], KerasModel, dict
     # 5. build the various nodes in the network
     # 6. get the attacker
     # 7. return the nodes, attacker, global_model, metrics_params
-    params_file: str = 'params/params/31.sydelp_mnist.json'
+    params_file: str = 'params/params/32.sydelp_mnist_random.json'
     params: dict = utils.read_json(params_file)
     
     if DEBUG:
