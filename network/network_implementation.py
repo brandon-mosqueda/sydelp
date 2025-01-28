@@ -18,8 +18,8 @@ from learning.learning import MetricParams
 from keras.src.models import Model as KerasModel
 
 # hyoerparameters
-HONEST_NODES = 5
-INIT_MALICIOUS_NODES = 3
+HONEST_NODES = 10 # check this parameter with the actual dataset parameters
+INIT_MALICIOUS_NODES = 1 # check this parameter with the actual dataset parameters
 
 
 DEBUG = False

@@ -31,15 +31,19 @@ def fed_avg(models_params: FloatArray,
 def krum(models_params: FloatArray,
          m: Union[float, int] = 0.3,
          weighting_mode: str = "uniform",
-         data_sizes: Union[IntArray, None] = None) -> FloatArray:
+         data_sizes: Union[IntArray, None] = None) -> [FloatArray, list[int]]:
     if len(models_params.shape) != 2:
         raise ValueError("models_params has to be a 2-D array")
 
+    # print("Starting krum")
     models_num: int = models_params.shape[0]
     if models_num == 0 or models_params.shape[1] == 0:
         return np.zeros((1, models_params.shape[1]), dtype="float")
     elif models_num < 3:
+        # print("Models num < 3")
         return fed_avg(models_params)
+
+    # print("Models num: ", models_num)
 
     # In case m is a proportion (default)
     if m < 1:
@@ -84,4 +88,4 @@ def krum(models_params: FloatArray,
     else:
         raise ValueError(f"Invalid weighting_mode '{weighting_mode}'")
 
-    return fed_avg(models_params[best_indices], weights)
+    return [fed_avg(models_params[best_indices], weights), best_indices]

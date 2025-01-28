@@ -113,11 +113,11 @@ class DataLoggerActor(NodeActor):
         if message.get('command') == 'new_block':
             # TODO: revise this for coherence with the other functions, not [] but .get()
 
-            print(f"New block received for round {message['round']}")
+            # print(f"New block received for round {message['round']}")
             self.util_node.set_model_weights(message['model'])
-            print(f"Model updated for round {message['round']}")
+            # print(f"Model updated for round {message['round']}")
             self.quality[message['round']] = self.calculate_quality()
-            print(f"Quality calculated for round {message['round']}")
+            # print(f"Quality calculated for round {message['round']}")
         # self.update_plot()
 
     def update_plot(self, frame=None):
@@ -195,7 +195,7 @@ class DataLoggerActor(NodeActor):
     def calculate_quality(self):
         # This function is the adaptation of the round_metrics function in the Learning class
         predictions = self.round_prediction()
-        print("predictions: ", predictions)
+        # print("predictions: ", predictions)
 
         try:
             loss = self.util_node.model.evaluate(
@@ -206,7 +206,7 @@ class DataLoggerActor(NodeActor):
         except Exception as e:
             print(f"Error in the evaluation of the model: {e}")
             return
-        print("loss: ", loss)
+        # print("loss: ", loss)
 
         try:
             round_metrics: dict[str, Float] = {
