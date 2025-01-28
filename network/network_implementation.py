@@ -18,14 +18,13 @@ from learning.learning import MetricParams
 from keras.src.models import Model as KerasModel
 
 # hyoerparameters
-HONEST_NODES = 10 # check this parameter with the actual dataset parameters
-INIT_MALICIOUS_NODES = 1 # check this parameter with the actual dataset parameters
+HONEST_NODES = 20 # check this parameter with the actual dataset parameters
+INIT_MALICIOUS_NODES = 4 # check this parameter with the actual dataset parameters
 
 
 DEBUG = False
 def network_implementation(params):
     nodes = []
-
 
     if DEBUG:
         print(f"Starting the network, with mock structure")

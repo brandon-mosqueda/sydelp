@@ -43,6 +43,7 @@ class ActiveNodeActor(NodeActor):
         self.score = 0. # the score is the difficulty of the PoW, maximum score means maximum difficulty
         self.first_round = True
         self.is_attacker = is_attacker_flag
+        self.perform_attack = False
 
     def on_receive(self, message: dict):        
         # 2 handle the starting message, it will start the training process
@@ -56,16 +57,6 @@ class ActiveNodeActor(NodeActor):
                     print("\nThe round is not present in the message, it is the first round\n")
                     self.round = 0
 
-            print(f"training started for node {self.ID} in round {self.round}")
-
-            # # TODO: check if the same round (in case of more then one verifier
-            # else:
-            #     try:
-            #         # TODO: check the index of the ID
-            #         self.update_score(message['scores'][self.ID])
-            #     except KeyError:
-            #         print("The score is not present in the message")
-            #         return
             self.start_training()
             return
         
@@ -73,7 +64,11 @@ class ActiveNodeActor(NodeActor):
         if message.get('command') == 'new_block':
             self.read_new_block(message)
             return
-        
+
+        if message.get('command') == 'change_behavior':
+            if self.is_attacker:
+                self.perform_attack = not self.perform_attack
+
         # 4 handle the new model message
         if message.get('command') == 'new_model':
             return
@@ -120,7 +115,7 @@ class ActiveNodeActor(NodeActor):
         # do the new training, with the built-in node object
         self.node.train()
 
-        if self.is_attacker:
+        if self.is_attacker and self.perform_attack:
             # if the node is an attacker, generate a new model
             try:
                 # TODO: we will change the if in to a more dynamic choice of the attack
