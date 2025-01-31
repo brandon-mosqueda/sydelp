@@ -2,7 +2,7 @@
 Author: francesco boldrin francesco.boldrin@studenti.unitn.it
 Date: 2024-12-28 12:39:50
 LastEditors: francesco boldrin francesco.boldrin@studenti.unitn.it
-LastEditTime: 2025-01-24 15:37:51
+LastEditTime: 2025-01-28 17:53:59
 FilePath: actors_nodes/user_interface_actor.py
 Description: 这是默认设置,可以在设置》工具》File Description中进行配置
 """
@@ -82,7 +82,7 @@ class UserInterfaceActor(NodeActor):
 
                 self.broadcast("update_partners", self.partners)
             elif command == "6":
-                print("Number of active nodes: ", len(self.partners) - 2)
+                print("Number of active nodes: ", len(self.partners) - 3)
             elif command == "7":
                 # find data logger and ask for the stats
                 self.partners[0].tell({"command": "print_messages_stats"})

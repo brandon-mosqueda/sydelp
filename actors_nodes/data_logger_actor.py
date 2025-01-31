@@ -1,3 +1,4 @@
+import json
 import threading
 import time
 import matplotlib.pyplot as plt
@@ -32,16 +33,19 @@ class DataLoggerActor(NodeActor):
     X_test: DataFrame
     y_test: DataFrame
 
-    def __init__(self, node_id: int, util_node, X_test, y_test, metrics_params) -> None:
+    def __init__(self, node_id: int, util_node, X_test, y_test, metrics_params, init_num_attacker, init_participant, simulation_name) -> None:
         super().__init__(node_id)
         self.messsages_from_trainers = []
-        self.num_participants = []
-        self.num_malicious_participants = []
+        self.num_participants = init_participant
+        self.honest_participants = init_participant - init_num_attacker
+        self.attacker_per_round = []
+        self.current_num_attacker = init_num_attacker
         self.quality = {}
         self.util_node = util_node
         self.X_test = X_test
         self.y_test = y_test
         self.metrics_params = metrics_params
+        self.simulation_name = simulation_name
 
         print("X_test: ", X_test)
         print("y_test: ", y_test)
@@ -79,11 +83,14 @@ class DataLoggerActor(NodeActor):
             self.record_messages(message)
             return
 
+        if message.get('command') == 'new_attacker':
+            self.current_num_attacker += 1
+            return
+
         # Handle messages from the user interface
         if message.get('command') == 'print_messages_stats':
             print(f"Messages from trainers: {self.messsages_from_trainers}")
             print(f"Number of participants: {self.num_participants}")
-            print(f"Number of malicious participants: {self.num_malicious_participants}")
             print(f"Quality of the model: {self.quality}")
             return
 
@@ -92,33 +99,13 @@ class DataLoggerActor(NodeActor):
 
     def record_messages(self, message):
         """Record the messages and update data."""
-        # print(f"{self.ID} received message: {message}")
-
-        # Record the message based on command
-        # if message.get('command') == 'new_model':
-        #     round = message['round']
-        #     # Ensure lists have enough space
-        #     while len(self.messsages_from_trainers) <= round:
-        #         self.messsages_from_trainers.append(None)
-        #         self.num_participants.append(None)
-        #         self.num_malicious_participants.append(None)
-        #         self.quality.append(None)
-        #
-        #     if self.messsages_from_trainers[round] is None:
-        #         self.messsages_from_trainers[round] = 0
-        #         # self.quality[round] = 1.0  # Default quality
-        #
-        #     self.messsages_from_trainers[round] += 1
 
         if message.get('command') == 'new_block':
             # TODO: revise this for coherence with the other functions, not [] but .get()
-
-            # print(f"New block received for round {message['round']}")
             self.util_node.set_model_weights(message['model'])
-            # print(f"Model updated for round {message['round']}")
             self.quality[message['round']] = self.calculate_quality()
-            # print(f"Quality calculated for round {message['round']}")
-        # self.update_plot()
+            self.attacker_per_round.append(self.current_num_attacker)
+
 
     def update_plot(self, frame=None):
         """Update the plot dynamically."""
@@ -156,6 +143,45 @@ class DataLoggerActor(NodeActor):
             plt.pause(0.01)  # Allows the GUI event loop to update the plot
             time.sleep(0.01)  # Prevents excessive CPU usage
 
+    def write_to_file(self):
+        # open "./results/result_network.json" in read mode
+        print("Writing to file")
+        try:
+            with open("./results/result_network.json", "r") as file:
+                # read the content of the file
+                data = file.read()
+                # convert the content to a dictionary
+                data = eval(data)
+        except FileNotFoundError:
+            data = {}
+            print("File not found, creating a new one.")
+        print(data)
+
+        # add the data in this manner
+        """
+        {
+            self.simulation_name: {
+                "quality": self.quality,
+                "attacker_per_round": self.attacker_per_round
+                "honest_participants": self.honest_participants
+            }
+        """
+        data[self.simulation_name] = {
+            "quality": self.quality,
+            "attacker_per_round": self.attacker_per_round,
+            "honest_participants": self.honest_participants
+        }
+
+        print(data)
+
+        try:
+            # open "./results/result_network.json" in write mode
+            with open("./results/result_network.json", "w") as file:
+                # write the dictionary to the file
+                json.dump(data, file, indent=4)
+        except FileNotFoundError:
+            print("Failed to write the data to the file.")
+
     def on_stop(self):
         """Stop the actor."""
         # print the quality of the model
@@ -164,11 +190,8 @@ class DataLoggerActor(NodeActor):
         except IndexError:
             print("No model quality recorded.")
 
-        # # Stop the plot
-        # plt.ioff()
-        # plt.show()
+        self.write_to_file()
 
-        # Stop the actor
         super().on_stop()
 
     def round_prediction(self) -> DataFrame:

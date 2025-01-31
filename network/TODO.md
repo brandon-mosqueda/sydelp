@@ -17,3 +17,9 @@
   4. [ ] 2.3. The training nodes will start the training process and send the message with all the information to the verifier nodes
   5. [ ] 2.4. The verifier nodes will receive the information 
   6. [ ] 2.5. When the verifier nodes receive all the information, they will compute the block and send it to the network
+
+3. How to handle the attacker, from the external point
+
+4. Set timeout for the verifier nod
+
+5. Write down the experimentation, of evaluation of PoW and maybe compare with State Of The Art[]()

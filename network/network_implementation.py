@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from actors_nodes.active_node_actor import ActiveNodeActor
+from actors_nodes.attacker_actor import AttackerManagerActor
 from actors_nodes.user_interface_actor import UserInterfaceActor
 from actors_nodes.data_logger_actor import DataLoggerActor
 from actors_nodes.verifier_node_actor import VerifierNodeActor
@@ -19,8 +20,9 @@ from keras.src.models import Model as KerasModel
 
 # hyoerparameters
 HONEST_NODES = 20 # check this parameter with the actual dataset parameters
-INIT_MALICIOUS_NODES = 4 # check this parameter with the actual dataset parameters
-
+INIT_MALICIOUS_NODES = 15 # check this parameter with the actual dataset parameters, it is equal to MAX_COMPUTING_POWER
+OFFSET = 4
+ALPHA = 2
 
 DEBUG = False
 def network_implementation(params):
@@ -46,12 +48,13 @@ def network_implementation(params):
     nodes.extend(
         [
             UserInterfaceActor.start(0),
-            DataLoggerActor.start(1, util_node_copy, X_test, y_test, metrics_params),
-            VerifierNodeActor.start(2, util_node_copy)
+            DataLoggerActor.start(1, util_node_copy, X_test, y_test, metrics_params, INIT_MALICIOUS_NODES, OFFSET+HONEST_NODES, "simulation_1"),
+            VerifierNodeActor.start(2, util_node_copy),
+            AttackerManagerActor.start(3, attacker_nodes, INIT_MALICIOUS_NODES, OFFSET+HONEST_NODES, ALPHA, INIT_MALICIOUS_NODES),
         ]
     )
 
-    OFFSET = 3
+
     for i in range(OFFSET, HONEST_NODES+OFFSET):
         nodes.append(ActiveNodeActor.start(i, sydelp_nodes[i-3], is_attacker_flag=False))
 
@@ -59,7 +62,7 @@ def network_implementation(params):
         nodes.append(ActiveNodeActor.start(i, attacker_nodes[i-(OFFSET+HONEST_NODES)], is_attacker_flag=True))
 
 
-    for i, node_h in enumerate(nodes[:3]):
+    for i, node_h in enumerate(nodes[:OFFSET]):
         list_of_partners = [node for node in nodes[1:] if node != node_h]
         try:
             node_h.tell({"command": "set_partners", "partners": list_of_partners})
@@ -68,8 +71,8 @@ def network_implementation(params):
             print(f"Failed to send partners to node {i}: {e}")
             return
 
-    for i, node_h in enumerate(nodes[3:]):
-        list_of_partners = [nodes[1], nodes[2]]
+    for i, node_h in enumerate(nodes[OFFSET:]):
+        list_of_partners = [nodes[1], nodes[2], nodes[3]]
         print(f"sending partners for node {i}: {node_h}")
         try:
             node_h.tell({"command": "set_partners", "partners": list_of_partners})

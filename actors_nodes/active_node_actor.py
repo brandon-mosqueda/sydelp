@@ -54,7 +54,7 @@ class ActiveNodeActor(NodeActor):
                     self.round = message['round']
                     # if first round the model is not present in the message so we will use the init model
                 except KeyError:
-                    print("\nThe round is not present in the message, it is the first round\n")
+                    # print("\nThe round is not present in the message, it is the first round\n")
                     self.round = 0
 
             self.start_training()
@@ -63,6 +63,21 @@ class ActiveNodeActor(NodeActor):
         # 3 handle the new block message
         if message.get('command') == 'new_block':
             self.read_new_block(message)
+            return
+
+        if message.get('command') == 'init_node':
+            # # the node is initialized with the model
+            self.node.train()
+            try:
+                self.node.set_model_weights(message['model'])
+                self.round = message['round']
+                self.first_round = False
+            except Exception as e:
+                print(f"Error in the initialization of the node: {e}")
+                return
+
+
+            #print(f"Node {self.ID} is initialized with the current model")
             return
 
         if message.get('command') == 'change_behavior':
@@ -95,34 +110,22 @@ class ActiveNodeActor(NodeActor):
 
         # update the model, check this function
         self.node.set_model_weights(block['model'])
-
-
-    # FOR NOW WE WILL NOT IMPLEMENT THE FOLLOWING FUNCTIONS, WE WILL IMPLEMENT THEM LATER
-    def add_new_node(self, node):
-        # The idea is that the attacker when reaching a good score can add a new attacker node to the training process
-        # TODO: implement  the creation of a new node
-
-        new_node = NodeActor.start(self.partners + 2, Node(), len(self.partners))
-        
-        self.partners.append(new_node)
-        
-        # REVISE THIS
-        
-        self.broadcast({"command": "new_node", "node": new_node, "public_key": new_node.public_key, "node_id": len(self.partners)})
-        
         
     def start_training(self):
         # do the new training, with the built-in node object
-        self.node.train()
+
 
         if self.is_attacker and self.perform_attack:
             # if the node is an attacker, generate a new model
             try:
                 # TODO: we will change the if in to a more dynamic choice of the attack
+                print(f"Node {self.ID} is attacking")
                 self.node.attack()
             except Exception as e:
                 print(f"Error in the attack: {e}")
                 return
+        else:
+            self.node.train()
 
         # calculate the proof of work
         (y, pi) = self.calculate_VDP()

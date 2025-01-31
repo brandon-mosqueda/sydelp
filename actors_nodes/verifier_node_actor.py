@@ -63,6 +63,9 @@ class VerifierNodeActor(NodeActor):
         for node_id in self.models.keys():
             self.scores[node_id] = VerifierNodeActor.MIN_SCORE
 
+    def on_stop(self):
+        self.broadcast({"command": "stop"})
+        self.stop()
 
     def on_receive(self, message):
         # print(f"Node {self.ID} received a message: {message['command']}")
@@ -81,16 +84,6 @@ class VerifierNodeActor(NodeActor):
         if message.get('command') == 'new_attacker':
             # a new node is participating in the training we need to add it to the list of nodes
             self.add_node(message)
-
-            # store the public key
-            self.store_public_key(message)
-
-            # add the maximum score to the list of scores
-            self.list_of_scores[message['ID']] = VerifierNodeActor.MIN_SCORE
-
-            # send the message to the new node to start the training
-            self.send_start_training_new_node(message)
-
             return
 
         if message.get('command') == 'DEBUG':
@@ -102,20 +95,42 @@ class VerifierNodeActor(NodeActor):
 
     def add_node(self, message):
         # add the node to the list of nodes and the list of partners
+        print("Adding a new node: ", message)
 
-        self.list_of_nodes.append(message['node_id']) # add the node to the list of nodes (the ID of the node)
+        self.list_of_nodes.append(message.get('node_id')) # add the node to the list of nodes (the ID of the node)
 
-        new_partners = self.partners + [message['node']]
+        new_partners = self.partners + [message.get('node')] # add the node to the list of partners
 
         self.update_partners(new_partners)
+
+        # print("New node added: ", message.get('node'))
+
+        self.scores[message.get('node_id')] = 0
+
+        # print("Added the new score to the new node")
+
+        # send the last global model to the new node
+        new_message = {
+            "command": "init_node",
+            "model": self.util_node.get_model_weights(),
+            "round": self.round
+        }
+
+        message['node'].tell(new_message)
+        # print("Message init sent to the new node")
+
+        # send the start training message to the new node
+        start_message = {
+            "command": "start",
+            "round": self.round
+        }
+
+        message['node'].tell(start_message)
+        # print("Message start sent to the new node")
 
 
     def print_list_of_nodes(self):
         print(self.list_of_nodes)
-
-    def store_public_key(self, message):
-        # store the public key of the new node
-        self.list_of_public_keys.append(message['public_key'])
 
     def verify(self, public_key, signature):
         # mock function to verify the signature and the PoW
@@ -137,11 +152,11 @@ class VerifierNodeActor(NodeActor):
         if self.FirstRound:
             self.init_scores()
             self.FirstRound = False
-        print("scores before aggregation: ", self.scores)
-        print("len of models: ", len(self.models))
-        print("models keys: ", self.models.keys())
+        # print("scores before aggregation: ", self.scores)
+        # print("len of models: ", len(self.models))
+        # print("models keys: ", self.models.keys())
         new_model = self.aggregation()
-        print("scores after aggregation: ", self.scores)
+        # print("scores after aggregation: ", self.scores)
 
         # update the global model
         self.update_global_model(new_model)
@@ -167,7 +182,7 @@ class VerifierNodeActor(NodeActor):
             "hash": "MockHash",
             "last_block_hash": self.last_block_hash
         }
-        print(f"Block {self.round} created6")
+        print(f"\nBlock {self.round} created\n")
 
         return message
 
@@ -183,21 +198,12 @@ class VerifierNodeActor(NodeActor):
     def aggregation(self):
         # updated version of the aggregation function in the sydelp class
 
-        # step 1: update model matrix
-        # list of models is a list of keras models
-        # get the list of models from the dictionary
-        # print("Getting the list of models")
-        # print("Models keys: ", self.models.keys())
-
         list_of_models = [self.models[id_node] for id_node in self.models.keys()]
-        # print("List of models: ", list_of_models)
         self.update_data_sizes()
 
-        # create the matrix of models
-        # print("Creating the models matrix")
         try:
             models_matrix = np.empty((len(self.models),
-                                      len(self.models[3])),
+                                      len(self.models[4])),
                                      dtype="float")
         except Exception as e:
             print(f"Error in the creation of the models matrix: {e}")
@@ -205,14 +211,9 @@ class VerifierNodeActor(NodeActor):
 
         for i, model in enumerate(list_of_models):
             models_matrix[i] = model
-        # matrix_of_models = [model.flatten() for model in self.models]
-        # print("Models matrix: ", models_matrix)
 
-        # step 2: get krums result and labels (+1, -1)
-        # the result is the weights of the model
         # TODO: modify the krum function to return the weights of the model and the labels [(id_node, label)]
         try:
-            # print("Averaging with krum")
             krum_result =  krum(models_matrix,
                  m= floor(len(self.models) * 0.3),
                  weighting_mode=self.weighting_mode,
@@ -221,9 +222,7 @@ class VerifierNodeActor(NodeActor):
             print(f"Error in the krum function: {e}")
             return
 
-        # print("Krum results: ", krum_result)
 
-        # print("Weights shapes: ", self.weights_shapes)
         self.update_scores(krum_result[1])
 
         # step 3: get the weights of the model
@@ -272,12 +271,13 @@ class VerifierNodeActor(NodeActor):
         }
 
         message['node'].tell(new_message)
+        print("Message start sent to the new node")
 
     def update_scores(self, krum_indexes):
         tmp_flag_map = [0] * len(self.partners)
 
         for i in range(len(krum_indexes)):
-            node_id = krum_indexes[i] + 2
+            node_id = krum_indexes[i] + 4 # check this
             if node_id in self.scores.keys():
                 self.scores[node_id] += 1
             else:
@@ -313,8 +313,5 @@ class VerifierNodeActor(NodeActor):
             return
 
         # check if the round is finished
-        if len(self.models.keys()) >= len(self.partners) - 1 :
-            # print("Round finished: ", self.round)
-            # print("Models length: ", len(self.models.keys()))
-            # print("Partners length: ", len(self.partners))
+        if len(self.models.keys()) >= len(self.partners) - 2:
             self.end_round()

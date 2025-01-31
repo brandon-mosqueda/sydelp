@@ -2,7 +2,7 @@
 Author: francesco boldrin francesco.boldrin@studenti.unitn.it
 Date: 2024-12-28 12:37:50
 LastEditors: francesco boldrin francesco.boldrin@studenti.unitn.it
-LastEditTime: 2025-01-24 17:16:50
+LastEditTime: 2025-01-31 14:30:33
 FilePath: actors_nodes/node_actor.py
 Description: 这是默认设置,可以在设置》工具》File Description中进行配置
 """
@@ -59,7 +59,7 @@ class NodeActor(pykka.ThreadingActor):
         
         # if the message is not a dictionary, print an error message
         if not isinstance(message, dict):
-            print(f"\n{self.ID} received an invalid message: {message}\n")
+            # print(f"\n{self.ID} received an invalid message: {message}\n")
             return
 
         # 1- If the message is a string "stop", stop the actor
@@ -82,11 +82,11 @@ class NodeActor(pykka.ThreadingActor):
         # 3- If the message is a dictionary with the key "command" and the value "update_partners",
         if message.get('command') == 'update_partners':
             self.update_partners(message['partners'])
-            print(f"{self.ID} updated partners to {message['partners']}")
+            # print(f"{self.ID} updated partners to {message['partners']}")
             return
         
         # 4- If the message is not recognized, print an error message
-        print(f"\n{self.ID} received an not recognized message: {message['command']}\n")
+        # print(f"\n{self.ID} received an not recognized message: {message['command']}\n")
         
         # NORMAL MESSAGE HANDLING are in the subclasses
         
