@@ -2,17 +2,21 @@
 Author: francesco boldrin francesco.boldrin@studenti.unitn.it
 Date: 2025-01-27 20:24:54
 LastEditors: francesco boldrin francesco.boldrin@studenti.unitn.it
-LastEditTime: 2025-01-31 15:03:07
+LastEditTime: 2025-02-04 17:04:21
 FilePath: actors_nodes/attacker_actor.py
 Description: 这是默认设置,可以在设置》工具》File Description中进行配置
 """
+from random import random
+
+import numpy as np
+
 from actors_nodes.active_node_actor import ActiveNodeActor
 # This class will control the attacker node in the network
 
 from actors_nodes.node_actor import NodeActor
 
 class AttackerManagerActor(NodeActor):
-    def __init__(self, node_id: int, attacker, num_active_attackers, offset_ids, alpha, max_computing_power) -> None:
+    def __init__(self, node_id: int, attacker, num_active_attackers, offset_ids, alpha, max_computing_power, T) -> None:
         super().__init__(node_id)
         self.attacker = attacker
         self.num_active_attackers = num_active_attackers
@@ -21,8 +25,9 @@ class AttackerManagerActor(NodeActor):
         self.alpha = alpha  
         self.round = 0
         self.COMPUTING_POWER = max_computing_power
-        self.total_iter = 10
+        self.T = T
         self.debug()
+        self.attack_started_flag = False
     
     def debug(self):
         print(f"Attacker Manager Actor {self.ID}")
@@ -40,16 +45,20 @@ class AttackerManagerActor(NodeActor):
         self.broadcast(message)
         
     def check_change_behavior(self):
-        if self.num_active_attackers > (self.offset_ids -4):
+        if self.num_active_attackers > int(((self.offset_ids -4)+self.num_active_attackers)* 0.4) :
             self.change_behavior("attack")
+            self.attack_started_flag = True
         
     def on_receive(self, message: dict):
         # print(f"Attacker Manager Actor {self.ID} received a message: {message.get('command')}")
         if message.get("command") == "new_block":
             # HANDLE THE NEW BLOCK 
+            print(f"Attacker Manager Actor {self.ID} received a new block")
             self.check_scores(message)
             
-            self.check_change_behavior()
+            print(f"Attacker Manager Actor {self.ID} is checking the change of behavior")
+            if not self.attack_started_flag:
+                self.check_change_behavior()
             
             return
         
@@ -62,7 +71,7 @@ class AttackerManagerActor(NodeActor):
         if score == 0:
             return 1.
         
-        tmp = (self.total_iter - self.alpha)/(self.total_iter - 1)
+        tmp = (self.T - self.alpha)/(self.T - 1)
         
         res = tmp ** score
         
@@ -82,15 +91,40 @@ class AttackerManagerActor(NodeActor):
         sum_score = 0
         scores = message.get("scores")
         
-        print(f"Scores: {scores}")
+        print(f"Scores (attacker): {scores}")
         attackers_id = [i for i in range(self.offset_ids, self.num_active_attackers+self.offset_ids)]
         print(f"Attackers ID: {attackers_id}")
+        
         
         for i in attackers_id:
             sum_score += self.compute_difficulty(scores[i])
             
-        print(f"Sum of the scores: {sum_score}")
+        print(f"Sum of the scores attackers: {sum_score}")
+
+        # take the sum of the scores of some random honest nodes
+        random_honest_nodes = []
+        choichable_nodes = [i for i in range(4, self.offset_ids)]
+        for i in range(len(attackers_id)):
+            # pick a random honest node in choichable_nodes
+            node = np.random.choice(choichable_nodes)
+            random_honest_nodes.append(node)
+            choichable_nodes.remove(node)
             
+        sum_score_rand = 0
+        for i in random_honest_nodes:
+            sum_score_rand += self.compute_difficulty(scores[i])
+        
+        print(f"Sum of the scores honest nodes: {sum_score_rand}")
+        
+        message = {
+            "command": "scores",
+            "round": self.round,
+            "attackers_scores": sum_score,
+            "honest_scores": sum_score_rand
+        }
+        
+        self.broadcast(message)
+        
         diff = self.COMPUTING_POWER - sum_score
         
         while diff > 1:

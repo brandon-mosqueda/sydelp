@@ -33,11 +33,11 @@ class DataLoggerActor(NodeActor):
     X_test: DataFrame
     y_test: DataFrame
 
-    def __init__(self, node_id: int, util_node, X_test, y_test, metrics_params, init_num_attacker, init_participant, simulation_name) -> None:
+    def __init__(self, node_id: int, util_node, X_test, y_test, metrics_params, init_num_attacker, honest_nodes, simulation_name) -> None:
         super().__init__(node_id)
         self.messsages_from_trainers = []
-        self.num_participants = init_participant
-        self.honest_participants = init_participant - init_num_attacker
+        self.num_participants = honest_nodes + init_num_attacker
+        self.honest_participants = honest_nodes
         self.attacker_per_round = []
         self.current_num_attacker = init_num_attacker
         self.quality = {}
@@ -46,7 +46,7 @@ class DataLoggerActor(NodeActor):
         self.y_test = y_test
         self.metrics_params = metrics_params
         self.simulation_name = simulation_name
-
+        self.scores_per_round = {}
         print("X_test: ", X_test)
         print("y_test: ", y_test)
 
@@ -92,6 +92,13 @@ class DataLoggerActor(NodeActor):
             print(f"Messages from trainers: {self.messsages_from_trainers}")
             print(f"Number of participants: {self.num_participants}")
             print(f"Quality of the model: {self.quality}")
+            return
+
+        if message.get('command') == 'scores':
+            self.scores_per_round[message['round']] = {
+                "attackers_scores": message['attackers_scores'],
+                "honest_scores": message['honest_scores']
+            }
             return
 
         # Handle primitive messages [stop, hello, set_partner, update_partners]
@@ -169,7 +176,8 @@ class DataLoggerActor(NodeActor):
         data[self.simulation_name] = {
             "quality": self.quality,
             "attacker_per_round": self.attacker_per_round,
-            "honest_participants": self.honest_participants
+            "honest_participants": self.honest_participants,
+            "scores_per_round": self.scores_per_round
         }
 
         print(data)

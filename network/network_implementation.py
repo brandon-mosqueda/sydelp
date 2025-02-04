@@ -17,12 +17,25 @@ from attack.attacker import Attacker
 from learning.learning import Learning
 from learning.learning import MetricParams
 from keras.src.models import Model as KerasModel
+import numpy as np
+import json
 
 # hyoerparameters
 HONEST_NODES = 20 # check this parameter with the actual dataset parameters
 INIT_MALICIOUS_NODES = 15 # check this parameter with the actual dataset parameters, it is equal to MAX_COMPUTING_POWER
 OFFSET = 4
 ALPHA = 2
+
+def read_input_params():
+    # read the input parameters from ./params_network/1_input_params.json
+    try:
+        with open("./params_network/15_input_params.json", "r") as f:
+            input_params = json.load(f)
+    except Exception as e:
+        print(f"Error in reading the input parameters: {e}")
+        return None
+
+    return input_params
 
 DEBUG = False
 def network_implementation(params):
@@ -31,14 +44,36 @@ def network_implementation(params):
     if DEBUG:
         print(f"Starting the network, with mock structure")
 
+    try:
+        input_params = read_input_params()
+        HONEST_NODES = input_params["HONEST_NODES"]
+        INIT_MALICIOUS_NODES = input_params["INIT_MALICIOUS_NODES"]
+        ALPHA = float(input_params["alpha"])
+        exp_num_of_attacks = float(input_params["exp_num_of_attackers"])
+        T = float(input_params["T"])
+        name = input_params["name"]
+    except Exception as e:
+        print(f"Error in reading the input parameters: {e}")
+        return
+
+
+
+
+    print("input_params: ", input_params)
+
 
     results_nodes_builder = nodes_builder()
 
     sydelp_nodes: list[Node] = results_nodes_builder[0]
+    # shuffle the nodes
+    np.random.shuffle(sydelp_nodes)
+
     attacker: Union[Attacker, None] = results_nodes_builder[1]
     (X_test, y_test) = (results_nodes_builder[4], results_nodes_builder[5])
     metrics_params: dict[str, MetricParams] = results_nodes_builder[3]
     attacker_nodes = attacker.nodes
+    # shuffle the attacker nodes
+    np.random.shuffle(attacker_nodes)
 
     print("attacker: ", attacker)
     print("attacker_nodes: ", attacker_nodes)
@@ -48,9 +83,9 @@ def network_implementation(params):
     nodes.extend(
         [
             UserInterfaceActor.start(0),
-            DataLoggerActor.start(1, util_node_copy, X_test, y_test, metrics_params, INIT_MALICIOUS_NODES, OFFSET+HONEST_NODES, "simulation_1"),
-            VerifierNodeActor.start(2, util_node_copy),
-            AttackerManagerActor.start(3, attacker_nodes, INIT_MALICIOUS_NODES, OFFSET+HONEST_NODES, ALPHA, INIT_MALICIOUS_NODES),
+            DataLoggerActor.start(1, util_node_copy, X_test, y_test, metrics_params, INIT_MALICIOUS_NODES, HONEST_NODES, name),
+            VerifierNodeActor.start(2, util_node_copy, T, exp_num_of_attacks),
+            AttackerManagerActor.start(3, attacker_nodes, INIT_MALICIOUS_NODES, OFFSET+HONEST_NODES, ALPHA, INIT_MALICIOUS_NODES, T),
         ]
     )
 
