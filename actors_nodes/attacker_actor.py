@@ -2,7 +2,7 @@
 Author: francesco boldrin francesco.boldrin@studenti.unitn.it
 Date: 2025-01-27 20:24:54
 LastEditors: francesco boldrin francesco.boldrin@studenti.unitn.it
-LastEditTime: 2025-02-04 17:04:21
+LastEditTime: 2025-02-05 14:50:43
 FilePath: actors_nodes/attacker_actor.py
 Description: 这是默认设置,可以在设置》工具》File Description中进行配置
 """
@@ -16,7 +16,7 @@ from actors_nodes.active_node_actor import ActiveNodeActor
 from actors_nodes.node_actor import NodeActor
 
 class AttackerManagerActor(NodeActor):
-    def __init__(self, node_id: int, attacker, num_active_attackers, offset_ids, alpha, max_computing_power, T) -> None:
+    def __init__(self, node_id: int, attacker, num_active_attackers, offset_ids, alpha, max_computing_power, T, strategy) -> None:
         super().__init__(node_id)
         self.attacker = attacker
         self.num_active_attackers = num_active_attackers
@@ -28,6 +28,7 @@ class AttackerManagerActor(NodeActor):
         self.T = T
         self.debug()
         self.attack_started_flag = False
+        self.strategy = strategy
     
     def debug(self):
         print(f"Attacker Manager Actor {self.ID}")
@@ -95,9 +96,11 @@ class AttackerManagerActor(NodeActor):
         attackers_id = [i for i in range(self.offset_ids, self.num_active_attackers+self.offset_ids)]
         print(f"Attackers ID: {attackers_id}")
         
-        
-        for i in attackers_id:
-            sum_score += self.compute_difficulty(scores[i])
+        try:
+            for i in attackers_id:
+                sum_score += self.compute_difficulty(scores[i])
+        except Exception as e:
+            print(f"Error in the computation of the scores: {e}")
             
         print(f"Sum of the scores attackers: {sum_score}")
 
@@ -151,7 +154,10 @@ class AttackerManagerActor(NodeActor):
         try:
             print("Trying to add a new attacker to the network")
             try:
-                new_attacker = ActiveNodeActor.start(self.new_attacker_id, self.attacker[self.num_active_attackers], is_attacker_flag=True)
+                if self.strategy == "independent":
+                    new_attacker = ActiveNodeActor.start(self.new_attacker_id, self.attacker[self.num_active_attackers], is_attacker_flag=True, perform_attack=True)
+                elif self.strategy == "colluding":
+                    new_attacker = ActiveNodeActor.start(self.new_attacker_id, self.attacker[self.num_active_attackers], is_attacker_flag=True, perform_attack=False)
             except Exception as e:
                 print(f"Error in the creation of the new attacker: {e}")
             self.num_active_attackers += 1

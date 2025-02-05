@@ -45,7 +45,7 @@ class VerifierNodeActor(NodeActor):
 
     MIN_SCORE = 0
     
-    def __init__(self,  ID, node: Node):
+    def __init__(self,  ID, node: Node, T, exp_num_malicious) -> None:
         super().__init__(ID)
         self.signatures = {}
         self.models = {}
@@ -57,9 +57,12 @@ class VerifierNodeActor(NodeActor):
         self.util_node = node
         self.weights_shapes = [weight.shape for weight in self.util_node.model.get_weights()]
         self.FirstRound = True
+        self.expected_malicious_num = exp_num_malicious
+        self.T = T
 
     def init_scores(self):
         # initialize the scores
+        print("sorted models keys: ", sorted(self.models.keys()))
         for node_id in self.models.keys():
             self.scores[node_id] = VerifierNodeActor.MIN_SCORE
 
@@ -197,8 +200,9 @@ class VerifierNodeActor(NodeActor):
 
     def aggregation(self):
         # updated version of the aggregation function in the sydelp class
-
-        list_of_models = [self.models[id_node] for id_node in self.models.keys()]
+        sorted_keys = sorted(self.models.keys())
+        print("Sorted keys: ", sorted_keys)
+        list_of_models = [self.models[id_node] for id_node in sorted_keys]
         self.update_data_sizes()
 
         try:
@@ -213,16 +217,18 @@ class VerifierNodeActor(NodeActor):
             models_matrix[i] = model
 
         # TODO: modify the krum function to return the weights of the model and the labels [(id_node, label)]
+        expected_malicious_num = int(round((len(self.models) * self.expected_malicious_num),0))
+        # print("Expected malicious number: ", expected_malicious_num)
         try:
             krum_result =  krum(models_matrix,
-                 m= floor(len(self.models) * 0.3),
+                 m= expected_malicious_num,
                  weighting_mode=self.weighting_mode,
                  data_sizes=self.data_sizes)
         except Exception as e:
             print(f"Error in the krum function: {e}")
             return
 
-
+        print("Best indexes: ", krum_result[1])
         self.update_scores(krum_result[1])
 
         # step 3: get the weights of the model
@@ -259,7 +265,10 @@ class VerifierNodeActor(NodeActor):
         self.round += 1
 
         # # send the message to the trainers to start the new round
-        self.broadcast({"command": "start", "round": self.round})
+        if self.round < self.T:
+            self.broadcast({"command": "start", "round": self.round})
+        else:
+            self.stop()
 
 
     
@@ -274,7 +283,8 @@ class VerifierNodeActor(NodeActor):
         print("Message start sent to the new node")
 
     def update_scores(self, krum_indexes):
-        tmp_flag_map = [0] * len(self.partners)
+        print("Length of krum indexes: ", len(krum_indexes))
+        tmp_flag_map = [0] * (len(self.partners) - 2)
 
         for i in range(len(krum_indexes)):
             node_id = krum_indexes[i] + 4 # check this
@@ -286,10 +296,12 @@ class VerifierNodeActor(NodeActor):
 
         for i in range(len(tmp_flag_map)):
             if tmp_flag_map[i] == 0:
-                if i + 2 in self.scores.keys():
-                    if self.scores[i + 2] > 0:
-                        self.scores[i + 2] -= 1
+                if i + 4 in self.scores.keys():
+                    if self.scores[i + 4] > 0:
+                        self.scores[i + 4] -= 1
 
+                else:
+                    self.scores[i + 4] = 0
 
 
     def store_model(self, message):

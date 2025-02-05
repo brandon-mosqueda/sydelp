@@ -35,7 +35,7 @@ class ActiveNodeActor(NodeActor):
     first_round: bool # flag to check if it is the first round of the training
     is_attacker: bool # flag to check if the node is an attacker
     
-    def __init__(self,  node_id: int, node: Node, is_attacker_flag: bool) -> None:
+    def __init__(self,  node_id: int, node: Node, is_attacker_flag: bool, perform_attack:bool) -> None:
         super().__init__(node_id)
         self.node = node
         self.public_key = "public_key_placeholder"
@@ -43,7 +43,7 @@ class ActiveNodeActor(NodeActor):
         self.score = 0. # the score is the difficulty of the PoW, maximum score means maximum difficulty
         self.first_round = True
         self.is_attacker = is_attacker_flag
-        self.perform_attack = False
+        self.perform_attack = perform_attack
 
     def on_receive(self, message: dict):        
         # 2 handle the starting message, it will start the training process
@@ -82,7 +82,7 @@ class ActiveNodeActor(NodeActor):
 
         if message.get('command') == 'change_behavior':
             if self.is_attacker:
-                self.perform_attack = not self.perform_attack
+                self.perform_attack = True
 
         # 4 handle the new model message
         if message.get('command') == 'new_model':

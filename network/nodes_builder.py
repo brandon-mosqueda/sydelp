@@ -2,7 +2,7 @@
 Author: francesco boldrin francesco.boldrin@studenti.unitn.it
 Date: 2025-01-21 18:41:51
 LastEditors: francesco boldrin francesco.boldrin@studenti.unitn.it
-LastEditTime: 2025-01-26 20:24:57
+LastEditTime: 2025-02-05 11:13:44
 FilePath: network/nodes_builder.py
 Description: 这是默认设置,可以在设置》工具》File Description中进行配置
 """

@@ -29,7 +29,7 @@ ALPHA = 2
 def read_input_params():
     # read the input parameters from ./params_network/1_input_params.json
     try:
-        with open("./params_network/15_input_params.json", "r") as f:
+        with open("./params_network/20_input_params.json", "r") as f:
             input_params = json.load(f)
     except Exception as e:
         print(f"Error in reading the input parameters: {e}")
@@ -52,6 +52,7 @@ def network_implementation(params):
         exp_num_of_attacks = float(input_params["exp_num_of_attackers"])
         T = float(input_params["T"])
         name = input_params["name"]
+        type_of_attack = input_params["attack_mode"]
     except Exception as e:
         print(f"Error in reading the input parameters: {e}")
         return
@@ -85,18 +86,21 @@ def network_implementation(params):
             UserInterfaceActor.start(0),
             DataLoggerActor.start(1, util_node_copy, X_test, y_test, metrics_params, INIT_MALICIOUS_NODES, HONEST_NODES, name),
             VerifierNodeActor.start(2, util_node_copy, T, exp_num_of_attacks),
-            AttackerManagerActor.start(3, attacker_nodes, INIT_MALICIOUS_NODES, OFFSET+HONEST_NODES, ALPHA, INIT_MALICIOUS_NODES, T),
+            AttackerManagerActor.start(3, attacker_nodes, INIT_MALICIOUS_NODES, OFFSET+HONEST_NODES, ALPHA, INIT_MALICIOUS_NODES, T, type_of_attack),
         ]
     )
 
 
     for i in range(OFFSET, HONEST_NODES+OFFSET):
-        nodes.append(ActiveNodeActor.start(i, sydelp_nodes[i-3], is_attacker_flag=False))
+        nodes.append(ActiveNodeActor.start(i, sydelp_nodes[i-3], is_attacker_flag=False, perform_attack=False))
 
     for i in range(HONEST_NODES+OFFSET, HONEST_NODES+OFFSET+INIT_MALICIOUS_NODES):
-        nodes.append(ActiveNodeActor.start(i, attacker_nodes[i-(OFFSET+HONEST_NODES)], is_attacker_flag=True))
+        if type_of_attack == "independent":
+            nodes.append(ActiveNodeActor.start(i, attacker_nodes[i-(OFFSET+HONEST_NODES)], is_attacker_flag=True, perform_attack=True))
+        elif type_of_attack == "colluding":
+            nodes.append(ActiveNodeActor.start(i, attacker_nodes[i-(OFFSET+HONEST_NODES)], is_attacker_flag=True, perform_attack=False))
 
-
+    print("Nodes created: ", len(nodes))
     for i, node_h in enumerate(nodes[:OFFSET]):
         list_of_partners = [node for node in nodes[1:] if node != node_h]
         try:
