@@ -1,0 +1,27 @@
+{
+  "protocol": "DL",
+  "weighting_mode": "uniform",
+  "attack": "Solitary untargeted",
+  "dataset": "MNIST",
+  "seed": 6,
+
+  "metrics": ["accuracy"],
+
+  "random_malicious_num": 4,
+  "attack_mean": 3,
+  "attack_sd": 2,
+
+  "is_identical_attack": false,
+  "nodes_num": 100,
+  "iterations_num": 100,
+  "local_epochs_num": 10,
+  "batch_size": 16,
+  "learning_rate": 0.001,
+
+  "alpha": 0.1,
+  "split_min_size": 32,
+
+  "dense_units": 100,
+
+  "results_dir": "results"
+}

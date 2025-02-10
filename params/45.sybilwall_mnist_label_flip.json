@@ -1,0 +1,31 @@
+{
+  "protocol": "SybilWall",
+  "attack": "Label flipping",
+  "dataset": "MNIST",
+  "seed": 3,
+
+  "metrics": ["accuracy", "attack_success_rate", "label_recall"],
+
+  "label_flip_malicious_num": 33,
+  "source_label": 1,
+  "target_label": 9,
+
+  "graph_type": "random_regular",
+  "distant_propagation_relevance": 0.8,
+  "confidence": 1,
+  "degree": 8,
+
+  "is_identical_attack": false,
+  "nodes_num": 100,
+  "iterations_num": 100,
+  "local_epochs_num": 10,
+  "batch_size": 16,
+  "learning_rate": 0.001,
+
+  "alpha": 0.1,
+  "split_min_size": 32,
+
+  "dense_units": 100,
+
+  "results_dir": "results"
+}

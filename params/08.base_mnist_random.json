@@ -1,0 +1,23 @@
+{
+  "protocol": "Baseline",
+  "weighting_mode": "uniform",
+  "attack": "Random",
+  "dataset": "MNIST",
+  "seed": 2,
+
+  "metrics": ["accuracy"],
+
+  "is_identical_attack": false,
+  "nodes_num": 100,
+  "iterations_num": 100,
+  "local_epochs_num": 10,
+  "batch_size": 16,
+  "learning_rate": 0.001,
+
+  "alpha": 0.1,
+  "split_min_size": 32,
+
+  "dense_units": 100,
+
+  "results_dir": "results"
+}
