@@ -1,4 +1,4 @@
-# Poisoning attacks mitigation
+# Sybil-resistant Decentralized Learning Protocol (SyDeLP)
 
 This repository contains the code for the experiments of the research paper [_Mitigation of Sybil-based Poisoning Attacks in Permissionless Decentralized Learning_](https://hal.science/hal-04892539). We provide the implementation of the following:
 
@@ -34,7 +34,7 @@ This repository contains the code for the experiments of the research paper [_Mi
 
 # Run the experiments
 
-You can use the following command to run any of the provided experiments. The json files have all the parameters required to reproduce the results of the paper. You can also try your own parameters, just be sure the follow the expected format as in all the provided examples of `params` folder.
+You can use the following command to run any of the provided experiments. The json files have all the parameters required to reproduce the results of the paper. You can also try your own parameters, just be sure you use the expected format as in all the provided examples of `params` folder.
 
 ```bash
 python run.py params/<file>.json
@@ -42,7 +42,7 @@ python run.py params/<file>.json
 
 # Tested dependencies versions
 
-Python 3.9.21 and the following packages (and versions) were used to run the experiments.
+Python 3.9.21 and the following packages were used to run the experiments.
 
 Package | Version
 ------- | -------
@@ -54,7 +54,7 @@ scipy | 1.9.3
 pandas | 2.2.1
 networkx | 3.2.1
 
-We noted that using a GPU does not offer a better performance due to the constant necessity of moving model parameters to the RAM. To enable CPU usage please comment the `os.environ["CUDA_VISIBLE_DEVICES"] = "-1"` line in `run.py`.
+We noted that using a GPU does not offer a better performance due to the constant necessity of moving model parameters to the RAM and GPU memory, so GPU usage is disabled by default. To enable GPU usage please comment the `os.environ["CUDA_VISIBLE_DEVICES"] = "-1"` line in `run.py`.
 
 # Citation
 
@@ -78,18 +78,18 @@ We noted that using a GPU does not offer a better performance due to the constan
 <a id="1">[1]</a> McMahan et al. (2016). **Communication-Efficient Learning of Deep Networks from Decentralized Data**. [arXiv:1602.05629](https://arxiv.org/abs/1602.05629).
 
 
-<a id="2">[2]</a> Blanchard et al. (2017). **Machine Learning with Adversaries: Byzantine Tolerant Gradient Descent**. Advances in Neural Information Processing Systems.
+<a id="2">[2]</a> Blanchard et al. (2017). **Machine Learning with Adversaries: Byzantine Tolerant Gradient Descent**. Advances in Neural Information Processing Systems. [Link](https://proceedings.neurips.cc/paper/2017/hash/f4b9ec30ad9f68f89b29639786cb62ef-Abstract.html).
 
-<a id="3">[3]</a> Werthenbach et at. (2023). **Towards Sybil Resilience in Decentralized Learning**. [arXiv:2306.15044](https://arxiv.org/abs/2306.15044)
+<a id="3">[3]</a> Werthenbach et at. (2023). **Towards Sybil Resilience in Decentralized Learning**. [arXiv:2306.15044](https://arxiv.org/abs/2306.15044).
 
-<a id="4">[4]</a> Wan et al. (2022). **Shielding federated learning: Robust aggregation with adaptive client selection**. [arXiv:2204.13256](https://arxiv.org/abs/2204.13256)
+<a id="4">[4]</a> Wan et al. (2022). **Shielding federated learning: Robust aggregation with adaptive client selection**. [arXiv:2204.13256](https://arxiv.org/abs/2204.13256).
 
 <a id="5">[5]</a> Lian et al. (2017). **Can Decentralized Algorithms Outperform Centralized Algorithms? A Case Study for Decentralized Parallel Stochastic Gradient Descent**. [arXiv:1705.09056](https://arxiv.org/abs/1705.09056).
 
-<a id="6">[6]</a> Li et al. (2019). **RSA: Byzantine-robust stochastic aggregation methods for distributed learning from heterogeneous datasets**. Proceedings of the AAAI conference on artificial intelligence.
+<a id="6">[6]</a> Li et al. (2019). **RSA: Byzantine-robust stochastic aggregation methods for distributed learning from heterogeneous datasets**. Proceedings of the AAAI conference on artificial intelligence. [DOI](https://doi.org/10.1609/aaai.v33i01.33011544).
 
-<a id="7">[7]</a> Tolpegin et al. (2020). **Data Poisoning Attacks Against Federated Learning Systems**. Computer Security -- ESORICS 2020.
+<a id="7">[7]</a> Tolpegin et al. (2020). **Data Poisoning Attacks Against Federated Learning Systems**. Computer Security -- ESORICS 2020. [DOI](https://doi.org/10.1007/978-3-030-58951-6_24).
 
-<a id="8">[8]</a> Fang et al. (2020). **Local Model Poisoning Attacks to Byzantine-Robust Federated Learning**. 29th USENIX Security Symposium.
+<a id="8">[8]</a> Fang et al. (2020). **Local Model Poisoning Attacks to Byzantine-Robust Federated Learning**. 29th USENIX Security Symposium. [Link](https://www.usenix.org/conference/usenixsecurity20/presentation/fang).
 
-<a id="9">[9]</a> Li et al. (2022). **Federated learning on non-iid data silos: An experimental study**. 2022 IEEE 38th international conference on data engineering (ICDE).
+<a id="9">[9]</a> Li et al. (2022). **Federated learning on non-iid data silos: An experimental study**. 2022 IEEE 38th international conference on data engineering (ICDE). [DOI](https://doi.org/10.1109/ICDE53745.2022.00077).
