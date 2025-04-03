@@ -33,6 +33,8 @@ from nodes.mab_malicious_nodes import *
 from nodes.sybilwall_malicious_nodes import *
 from nodes.mab_node import MabNode
 from nodes.sybilwall_node import SybilwallNode
+from nodes.sydelp_node import SydelpNode
+from nodes.sydelp_malicious_nodes import *
 
 from utils.datasets import mnist_data, spam_data
 from utils.models import mnist_model, spam_model
@@ -201,6 +203,13 @@ def get_nodes_by_protocol(params: dict,
         RandomClass = MabRandomNode
         SignClass = MabSignFlippingNode
         TarLabelClass = MabTargetedLabelFlippingNode
+    elif protocol == "sydelp":
+        base_node_params['momentum_coefficient'] = params['momentum_coefficient']
+
+        NodeClass = SydelpNode
+        RandomClass = SydelpRandomNode
+        SignClass = SydelpSignFlippingNode
+        TarLabelClass = SydelpTargetedLabelFlippingNode
     elif protocol == "sybilwall":
         base_node_params['confidence'] = params['confidence']
         base_node_params['distant_propagation_relevance'] = params['distant_propagation_relevance']
