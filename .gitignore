@@ -16,3 +16,5 @@ results.first/*
 plots/
 mab.original.py
 params
+scores_results/
+similarity_results/

@@ -1,6 +1,5 @@
 {
   "protocol": "DL",
-  "weighting_mode": "uniform",
   "attack": "Label flipping",
   "dataset": "MNIST",
   "seed": 3,

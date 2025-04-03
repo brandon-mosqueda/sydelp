@@ -1,6 +1,5 @@
 {
   "protocol": "Baseline",
-  "weighting_mode": "uniform",
   "attack": "Random",
   "dataset": "SMS Spam",
   "seed": 2,

@@ -1,6 +1,5 @@
 {
   "protocol": "DL",
-  "weighting_mode": "uniform",
   "attack": "Solitary untargeted",
   "dataset": "SMS Spam",
   "seed": 6,

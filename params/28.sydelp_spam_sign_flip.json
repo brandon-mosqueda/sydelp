@@ -1,6 +1,5 @@
 {
   "protocol": "SyDeLP",
-  "weighting_mode": "uniform",
   "attack": "Sign flipping",
   "dataset": "SMS Spam",
   "seed": 4,

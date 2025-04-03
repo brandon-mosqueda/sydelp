@@ -1,6 +1,5 @@
 {
   "protocol": "SyDeLP",
-  "weighting_mode": "uniform",
   "attack": "Random",
   "dataset": "MNIST",
   "seed": 2,

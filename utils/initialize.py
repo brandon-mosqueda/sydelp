@@ -83,7 +83,7 @@ def get_controller_by_protocol(params: dict,
                                      for layer in global_model.get_weights()]
 
     base_params: dict = {
-        'iterations': params['iterations_num'],
+        'iterations_num': params['iterations_num'],
         'nodes': nodes,
         'global_model': global_model,
         'weights_shapes': weights_shapes,
@@ -96,13 +96,9 @@ def get_controller_by_protocol(params: dict,
     protocol: str = as_name(params['protocol'])
 
     if protocol in ["dl", "baseline"]:
-        return FederatedLearning(
-            weighting_mode=params['weighting_mode'],
-            **base_params
-        )
+        return FederatedLearning(**base_params)
     elif protocol == "sydelp":
         return Sydelp(
-            weighting_mode=params['weighting_mode'],
             expected_malicious_num=params['expected_malicious_num'],
             **base_params
         )

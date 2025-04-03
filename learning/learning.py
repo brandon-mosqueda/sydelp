@@ -30,19 +30,18 @@ NodeType = TypeVar('NodeType', bound='Node')
 
 class Learning(ABC, Generic[NodeType]):
     nodes: list[NodeType]
-    honest_num: int
     global_model: KerasModel
     weights_shapes: WeightsShapes
     x_testing: NumArray
     y_testing: IntArray
-    iterations: int
+    iterations_num: int # T
     execution_time: float
     metrics: DataFrame
     metrics_params: dict[str, MetricParams]
     attacker: Union[Attacker, None]
 
     def __init__(self,
-                 iterations: int,
+                 iterations_num: int,
                  nodes: list[NodeType],
                  global_model: KerasModel,
                  weights_shapes: WeightsShapes,
@@ -55,17 +54,17 @@ class Learning(ABC, Generic[NodeType]):
         self.y_testing = y_testing
         self.global_model = global_model
         self.weights_shapes = weights_shapes
-        self.iterations = iterations
+        self.iterations_num = iterations_num
         self.metrics_params = metrics_params
         self.execution_time = 0
-        self.honest_num = sum(not node.is_malicious for node in self.nodes)
         self.attacker = attacker
 
     def iteration_setup(self, iteration_num: int) -> None:
         pass
 
     def training(self) -> None:
-        bar: MyProgressBar = utils.progress_bar(self.honest_num)
+        honest_num: int = sum(not node.is_malicious for node in self.nodes)
+        bar: MyProgressBar = utils.progress_bar(honest_num)
 
         for node in self.nodes:
             if not node.is_malicious:
@@ -117,8 +116,8 @@ class Learning(ABC, Generic[NodeType]):
         start: float = time()
         metrics: list[dict] = []
 
-        for i in range(self.iterations):
-            print(f'* Iteration {i + 1}/{self.iterations}')
+        for i in range(self.iterations_num):
+            print(f'* Iteration {i + 1}/{self.iterations_num}')
 
             self.iteration_setup(i)
 

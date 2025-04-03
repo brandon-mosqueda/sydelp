@@ -1,6 +1,5 @@
 {
   "protocol": "Baseline",
-  "weighting_mode": "uniform",
   "attack": "Random",
   "dataset": "MNIST",
   "seed": 2,
