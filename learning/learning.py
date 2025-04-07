@@ -116,6 +116,10 @@ class Learning(ABC, Generic[NodeType]):
         start: float = time()
         metrics: list[dict] = []
 
+        # Ensure all nodes use the same initial model
+        for node in self.nodes:
+            node.set_model_weights(self.global_model.get_weights())
+
         for i in range(self.iterations_num):
             print(f'* Iteration {i + 1}/{self.iterations_num}')
 

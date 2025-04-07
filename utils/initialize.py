@@ -102,6 +102,7 @@ def get_controller_by_protocol(params: dict,
     elif protocol == "sydelp":
         return Sydelp(
             expected_malicious_num=params['expected_malicious_num'],
+            learning_rate=params['learning_rate'],
             **base_params
         )
     elif protocol == "mab-fl":

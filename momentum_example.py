@@ -13,6 +13,7 @@ F = 20
 ROUNDS = 200  # Number of communication rounds
 LEARNING_RATE = 0.75
 BETA = 0.99
+BATCH_SIZE = 150
 
 def euclidean_distance(m1, m2):
     return sum(np.sum((a - b)**2) for a, b in zip(m1, m2))
@@ -79,8 +80,11 @@ metric = keras.metrics.CategoricalAccuracy()
 
 def create_model():
     model = keras.Sequential([
-        layers.Dense(100, activation='relu', input_shape=(28, 28, 1)),
+        layers.Conv2D(32, kernel_size=(3, 3), activation='relu',
+                      input_shape=(28, 28, 1)),
+        layers.MaxPooling2D(pool_size=(2, 2)),
         layers.Flatten(),
+        layers.Dense(128, activation='relu'),
         layers.Dense(10, activation='softmax')
     ])
 
@@ -105,6 +109,10 @@ for round in range(ROUNDS):
         model.set_weights(global_weights)
 
         x_c, y_c = client_data[client_id]
+        idx = np.random.choice(np.arange(x_c.shape[0]), size=BATCH_SIZE, replace=False)
+        x_c = x_c[idx]
+        y_c = y_c[idx]
+
         with tf.GradientTape() as tape:
             preds = model(x_c, training=True)
             loss = loss_fn(y_c, preds)
