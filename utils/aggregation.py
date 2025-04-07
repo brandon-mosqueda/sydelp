@@ -46,8 +46,8 @@ def krum(models_params: FloatArray,
         m = models_num * m
 
     m = int(m)
-    kept_models_num: int = models_num - m - 2
-    if kept_models_num < 1:
+    closest_models_num: int = models_num - m - 2
+    if closest_models_num < 1:
         raise ValueError("models_num - m - 2 yielded < 1")
 
     distances: FloatArray = cdist(models_params,
@@ -57,11 +57,11 @@ def krum(models_params: FloatArray,
     scores: FloatArray = np.zeros(models_num, dtype="float")
 
     for i in range(models_num):
-        # We use n_models + 1 because the distance with itself is always the
-        # lowest (0)
-        scores[i] = np.sum(bottom_n(distances[i], kept_models_num + 1))
+        # We use closest_models_num + 1 because the distance with itself is
+        # always included for since it is the lowest (0)
+        scores[i] = np.sum(bottom_n(distances[i], closest_models_num + 1))
 
-    best_indices: IntArray = bottom_indices(scores, kept_models_num)
+    best_indices: IntArray = bottom_indices(scores, closest_models_num)
 
     weights: FloatArray
     if weighting_mode == "uniform":

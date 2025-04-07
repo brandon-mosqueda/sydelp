@@ -2,10 +2,8 @@ import progressbar
 
 import keras
 
-import tensorflow as tf
 import numpy as np
 
-from tensorflow import GradientTape, Tensor
 from keras import models
 from typing import Union, Any
 from json import load as load_json
@@ -219,36 +217,3 @@ def replace_by(x: Union[NDArray, list],
         res = np.array(res)
 
     return res
-
-
-def compute_gradient(model: KerasModel,
-                     x: NumArray,
-                     y: IntArray) -> list[FloatArray]:
-    with GradientTape() as tape:
-        # The training gradient for each individual data sample is
-        # automatically recorded here to compute the overall gradient after.
-        predictions: Tensor  = model(x, training=True)
-        loss: Tensor = model.compute_loss(x, y, predictions) # type: ignore
-
-    # NOTE!! The gradients are computed as the sum of all gradients.
-    # https://www.tensorflow.org/guide/autodiff
-    gradients: list[Tensor] = tape.gradient(
-        loss,
-        model.trainable_variables
-    ) # type: ignore
-
-    # This conversion is required because Embedding layers are sometimes not
-    # encoded as Tensors
-    gradients = [
-        tf.convert_to_tensor(grad)
-        if isinstance(grad, tf.IndexedSlices)
-        else grad
-        for grad in gradients
-    ]
-
-    # It does not work if we divide it by the batch size
-    averaged_gradients: list[FloatArray] = [
-        grad.numpy() for grad in gradients # type: ignore
-    ]
-
-    return averaged_gradients

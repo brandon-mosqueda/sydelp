@@ -102,7 +102,6 @@ def get_controller_by_protocol(params: dict,
     elif protocol == "sydelp":
         return Sydelp(
             expected_malicious_num=params['expected_malicious_num'],
-            learning_rate=params['learning_rate'],
             **base_params
         )
     elif protocol == "mab-fl":
@@ -205,8 +204,6 @@ def get_nodes_by_protocol(params: dict,
         SignClass = MabSignFlippingNode
         TarLabelClass = MabTargetedLabelFlippingNode
     elif protocol == "sydelp":
-        base_node_params['momentum_coefficient'] = params['momentum_coefficient']
-
         NodeClass = SydelpNode
         RandomClass = SydelpRandomNode
         SignClass = SydelpSignFlippingNode

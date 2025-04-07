@@ -14,9 +14,7 @@ from keras.src.models import Model as KerasModel
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-# params_file: str = sys.argv[1]
-# params_file: str = "spam.json"
-params_file: str = "mnist.json"
+params_file: str = sys.argv[1]
 params: dict = utils.read_json(params_file)
 print(params)
 
