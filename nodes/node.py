@@ -12,8 +12,6 @@ class Node:
     weights_shapes: WeightsShapes
     epochs: int
     batch_size: int
-    predict_batch_size: int
-    rows_num: int
     is_malicious: bool = False
 
     def __init__(self,
@@ -22,19 +20,13 @@ class Node:
                  model: KerasModel,
                  weights_shapes: WeightsShapes,
                  epochs: int,
-                 batch_size: int,
-                 predict_batch_size: int = 252) -> None:
+                 batch_size: int) -> None:
         self.x = x
         self.y = y
         self.model = model
         self.epochs = epochs
         self.batch_size = batch_size
         self.weights_shapes = weights_shapes
-        self.predict_batch_size = (batch_size
-                                   if predict_batch_size is None
-                                   else predict_batch_size)
-
-        self.rows_num = x.shape[0]
 
         total_size: Int = sum(np.prod(shape) for shape in weights_shapes)
         self.flat_weights = np.empty(total_size, dtype="float")
@@ -73,7 +65,7 @@ class Node:
         predicted: NumArray = self.model.predict(
             x,
             verbose=0,
-            batch_size=self.predict_batch_size
+            batch_size=x.shape[0]
         )
 
         # For binary classification

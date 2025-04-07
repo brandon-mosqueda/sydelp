@@ -8,10 +8,10 @@ from time import time
 from abc import ABC, abstractmethod
 from nodes.node import Node
 from attack.attacker import Attacker
-from utils.utils import MyProgressBar
+from utils.utils import MyProgressBar, set_weights_to_array
 from pandas import DataFrame
-from utils.typing import NumArray, Float, IntArray, KerasModel, WeightsShapes
 from typing import TypedDict, Protocol, TypeVar, Generic, Union
+from utils.typing import *
 
 
 class MetricFunction(Protocol):
@@ -31,6 +31,7 @@ NodeType = TypeVar('NodeType', bound='Node')
 class Learning(ABC, Generic[NodeType]):
     nodes: list[NodeType]
     global_model: KerasModel
+    global_flat_weights: FloatArray
     weights_shapes: WeightsShapes
     x_testing: NumArray
     y_testing: IntArray
@@ -58,6 +59,14 @@ class Learning(ABC, Generic[NodeType]):
         self.metrics_params = metrics_params
         self.execution_time = 0
         self.attacker = attacker
+
+        total_size: Int = sum(np.prod(shape) for shape in weights_shapes)
+        self.global_flat_weights = np.empty(total_size, dtype="float")
+
+        set_weights_to_array(
+            self.global_model.get_weights(),
+            self.global_flat_weights
+        )
 
     def iteration_setup(self, iteration_num: int) -> None:
         pass
@@ -117,8 +126,9 @@ class Learning(ABC, Generic[NodeType]):
         metrics: list[dict] = []
 
         # Ensure all nodes use the same initial model
+        global_weights: list[FloatArray] = self.global_model.get_weights()
         for node in self.nodes:
-            node.set_model_weights(self.global_model.get_weights())
+            node.set_model_weights(global_weights)
 
         for i in range(self.iterations_num):
             print(f'* Iteration {i + 1}/{self.iterations_num}')

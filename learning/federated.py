@@ -8,10 +8,13 @@ from utils.aggregation import fed_avg
 
 class FederatedLearning(Learning[NodeType]):
     def aggregation(self, iteration_num: int) -> None:
+        self.global_flat_weights = fed_avg(
+            np.array([node.get_flat_model_weights()
+                      for node in self.nodes],
+                     dtype='float')
+        )
         avg_model: list[FloatArray] = flat_weights_to_original(
-            fed_avg(np.array([node.get_flat_model_weights()
-                              for node in self.nodes],
-                             dtype='float')),
+            self.global_flat_weights,
             self.weights_shapes
         )
 

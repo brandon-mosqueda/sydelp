@@ -5,7 +5,7 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import AgglomerativeClustering
 from networkx import Graph, connected_components
 from utils.utils import MyProgressBar
-from utils.typing import IntArray, Float, FloatArray
+from utils.typing import IntArray, Float, FloatArray, Int
 from utils.metrics import cos_similarity
 from learning.learning import Learning
 from nodes.mab_node import MabNode
@@ -111,15 +111,10 @@ class Mab(Learning[MabNode]):
             self.selected_idx = np.delete(self.selected_idx, remove_idx)
 
     def aggregation(self, iteration_num: int) -> None:
-        global_weights: FloatArray = np.empty(self.nodes[0].flat_weights.size,
-                                              dtype="float")
-        utils.set_weights_to_array(self.global_model.get_weights(),
-                                   global_weights)
-
         # self.selected_idx is update before training in iteration_setup
         for i in self.selected_idx:
             node: MabNode = self.nodes[i]
-            node.set_update(global_weights)
+            node.set_update(self.global_flat_weights)
 
             node.momentum = (
                 node.update
@@ -189,8 +184,10 @@ class Mab(Learning[MabNode]):
             axis=0
         )
 
+        self.global_flat_weights = self.global_flat_weights + lr * global_update
+
         aggregated_weights: list[FloatArray] = utils.flat_weights_to_original(
-            global_weights + lr * global_update,
+            self.global_flat_weights,
             self.weights_shapes
         )
 

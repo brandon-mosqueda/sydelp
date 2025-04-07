@@ -18,12 +18,17 @@ class Gossip(Learning[NodeType]):
         self.graph = graph
 
     def global_model_aggregation(self) -> None:
+        self.global_flat_weights = fed_avg(
+            np.array([node.get_flat_model_weights()
+                      for node in self.nodes
+                      if not node.is_malicious],
+                     dtype='float')
+        )
+
         # For global aggregation (to compute the metrics) only honest models
         # are considered. Poisoning is prevented (or succeded) locally.
         self.global_model.set_weights(flat_weights_to_original(
-            fed_avg(np.array([node.get_flat_model_weights()
-                              for node in self.nodes
-                              if not node.is_malicious])),
+            self.global_flat_weights,
             self.weights_shapes
         ))
 
