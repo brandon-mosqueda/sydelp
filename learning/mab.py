@@ -118,12 +118,12 @@ class Mab(Learning[MabNode]):
 
             node.momentum = (
                 node.update
-                + (self.miu**(iteration_num - node.seleted_epoch)
+                + (self.miu**(iteration_num - node.selected_epoch)
                    * node.momentum)
             )
 
             node.momentum = node.momentum / np.linalg.norm(node.momentum)
-            node.seleted_epoch = iteration_num
+            node.selected_epoch = iteration_num
 
         # Remove sybils
         self.remove_sybils_idx(iteration_num)
