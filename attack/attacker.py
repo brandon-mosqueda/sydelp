@@ -34,15 +34,13 @@ class Attacker(Generic[MaliciousNodeType]):
         # For those attacks that require a training dataset (e.g. Label
         # flipping), we use the whole dataset to fit the model and then we
         # replicate it
-        node.x = self.x
-        node.y = self.y
+        node.set_new_dataset(self.x, self.y)
         node.attack()
 
         attack_params: list[FloatArray] = node.get_model_weights()
 
         # We gave him back his dataset to not interfer with other parts
-        node.x = original_x
-        node.y = original_y
+        node.set_new_dataset(original_x, original_y)
 
         for node in self.nodes:
             node.set_model_weights(attack_params)

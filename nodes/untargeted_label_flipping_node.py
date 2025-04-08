@@ -1,5 +1,6 @@
 from numpy import unique
 from nodes.malicious_node import MaliciousNode
+from utils.typing import NumArray, IntArray
 
 
 # When attacking the model is normally trained but using the flipped labels
@@ -10,6 +11,11 @@ class UntargetedLabelFlippingNode(MaliciousNode):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
+        self.classes_num = len(unique(self.y))
+
+    def set_new_dataset(self, x: NumArray, y: IntArray) -> None:
+        self.x = x
+        self.y = y
         self.classes_num = len(unique(self.y))
 
     def flip_labels(self) -> None:

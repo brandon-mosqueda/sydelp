@@ -29,21 +29,17 @@ class Sydelp(Learning[SydelpNode, SydelpAttacker]):
         self.momentum_coeff = momentum_coeff
         self.expected_malicious_num = expected_malicious_num
 
-    def node_difficulty(self, node: SydelpNode) -> Float:
-        phi: int = node.contribution_score
-
-        return (
-            (self.iterations_num - self.difficulty_alpha) /
-            (self.iterations_num - 1)
-        )**phi
-
     def round_metrics(self) -> dict[str, Float]:
         metrics: dict[str, Float] = super().round_metrics()
 
-        honest_dificulties = np.array([self.node_difficulty(node)
-                                       for node in self.honest_nodes])
-        mal_dificulties = np.array([self.node_difficulty(node)
-                                    for node in self.mal_nodes])
+        honest_dificulties: FloatArray = np.array([
+            node.compute_difficulty()
+            for node in self.honest_nodes
+        ])
+        mal_dificulties: FloatArray = np.array([
+            node.compute_difficulty()
+            for node in self.mal_nodes
+        ])
 
         metrics['mean_honest_difficulty'] = honest_dificulties.mean()
         metrics['sd_honest_difficulty'] = honest_dificulties.std()

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from nodes.node import Node
+from utils.typing import NumArray, IntArray
 
 
 class MaliciousNode(Node, ABC):
@@ -11,3 +12,7 @@ class MaliciousNode(Node, ABC):
     @abstractmethod
     def attack(self) -> None:
         pass
+
+    def set_new_dataset(self, x: NumArray, y: IntArray) -> None:
+        self.x = x
+        self.y = y

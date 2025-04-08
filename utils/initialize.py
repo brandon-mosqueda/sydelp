@@ -206,6 +206,8 @@ def get_nodes_by_protocol(params: dict,
         TarLabelClass = MabTargetedLabelFlippingNode
     elif protocol == "sydelp":
         base_node_params['momentum_coeff'] = params['momentum_coeff']
+        base_node_params['difficulty_alpha'] = params['difficulty_alpha']
+        base_node_params['iterations_num'] = params['iterations_num']
 
         NodeClass = SydelpNode
         RandomClass = SydelpRandomNode
@@ -315,11 +317,16 @@ def get_attacker(nodes: list[Node], params: dict) -> Union[Attacker, None]:
     if not mal_nodes:
         return None
 
+    # For sydelp worst case attack use the same value for the number of
+    # malicious nodes and the computing power for proper initialization.
+    # Otherwise, the necessary malicious nodes will be included in the second
+    # iteration.
     if as_name(params['protocol']) == "sydelp":
         return SydelpAttacker(
             nodes=mal_nodes,  # type: ignore
             computing_power=params['computing_power'],
-            is_identical_attack=params['is_identical_attack']
+            is_identical_attack=params['is_identical_attack'],
+            is_worst_case=params['is_worst_case'],
         )
     else:
         return Attacker(
