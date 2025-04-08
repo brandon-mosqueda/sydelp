@@ -103,6 +103,7 @@ def get_controller_by_protocol(params: dict,
         return Sydelp(
             expected_malicious_num=params['expected_malicious_num'],
             momentum_coeff=params['momentum_coeff'],
+            difficulty_alpha=params['difficulty_alpha'],
             **base_params
         )
     elif protocol == "mab-fl":

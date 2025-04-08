@@ -6,6 +6,7 @@ from utils.typing import Float, FloatArray
 class SydelpNode(Node):
     momentum_coeff: Float
     momentum: FloatArray
+    contribution_score: int = 0
 
     def __init__(self,
                  momentum_coeff: Float,
@@ -15,6 +16,12 @@ class SydelpNode(Node):
 
         self.momentum_coeff = momentum_coeff
         self.momentum = np.zeros(self.flat_weights.size, dtype='float')
+
+    def update_contribution_score(self, was_selected: bool) -> None:
+        reward: int = 1 if was_selected else -1
+        self.contribution_score += reward
+        # Prevent negative scores
+        self.contribution_score = max(0, self.contribution_score)
 
     def train(self) -> None:
         super().train()
