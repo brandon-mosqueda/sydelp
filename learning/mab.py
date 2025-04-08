@@ -5,7 +5,7 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import AgglomerativeClustering
 from networkx import Graph, connected_components
 from utils.utils import MyProgressBar
-from utils.typing import IntArray, Float, FloatArray, Int
+from utils.typing import IntArray, Float, FloatArray
 from utils.metrics import cos_similarity
 from learning.learning import Learning
 from nodes.mab_node import MabNode
@@ -41,30 +41,33 @@ class Mab(Learning[MabNode, Attacker]):
     def client_beta_selection(self) -> IntArray:
         selected_ids: list[int] = []
 
-        for i, node in enumerate(self.nodes):
+        for i, node in enumerate(self.all_nodes):
             p: float = np.random.beta(node.success_prob, node.fail_prob)
 
             if p >= 0.9 or (p > 0.2 and np.random.random() < p):
                 selected_ids.append(i)
 
         if len(selected_ids) < 2:
-            selected_ids = [i for i in range(len(self.nodes))]
+            selected_ids = [i for i in range(len(self.all_nodes))]
 
         return np.array(selected_ids)
 
     def iteration_setup(self, iteration_num: int) -> None:
         if iteration_num < self.warm_up_iterations:
-            self.selected_idx = np.arange(len(self.nodes))
+            self.selected_idx = np.arange(len(self.all_nodes))
         else:
             self.selected_idx = self.client_beta_selection()
 
     def training(self) -> None:
         bar: MyProgressBar = utils.progress_bar(len([
-            i for i in self.selected_idx if not self.nodes[i].is_malicious]))
+            i
+            for i in self.selected_idx
+            if not self.all_nodes[i].is_malicious
+        ]))
 
         for i in self.selected_idx:
-            if not self.nodes[i].is_malicious:
-                self.nodes[i].train()
+            if not self.all_nodes[i].is_malicious:
+                self.all_nodes[i].train()
                 bar.next()
 
         bar.finish()
@@ -82,8 +85,8 @@ class Mab(Learning[MabNode, Attacker]):
         for i in range(len(self.selected_idx)):
             for j in range(i + 1, len(self.selected_idx)):
                 similarity: Float = cos_similarity(
-                    self.nodes[self.selected_idx[i]].momentum,
-                    self.nodes[self.selected_idx[j]].momentum
+                    self.all_nodes[self.selected_idx[i]].momentum,
+                    self.all_nodes[self.selected_idx[j]].momentum
                 )
 
                 if similarity > sybil_similarity_threshold:
@@ -107,14 +110,14 @@ class Mab(Learning[MabNode, Attacker]):
         # We need at least two models to avoid errors in cluster operations
         if len(self.selected_idx) - len(remove_idx) >= 2:
             for i in self.selected_idx[remove_idx]:
-                self.nodes[i].fail_prob += 1
+                self.all_nodes[i].fail_prob += 1
 
             self.selected_idx = np.delete(self.selected_idx, remove_idx)
 
     def aggregation(self, iteration_num: int) -> None:
         # self.selected_idx is update before training in iteration_setup
         for i in self.selected_idx:
-            node: MabNode = self.nodes[i]
+            node: MabNode = self.all_nodes[i]
             node.set_update(self.global_flat_weights)
 
             node.momentum = (
@@ -130,7 +133,7 @@ class Mab(Learning[MabNode, Attacker]):
         self.remove_sybils_idx(iteration_num)
 
         selected_updates: FloatArray = np.array(
-            [self.nodes[i].momentum for i in self.selected_idx])
+            [self.all_nodes[i].momentum for i in self.selected_idx])
 
         pca: PCA = PCA(n_components=self.pca_components)
         X_reduced = pca.fit_transform(selected_updates)
@@ -140,7 +143,7 @@ class Mab(Learning[MabNode, Attacker]):
         cluster_labels: IntArray = estimator.labels_
 
         # cluster_labels is the same length as self.selected_idx, but we want to
-        # use these ids from the cluster to index self.nodes
+        # use these ids from the cluster to index self.all_nodes
         ids_cluster1: IntArray = self.selected_idx[
             np.where(cluster_labels == 0)[0]
         ]
@@ -149,11 +152,11 @@ class Mab(Learning[MabNode, Attacker]):
         ]
 
         mean_cluster1: FloatArray = np.mean(
-            [self.nodes[i].momentum for i in ids_cluster1],
+            [self.all_nodes[i].momentum for i in ids_cluster1],
             axis=0
         )
         mean_cluster2: FloatArray = np.mean(
-            [self.nodes[i].momentum for i in ids_cluster2],
+            [self.all_nodes[i].momentum for i in ids_cluster2],
             axis=0
         )
 
@@ -168,20 +171,19 @@ class Mab(Learning[MabNode, Attacker]):
             )
 
             for i in smallest_cluster:
-                self.nodes[i].fail_prob += 1
+                self.all_nodes[i].fail_prob += 1
 
             self.selected_idx = largest_cluster
 
         # Increase the prob for the remaining nodes (largest cluster)
         for i in self.selected_idx:
-            self.nodes[i].success_prob += 1
+            self.all_nodes[i].success_prob += 1
 
-        lr: np.float_ = np.median(
-            [np.linalg.norm(self.nodes[i].update) for i in self.selected_idx]
-        )
+        lr: np.float_ = np.median([np.linalg.norm(self.all_nodes[i].update)
+                                   for i in self.selected_idx])
 
         global_update: FloatArray = np.mean(
-            [self.nodes[i].momentum for i in self.selected_idx],
+            [self.all_nodes[i].momentum for i in self.selected_idx],
             axis=0
         )
 
@@ -194,5 +196,5 @@ class Mab(Learning[MabNode, Attacker]):
 
         self.global_model.set_weights(global_weights)
 
-        for node in self.nodes:
+        for node in self.all_nodes:
             node.set_model_weights(global_weights)

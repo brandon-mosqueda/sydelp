@@ -20,6 +20,7 @@ from learning.sybilwall import Sybilwall
 from learning.gossip import Gossip
 
 from attack.attacker import Attacker
+from attack.sydelp_attacker import SydelpAttacker
 
 from nodes.node import Node
 from nodes.random_node import RandomNode
@@ -79,10 +80,11 @@ def get_controller_by_protocol(params: dict,
                                                None] = None) -> Learning:
     weights_shapes: WeightsShapes = [layer.shape
                                      for layer in global_model.get_weights()]
+    honest_nodes: list[Node] = [node for node in nodes if not node.is_malicious]
 
     base_params: dict = {
         'iterations_num': params['iterations_num'],
-        'nodes': nodes,
+        'honest_nodes': honest_nodes,
         'global_model': global_model,
         'weights_shapes': weights_shapes,
         'x_testing': x_testing,
@@ -313,7 +315,14 @@ def get_attacker(nodes: list[Node], params: dict) -> Union[Attacker, None]:
     if not mal_nodes:
         return None
 
-    return Attacker(
-        nodes=mal_nodes, # type: ignore
-        is_identical_attack=params['is_identical_attack']
-    )
+    if as_name(params['protocol']) == "sydelp":
+        return SydelpAttacker(
+            nodes=mal_nodes,  # type: ignore
+            computing_power=params['computing_power'],
+            is_identical_attack=params['is_identical_attack']
+        )
+    else:
+        return Attacker(
+            nodes=mal_nodes, # type: ignore
+            is_identical_attack=params['is_identical_attack']
+        )

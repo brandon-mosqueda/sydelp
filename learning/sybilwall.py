@@ -9,16 +9,17 @@ class Sybilwall(Gossip[SybilwallNode]):
         super().__init__(*args, **kwargs)
 
         # Initialize neighbors
-        for i, node in enumerate(self.nodes):
+        for i, node in enumerate(self.all_nodes):
             node.id = i
-            node.neighbors = {j: self.nodes[j] for j in self.graph.neighbors(i)}
+            node.neighbors = {j: self.all_nodes[j]
+                              for j in self.graph.neighbors(i)}
 
     def gossip(self, iteration_num: int) -> None:
         print("\t+ Gossiping")
-        bar: MyProgressBar = progress_bar(len(self.nodes) * 2)
+        bar: MyProgressBar = progress_bar(len(self.all_nodes) * 2)
 
         # First share the most recent version of own models with neighborhood
-        for node in self.nodes:
+        for node in self.all_nodes:
             bar.next()
 
             for neighbor in node.neighbors.values():
@@ -30,7 +31,7 @@ class Sybilwall(Gossip[SybilwallNode]):
                     sender_id=node.id,
                 )
 
-        for node in self.nodes:
+        for node in self.all_nodes:
             bar.next()
             node.gossip()
 
@@ -38,16 +39,16 @@ class Sybilwall(Gossip[SybilwallNode]):
 
     def aggregation(self, iteration_num: int) -> None:
         # Update own local model histories
-        for node in self.nodes:
+        for node in self.all_nodes:
             node.update_own_history()
 
         self.gossip(iteration_num)
 
         print("\t+ Aggregating")
-        bar: MyProgressBar = progress_bar(len(self.nodes))
+        bar: MyProgressBar = progress_bar(len(self.all_nodes))
 
         # Aggregation
-        for node in self.nodes:
+        for node in self.all_nodes:
             bar.next()
             node.aggregate()
 

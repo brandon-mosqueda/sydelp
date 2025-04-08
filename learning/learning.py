@@ -30,7 +30,11 @@ AttackerType = TypeVar('AttackerType', bound='Attacker')
 
 
 class Learning(ABC, Generic[NodeType, AttackerType]):
-    nodes: list[NodeType]
+    # This will be just a reference of the maliicous nodes at attacker class
+    mal_nodes: list[NodeType]
+    honest_nodes: list[NodeType]
+    # In dynamic protocols, this has to be updated each iteration or not used
+    all_nodes: list[NodeType]
     global_model: KerasModel
     global_flat_weights: FloatArray
     weights_shapes: WeightsShapes
@@ -44,14 +48,14 @@ class Learning(ABC, Generic[NodeType, AttackerType]):
 
     def __init__(self,
                  iterations_num: int,
-                 nodes: list[NodeType],
+                 honest_nodes: list[NodeType],
                  global_model: KerasModel,
                  weights_shapes: WeightsShapes,
                  x_testing: NumArray,
                  y_testing: IntArray,
                  metrics_params: dict[str, MetricParams],
                  attacker: Union[AttackerType, None] = None) -> None:
-        self.nodes = nodes
+        self.honest_nodes = honest_nodes
         self.x_testing = x_testing
         self.y_testing = y_testing
         self.global_model = global_model
@@ -60,6 +64,10 @@ class Learning(ABC, Generic[NodeType, AttackerType]):
         self.metrics_params = metrics_params
         self.execution_time = 0
         self.attacker = attacker
+        self.mal_nodes = ([]
+                          if self.attacker is None
+                          else self.attacker.nodes)
+        self.all_nodes = self.honest_nodes + self.mal_nodes
 
         total_size: Int = sum(np.prod(shape) for shape in weights_shapes)
         self.global_flat_weights = np.empty(total_size, dtype="float")
@@ -73,13 +81,11 @@ class Learning(ABC, Generic[NodeType, AttackerType]):
         pass
 
     def training(self) -> None:
-        honest_num: int = sum(not node.is_malicious for node in self.nodes)
-        bar: MyProgressBar = utils.progress_bar(honest_num)
+        bar: MyProgressBar = utils.progress_bar(len(self.honest_nodes))
 
-        for node in self.nodes:
-            if not node.is_malicious:
-                node.train()
-                bar.next()
+        for node in self.honest_nodes:
+            node.train()
+            bar.next()
 
         bar.finish()
 
@@ -128,7 +134,7 @@ class Learning(ABC, Generic[NodeType, AttackerType]):
 
         # Ensure all nodes use the same initial model
         global_weights: list[FloatArray] = self.global_model.get_weights()
-        for node in self.nodes:
+        for node in self.honest_nodes:
             node.set_model_weights(global_weights)
 
         for i in range(self.iterations_num):
@@ -173,5 +179,5 @@ class Learning(ABC, Generic[NodeType, AttackerType]):
             self.global_model.save(os.path.join(dir, "global_model.keras"))
             os.makedirs(os.path.join(dir, "nodes"), exist_ok=True)
 
-            for i, node in enumerate(self.nodes):
+            for i, node in enumerate(self.honest_nodes):
                 node.model.save(os.path.join(dir, "nodes", f"node_{i}.keras"))

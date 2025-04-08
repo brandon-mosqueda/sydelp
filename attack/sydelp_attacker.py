@@ -13,10 +13,5 @@ class SydelpAttacker(Attacker[SydelpMaliciousNode]):
 
         self.computing_power = computing_power
 
-    def add_nodes(self) -> None:
+    def update_nodes(self) -> None:
         pass
-
-    def attack(self) -> None:
-        super().attack()
-
-        self.add_nodes()

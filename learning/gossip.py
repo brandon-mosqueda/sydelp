@@ -13,48 +13,47 @@ class Gossip(Learning[NodeType, Attacker]):
 
     def __init__(self, graph: Graph, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        if sorted(list(graph.nodes)) != np.arange(len(self.nodes)).tolist():
+
+        if sorted(list(graph.nodes)) != np.arange(len(self.all_nodes)).tolist():
             raise ValueError("graph.nodes is not equal to nodes")
 
         self.graph = graph
 
     def global_model_aggregation(self) -> None:
+        # For global aggregation (to compute the metrics) only honest models
+        # are considered. Poisoning is prevented (or succeded) locally.
         self.global_flat_weights = fed_avg(
             np.array([node.get_flat_model_weights()
-                      for node in self.nodes
-                      if not node.is_malicious],
+                      for node in self.honest_nodes],
                      dtype='float')
         )
 
-        # For global aggregation (to compute the metrics) only honest models
-        # are considered. Poisoning is prevented (or succeded) locally.
         self.global_model.set_weights(flat_weights_to_original(
             self.global_flat_weights,
             self.weights_shapes
         ))
 
     def aggregation(self, iteration_num: int) -> None:
-        for i, node in enumerate(self.nodes):
+        for i, node in enumerate(self.all_nodes):
             neighbors: list[int] = list(self.graph.neighbors(i)) + [i]
 
             node.set_flat_model_weights(fed_avg(
-                np.array([self.nodes[neigh_i].get_flat_model_weights()
+                np.array([self.all_nodes[neigh_i].get_flat_model_weights()
                           for neigh_i in neighbors])
             ))
 
         self.global_model_aggregation()
 
-    def node_metrics(self,
-                     observed: IntArray,
-                     predicted: IntArray,
-                     node_i: int) -> FloatArray:
-        loss: Float = self.nodes[node_i].model.evaluate(self.x_testing,
-                                                        self.y_testing,
-                                                        verbose=0)
+    def node_metrics(self, node: NodeType) -> FloatArray:
+        predicted: IntArray = node.predict(self.x_testing)
+
+        loss: Float = node.model.evaluate(self.x_testing,
+                                          self.y_testing,
+                                          verbose=0)
 
         metrics: list[Float] = [
             self.metrics_params[metric]['function'](
-                y_true=observed,
+                y_true=self.y_testing,
                 y_pred=predicted,
                 **self.metrics_params[metric]['params']
             ) for metric in self.metrics_params
@@ -64,21 +63,18 @@ class Gossip(Learning[NodeType, Attacker]):
         return np.array(metrics)
 
     def round_metrics(self) -> dict[str, Float]:
-        bar: MyProgressBar = progress_bar(len(self.nodes))
+        bar: MyProgressBar = progress_bar(len(self.honest_nodes))
         # Loss is added by default on metrics
         values: FloatArray = np.zeros(len(self.metrics_params) + 1,
                                       dtype="float")
 
-        for i, node in enumerate(self.nodes):
+        for node in self.honest_nodes:
             bar.next()
-
-            if not node.is_malicious:
-                predicted: IntArray = node.predict(self.x_testing)
-                values += self.node_metrics(self.y_testing, predicted, i)
+            values += self.node_metrics(node)
 
         bar.finish()
         metrics: list = list(self.metrics_params.keys()) + ['loss']
-        values /= sum([not node.is_malicious for node in self.nodes])
+        values /= len(self.honest_nodes)
 
         final_metrics: dict[str, Float] = {
             metric: values[i]

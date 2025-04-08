@@ -13,7 +13,7 @@ class Sydelp(Learning[SydelpNode, SydelpAttacker]):
     momentum_coeff: Float
     difficulty_alpha: Float
     models_per_iteration: int
-    considered_idx: IntArray
+    aggregation_nodes: list[SydelpNode]
 
     def __init__(self,
                  expected_malicious_num: int,
@@ -41,11 +41,9 @@ class Sydelp(Learning[SydelpNode, SydelpAttacker]):
         metrics: dict[str, Float] = super().round_metrics()
 
         honest_dificulties = np.array([self.node_difficulty(node)
-                                       for node in self.nodes
-                                       if not node.is_malicious])
+                                       for node in self.honest_nodes])
         mal_dificulties = np.array([self.node_difficulty(node)
-                                    for node in self.nodes
-                                    if node.is_malicious])
+                                    for node in self.mal_nodes])
 
         metrics['mean_honest_difficulty'] = honest_dificulties.mean()
         metrics['sd_honest_difficulty'] = honest_dificulties.std()
@@ -60,30 +58,25 @@ class Sydelp(Learning[SydelpNode, SydelpAttacker]):
         return metrics
 
     def training(self) -> None:
-        malicious_idx: IntArray = np.array([
-            i
-            for (i, node) in enumerate(self.nodes)
-            if node.is_malicious
-        ])
-        honest_idx: IntArray = np.array([
-            i
-            for (i, node) in enumerate(self.nodes)
-            if not node.is_malicious
-        ])
-        honest_idx = np.random.choice(
-            honest_idx,
-            size=self.models_per_iteration - malicious_idx.size,
+        honest_agg_idx = np.random.choice(
+            np.arange(len(self.honest_nodes)),
+            size=self.models_per_iteration - len(self.mal_nodes),
             replace=False
         )
+        honest_agg_nodes: list[SydelpNode] = [
+            node
+            for i, node in enumerate(self.honest_nodes)
+            if i in honest_agg_idx
+        ]
 
         # The malicious models are always taken because we assume that the
         # attacker can always finish the train for them before the honest nodes
-        self.considered_idx = np.concatenate([malicious_idx, honest_idx])
+        self.aggregation_nodes = self.mal_nodes + honest_agg_nodes
 
-        bar: MyProgressBar = progress_bar(honest_idx.size)
+        bar: MyProgressBar = progress_bar(len(honest_agg_nodes))
 
-        for i in honest_idx:
-            self.nodes[i].train()
+        for node in honest_agg_nodes:
+            node.train()
             bar.next()
 
         bar.finish()
@@ -91,19 +84,18 @@ class Sydelp(Learning[SydelpNode, SydelpAttacker]):
     def aggregation(self, iteration_num: int) -> None:
         were_selected: BoolArray = krum_selection(
             np.array([node.momentum
-                      for (i, node) in enumerate(self.nodes)
-                      if i in self.considered_idx],
+                      for node in self.aggregation_nodes],
                      dtype='float'),
             m=self.expected_malicious_num
         )
 
-        for (was_selected, idx) in zip(were_selected, self.considered_idx):
-            self.nodes[idx].update_contribution_score(was_selected)
+        for was_selected, node in zip(were_selected, self.aggregation_nodes):
+            node.update_contribution_score(was_selected)
 
         self.global_flat_weights = fed_avg(
-            np.array([self.nodes[idx].momentum
-                      for (was_selected, idx) in zip(were_selected,
-                                                     self.considered_idx)
+            np.array([node.momentum
+                      for was_selected, node in zip(were_selected,
+                                                    self.aggregation_nodes)
                       if was_selected],
                      dtype='float')
         )
@@ -115,5 +107,15 @@ class Sydelp(Learning[SydelpNode, SydelpAttacker]):
 
         self.global_model.set_weights(global_weights)
 
-        for node in self.nodes:
+        for node in self.honest_nodes:
             node.set_model_weights(global_weights)
+
+        for node in self.mal_nodes:
+            node.set_model_weights(global_weights)
+
+        # After the end of the iteration (after aggregation), we allow new nodes
+        # to join. This is put here because it is the only system where this
+        # dynamism is allowed. self.mal_nodes is automatically updated as it is
+        # a reference list to self.attacker.nodes
+        if self.attacker is not None:
+            self.attacker.update_nodes()

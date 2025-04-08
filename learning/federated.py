@@ -11,7 +11,7 @@ class FederatedLearning(Learning[NodeType, Attacker]):
     def aggregation(self, iteration_num: int) -> None:
         self.global_flat_weights = fed_avg(
             np.array([node.get_flat_model_weights()
-                      for node in self.nodes],
+                      for node in self.all_nodes],
                      dtype='float')
         )
         global_weights: list[FloatArray] = flat_weights_to_original(
@@ -21,5 +21,5 @@ class FederatedLearning(Learning[NodeType, Attacker]):
 
         self.global_model.set_weights(global_weights)
 
-        for node in self.nodes:
+        for node in self.all_nodes:
             node.set_model_weights(global_weights)
