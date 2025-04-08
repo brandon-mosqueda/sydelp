@@ -1,59 +1,62 @@
-from abc import ABC, abstractmethod
+import numpy as np
+
 from nodes.malicious_node import MaliciousNode
 from utils.utils import MyProgressBar, progress_bar
-from typing import Generic, TypeVar
-from utils.typing import FloatArray
+from utils.typing import *
 
 
-MalNodeType = TypeVar('MalNodeType', bound='MaliciousNode')
-
-# This class orchestrates the attacker. In case of an identical attack, it will
-# create the attack model and replicate it to all sybils.
-class Attacker(ABC, Generic[MalNodeType]):
+# This class orchestrates all the malicious nodes
+class Attacker:
     is_identical_attack: bool
-    nodes: list[MalNodeType]
+    nodes: list[MaliciousNode]
+    x: NumArray
+    y: IntArray
 
     def __init__(self,
-                 nodes: list[MalNodeType],
+                 nodes: list[MaliciousNode],
                  is_identical_attack: bool) -> None:
         self.nodes = nodes
         self.is_identical_attack = is_identical_attack
 
-    @abstractmethod
-    def get_attack_params(self,
-                          attacking_nodes: list[MalNodeType]) -> list[FloatArray]:
-        pass
+        self.x = np.concatenate([node.x for node in self.nodes])
+        self.y = np.concatenate([node.y for node in self.nodes])
+
+    def identical_attack(self) -> None:
+        bar: MyProgressBar = progress_bar(len(self.nodes))
+
+        node: MaliciousNode = self.nodes[0]
+
+        original_x: NumArray = node.x
+        original_y: IntArray = node.y
+
+        # For those attacks that require a training dataset (e.g. Label
+        # flipping), we use the whole dataset to fit the model and then we
+        # replicate it
+        node.x = self.x
+        node.y = self.y
+        node.attack()
+
+        attack_params: list[FloatArray] = node.get_model_weights()
+
+        # We gave him back his dataset to not interfer with other parts
+        node.x = original_x
+        node.y = original_y
+
+        for node in self.nodes:
+            node.set_model_weights(attack_params)
+            bar.next()
+
+        bar.finish()
 
     def attack(self) -> None:
-        if not self.nodes:
+        if self.is_identical_attack:
+            self.identical_attack()
             return
 
         bar: MyProgressBar = progress_bar(len(self.nodes))
-        attacking_nodes: list[MalNodeType] = [node
-                                              for node in self.nodes
-                                              if node.attacking]
-        not_attacking_nodes: list[MalNodeType] = [node
-                                                  for node in self.nodes
-                                                  if not node.attacking]
 
-        for node in not_attacking_nodes:
-            node.train()
+        for node in self.nodes:
+            node.attack()
             bar.next()
-
-        if not attacking_nodes:
-            bar.finish()
-            return
-
-        if self.is_identical_attack:
-            attack_params: list[FloatArray] = self.get_attack_params(
-                attacking_nodes)
-
-            for node in attacking_nodes:
-                node.set_model_weights(attack_params)
-                bar.next()
-        else:
-            for node in attacking_nodes:
-                node.attack()
-                bar.next()
 
         bar.finish()

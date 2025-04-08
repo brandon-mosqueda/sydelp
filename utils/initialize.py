@@ -20,10 +20,6 @@ from learning.sybilwall import Sybilwall
 from learning.gossip import Gossip
 
 from attack.attacker import Attacker
-from attack.random_attacker import RandomAttacker
-from attack.sign_flipping_attacker import SignFlippingAttacker
-from attack.targeted_label_flipping_attacker import TargetedLabelFlippingAttacker
-from attack.untargeted_label_flipping_attacker import UntargetedLabelFlippingAttacker
 
 from nodes.node import Node
 from nodes.random_node import RandomNode
@@ -312,34 +308,12 @@ def get_nodes_by_protocol(params: dict,
 
 
 def get_attacker(nodes: list[Node], params: dict) -> Union[Attacker, None]:
-    attack: str = as_name(params['attack'])
+    mal_nodes: list[Node] = [node for node in nodes if node.is_malicious]
 
-    if attack in ['random', 'solitary_untargeted']:
-        AttackerClass = RandomAttacker
-        NodeClass = RandomNode
-    elif attack == 'sign_flipping':
-        AttackerClass = SignFlippingAttacker
-        NodeClass = SignFlippingNode
-    elif attack in ['label_flipping', 'solitary_targeted']:
-        AttackerClass = TargetedLabelFlippingAttacker
-        NodeClass = TargetedLabelFlippingNode
-    elif 'untargeted_label_flipping':
-        AttackerClass = UntargetedLabelFlippingAttacker
-        NodeClass = UntargetedLabelFlippingNode
-    else:
-        raise ValueError(f"{params['attack']} is not a valid attack")
-
-    class_nodes = [node for node in nodes if isinstance(node, NodeClass)]
-    mal_nodes = [node for node in nodes if node.is_malicious]
-
-    if len(class_nodes) != len(mal_nodes):
-        raise ValueError("All mal nodes should be of the same type "
-                         "len(class_nodes) != len(mal_nodes)")
-
-    if not class_nodes:
+    if not mal_nodes:
         return None
 
-    return AttackerClass(
-        nodes=class_nodes,  # type: ignore
+    return Attacker(
+        nodes=mal_nodes, # type: ignore
         is_identical_attack=params['is_identical_attack']
     )
