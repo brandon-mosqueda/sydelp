@@ -104,6 +104,7 @@ def get_controller_by_protocol(params: dict,
             expected_malicious_num=params['expected_malicious_num'],
             momentum_coeff=params['momentum_coeff'],
             difficulty_alpha=params['difficulty_alpha'],
+            models_per_iteration=params['models_per_iteration'],
             **base_params
         )
     elif protocol == "mab-fl":
@@ -238,7 +239,7 @@ def get_nodes_by_protocol(params: dict,
             X_train,
             y_train,
             stratify=y_train,
-            test_size=min(malicious_num/params['nodes_num'], 0.15),
+            test_size=min(malicious_num/params['nodes_num'], 0.2),
             random_state=params['seed']
         )
 
