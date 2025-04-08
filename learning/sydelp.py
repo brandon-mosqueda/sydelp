@@ -2,12 +2,13 @@ import numpy as np
 
 from learning.learning import Learning
 from nodes.sydelp_node import SydelpNode
+from attack.sydelp_attacker import SydelpAttacker
 from utils.utils import flat_weights_to_original, MyProgressBar, progress_bar
 from utils.typing import *
 from utils.aggregation import fed_avg, krum_selection
 
 
-class Sydelp(Learning[SydelpNode]):
+class Sydelp(Learning[SydelpNode, SydelpAttacker]):
     expected_malicious_num: int # beta (krum)
     momentum_coeff: Float
     difficulty_alpha: Float

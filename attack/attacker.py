@@ -3,17 +3,19 @@ import numpy as np
 from nodes.malicious_node import MaliciousNode
 from utils.utils import MyProgressBar, progress_bar
 from utils.typing import *
+from typing import TypeVar, Generic
 
+MaliciousNodeType = TypeVar('MaliciousNodeType', bound='MaliciousNode')
 
 # This class orchestrates all the malicious nodes
-class Attacker:
+class Attacker(Generic[MaliciousNodeType]):
     is_identical_attack: bool
-    nodes: list[MaliciousNode]
+    nodes: list[MaliciousNodeType]
     x: NumArray
     y: IntArray
 
     def __init__(self,
-                 nodes: list[MaliciousNode],
+                 nodes: list[MaliciousNodeType],
                  is_identical_attack: bool) -> None:
         self.nodes = nodes
         self.is_identical_attack = is_identical_attack
@@ -24,7 +26,7 @@ class Attacker:
     def identical_attack(self) -> None:
         bar: MyProgressBar = progress_bar(len(self.nodes))
 
-        node: MaliciousNode = self.nodes[0]
+        node: MaliciousNodeType = self.nodes[0]
 
         original_x: NumArray = node.x
         original_y: IntArray = node.y

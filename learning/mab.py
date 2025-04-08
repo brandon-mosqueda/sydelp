@@ -9,9 +9,10 @@ from utils.typing import IntArray, Float, FloatArray, Int
 from utils.metrics import cos_similarity
 from learning.learning import Learning
 from nodes.mab_node import MabNode
+from attack.attacker import Attacker
 
 
-class Mab(Learning[MabNode]):
+class Mab(Learning[MabNode, Attacker]):
     selected_idx: IntArray
     warm_up_iterations: int
     alpha: float

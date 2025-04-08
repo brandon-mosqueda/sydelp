@@ -1,6 +1,7 @@
 from learning.gossip import Gossip
 from utils.utils import MyProgressBar, progress_bar
 from nodes.sybilwall_node import SybilwallNode
+from attack.attacker import Attacker
 
 
 class Sybilwall(Gossip[SybilwallNode]):

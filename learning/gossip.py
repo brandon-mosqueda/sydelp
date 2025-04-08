@@ -5,9 +5,10 @@ from learning.learning import Learning, NodeType
 from utils.utils import MyProgressBar, progress_bar, flat_weights_to_original
 from utils.aggregation import fed_avg
 from utils.typing import Float, IntArray, FloatArray
+from attack.attacker import Attacker
 
 
-class Gossip(Learning[NodeType]):
+class Gossip(Learning[NodeType, Attacker]):
     graph: Graph
 
     def __init__(self, graph: Graph, *args, **kwargs) -> None:

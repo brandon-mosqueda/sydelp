@@ -4,9 +4,10 @@ from learning.learning import Learning, NodeType
 from utils.utils import flat_weights_to_original
 from utils.typing import FloatArray
 from utils.aggregation import fed_avg
+from attack.attacker import Attacker
 
 
-class FederatedLearning(Learning[NodeType]):
+class FederatedLearning(Learning[NodeType, Attacker]):
     def aggregation(self, iteration_num: int) -> None:
         self.global_flat_weights = fed_avg(
             np.array([node.get_flat_model_weights()

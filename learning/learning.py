@@ -26,9 +26,10 @@ class MetricParams(TypedDict):
 
 # This allows to use any kind of node in the learning sub-classes
 NodeType = TypeVar('NodeType', bound='Node')
+AttackerType = TypeVar('AttackerType', bound='Attacker')
 
 
-class Learning(ABC, Generic[NodeType]):
+class Learning(ABC, Generic[NodeType, AttackerType]):
     nodes: list[NodeType]
     global_model: KerasModel
     global_flat_weights: FloatArray
@@ -39,7 +40,7 @@ class Learning(ABC, Generic[NodeType]):
     execution_time: float
     metrics: DataFrame
     metrics_params: dict[str, MetricParams]
-    attacker: Union[Attacker, None]
+    attacker: Union[AttackerType, None]
 
     def __init__(self,
                  iterations_num: int,
@@ -49,7 +50,7 @@ class Learning(ABC, Generic[NodeType]):
                  x_testing: NumArray,
                  y_testing: IntArray,
                  metrics_params: dict[str, MetricParams],
-                 attacker: Union[Attacker, None] = None) -> None:
+                 attacker: Union[AttackerType, None] = None) -> None:
         self.nodes = nodes
         self.x_testing = x_testing
         self.y_testing = y_testing
