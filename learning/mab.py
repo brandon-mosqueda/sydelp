@@ -186,12 +186,12 @@ class Mab(Learning[MabNode]):
 
         self.global_flat_weights = self.global_flat_weights + lr * global_update
 
-        aggregated_weights: list[FloatArray] = utils.flat_weights_to_original(
+        global_weights: list[FloatArray] = utils.flat_weights_to_original(
             self.global_flat_weights,
             self.weights_shapes
         )
 
-        self.global_model.set_weights(aggregated_weights)
+        self.global_model.set_weights(global_weights)
 
         for node in self.nodes:
-            node.set_model_weights(aggregated_weights)
+            node.set_model_weights(global_weights)

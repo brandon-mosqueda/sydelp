@@ -237,7 +237,7 @@ def get_nodes_by_protocol(params: dict,
             X_train,
             y_train,
             stratify=y_train,
-            test_size=malicious_num/params['nodes_num'],
+            test_size=min(malicious_num/params['nodes_num'], 0.15),
             random_state=params['seed']
         )
 

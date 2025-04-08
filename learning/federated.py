@@ -13,12 +13,12 @@ class FederatedLearning(Learning[NodeType]):
                       for node in self.nodes],
                      dtype='float')
         )
-        avg_model: list[FloatArray] = flat_weights_to_original(
+        global_weights: list[FloatArray] = flat_weights_to_original(
             self.global_flat_weights,
             self.weights_shapes
         )
 
-        self.global_model.set_weights(avg_model)
+        self.global_model.set_weights(global_weights)
 
         for node in self.nodes:
-            node.set_model_weights(avg_model)
+            node.set_model_weights(global_weights)
