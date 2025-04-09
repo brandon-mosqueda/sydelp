@@ -3,6 +3,7 @@ import numpy as np
 from attack.attacker import Attacker
 from nodes.sydelp_malicious_nodes import SydelpMaliciousNode
 from utils.typing import Float, FloatArray
+from utils.split import Split, balanced_split
 
 
 class SydelpAttacker(Attacker[SydelpMaliciousNode]):
@@ -55,3 +56,13 @@ class SydelpAttacker(Attacker[SydelpMaliciousNode]):
 
             for _ in range(new_nodes_num):
                 self.nodes.append(self.nodes[0].clone())
+
+            # If there are new nodes, the malicious dataset is reassigned
+            # equally to all of them.
+            if new_nodes_num > 0:
+                splits: list[Split] = balanced_split(self.x,
+                                                     self.y,
+                                                     n_splits=len(self.nodes))
+
+                for split, node in zip(splits, self.nodes):
+                    node.set_new_dataset(split["X"], split["y"])
