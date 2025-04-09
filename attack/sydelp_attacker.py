@@ -33,9 +33,9 @@ class SydelpAttacker(Attacker[SydelpMaliciousNode]):
 
         if total_difficulties > self.computing_power:
             # Some nodes where penalized and there is no enough computing power
-            # to keep them all. We will remove as many nodes as necessary starting
-            # with those with highest difficulty (which are usually the newer
-            # ones)
+            # to keep them all. We will remove as many nodes as necessary
+            # starting with those with highest difficulty (which are usually the
+            # newer ones)
             order_diff_idx: list[int] = np.flip(
                 np.argsort(difficulties)
             ).tolist()
@@ -46,12 +46,12 @@ class SydelpAttacker(Attacker[SydelpMaliciousNode]):
                 total_difficulties -= difficulties[idx]
                 remove_idx.append(idx)
 
-            # We have to remove them like this to ensure the reference in
-            # Learning.mal_nodes is also updated
+            # We have to remove them like this (by reference) to ensure the
+            # reference in Learning.mal_nodes is also updated
             for idx in remove_idx:
                 del self.nodes[idx]
         else:
             new_nodes_num: int = int(self.computing_power - total_difficulties)
 
-            for i in range(new_nodes_num):
+            for _ in range(new_nodes_num):
                 self.nodes.append(self.nodes[0].clone())

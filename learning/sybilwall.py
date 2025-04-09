@@ -1,10 +1,10 @@
 from learning.gossip import Gossip
 from utils.utils import MyProgressBar, progress_bar
 from nodes.sybilwall_node import SybilwallNode
-from attack.attacker import Attacker
+from learning.learning import AttackerType
 
 
-class Sybilwall(Gossip[SybilwallNode]):
+class Sybilwall(Gossip[SybilwallNode, AttackerType]):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 

@@ -14,6 +14,12 @@ from typing import TypedDict, Protocol, TypeVar, Generic, Union
 from utils.typing import *
 
 
+# This allows to use type annotations for any kind of node in the learning
+# sub-classes
+NodeType = TypeVar('NodeType', bound='Node')
+AttackerType = TypeVar('AttackerType', bound='Attacker')
+
+
 class MetricFunction(Protocol):
     def __call__(self, y_true: IntArray, y_pred: IntArray,
                  *args, **kwargs) -> Float: ...
@@ -24,26 +30,25 @@ class MetricParams(TypedDict):
     params: dict
 
 
-# This allows to use any kind of node in the learning sub-classes
-NodeType = TypeVar('NodeType', bound='Node')
-AttackerType = TypeVar('AttackerType', bound='Attacker')
-
-
 class Learning(ABC, Generic[NodeType, AttackerType]):
     # This will be just a reference of the maliicous nodes at attacker class
     mal_nodes: list[NodeType]
     honest_nodes: list[NodeType]
     # In dynamic protocols, this has to be updated each iteration or not used
     all_nodes: list[NodeType]
+
     global_model: KerasModel
     global_flat_weights: FloatArray
     weights_shapes: WeightsShapes
+
     x_testing: NumArray
     y_testing: IntArray
+
     iterations_num: int # T
     execution_time: float
     metrics: DataFrame
     metrics_params: dict[str, MetricParams]
+
     attacker: Union[AttackerType, None]
 
     def __init__(self,
@@ -56,18 +61,21 @@ class Learning(ABC, Generic[NodeType, AttackerType]):
                  metrics_params: dict[str, MetricParams],
                  attacker: Union[AttackerType, None] = None) -> None:
         self.honest_nodes = honest_nodes
-        self.x_testing = x_testing
-        self.y_testing = y_testing
-        self.global_model = global_model
-        self.weights_shapes = weights_shapes
-        self.iterations_num = iterations_num
-        self.metrics_params = metrics_params
-        self.execution_time = 0
         self.attacker = attacker
         self.mal_nodes = ([]
                           if self.attacker is None
                           else self.attacker.nodes)
         self.all_nodes = self.honest_nodes + self.mal_nodes
+
+        self.x_testing = x_testing
+        self.y_testing = y_testing
+
+        self.global_model = global_model
+        self.weights_shapes = weights_shapes
+
+        self.iterations_num = iterations_num
+        self.metrics_params = metrics_params
+        self.execution_time = 0
 
         total_size: Int = sum(np.prod(shape) for shape in weights_shapes)
         self.global_flat_weights = np.empty(total_size, dtype="float")
@@ -132,7 +140,7 @@ class Learning(ABC, Generic[NodeType, AttackerType]):
         start: float = time()
         metrics: list[dict] = []
 
-        # Ensure all nodes use the same initial model
+        # Ensure all honest nodes use the same initial model
         global_weights: list[FloatArray] = self.global_model.get_weights()
         for node in self.honest_nodes:
             node.set_model_weights(global_weights)

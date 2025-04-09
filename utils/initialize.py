@@ -288,6 +288,7 @@ def get_nodes_by_protocol(params: dict,
                 **base_node_params
             ))
 
+    # Non-IID partitioning for honest updates
     honest_splits: list[Split] = dirichlet_split(
         X_train,
         y_train,
@@ -324,8 +325,9 @@ def get_attacker(nodes: list[Node], params: dict) -> Union[Attacker, None]:
     if as_name(params['protocol']) == "sydelp":
         return SydelpAttacker(
             nodes=mal_nodes,  # type: ignore
-            computing_power=params['computing_power'],
             is_identical_attack=params['is_identical_attack'],
+
+            computing_power=params['computing_power'],
             is_worst_case=params['is_worst_case'],
         )
     else:

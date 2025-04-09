@@ -5,7 +5,8 @@ from nodes.sign_flipping_node import SignFlippingNode
 from nodes.targeted_label_flipping_node import TargetedLabelFlippingNode
 from nodes.untargeted_label_flipping_node import UntargetedLabelFlippingNode
 
-
+# The attack vector is assigned to node's local model not to the momentum as
+# in Sydelp because the momentum is computed at the server level.
 class MabMaliciousNode(MabNode, MaliciousNode):
     pass
 

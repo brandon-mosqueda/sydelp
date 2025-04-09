@@ -1,14 +1,13 @@
 import numpy as np
 
 from networkx import Graph
-from learning.learning import Learning, NodeType
+from learning.learning import Learning, NodeType, AttackerType
 from utils.utils import MyProgressBar, progress_bar, flat_weights_to_original
 from utils.aggregation import fed_avg
 from utils.typing import Float, IntArray, FloatArray
-from attack.attacker import Attacker
 
 
-class Gossip(Learning[NodeType, Attacker]):
+class Gossip(Learning[NodeType, AttackerType]):
     graph: Graph
 
     def __init__(self, graph: Graph, *args, **kwargs) -> None:

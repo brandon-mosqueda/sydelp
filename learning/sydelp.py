@@ -13,6 +13,7 @@ class Sydelp(Learning[SydelpNode, SydelpAttacker]):
     momentum_coeff: Float
     difficulty_alpha: Float
     models_per_iteration: int
+    # Each iteration this list is updated with models_per_iteration nodes
     aggregation_nodes: list[SydelpNode]
 
     def __init__(self,
@@ -32,6 +33,8 @@ class Sydelp(Learning[SydelpNode, SydelpAttacker]):
     def round_metrics(self) -> dict[str, Float]:
         metrics: dict[str, Float] = super().round_metrics()
 
+        metrics['malicious_num'] = len(self.mal_nodes)
+
         honest_dificulties: FloatArray = np.array([
             node.compute_difficulty()
             for node in self.honest_nodes
@@ -44,7 +47,7 @@ class Sydelp(Learning[SydelpNode, SydelpAttacker]):
         metrics['mean_honest_difficulty'] = honest_dificulties.mean()
         metrics['sd_honest_difficulty'] = honest_dificulties.std()
 
-        if mal_dificulties:
+        if mal_dificulties.size > 0:
             metrics['mean_mal_difficulty'] = mal_dificulties.mean()
             metrics['sd_mal_difficulty'] = mal_dificulties.std()
         else:
@@ -54,6 +57,11 @@ class Sydelp(Learning[SydelpNode, SydelpAttacker]):
         return metrics
 
     def training(self) -> None:
+        # The malicious models are always taken because we assume that the
+        # attacker can always finish the train for them before the honest nodes.
+        # To simulate that honest nodes finish after and as they have similar
+        # computing capabilities, we take a random sample of them with the
+        # remaining models.
         honest_agg_idx = np.random.choice(
             np.arange(len(self.honest_nodes)),
             size=self.models_per_iteration - len(self.mal_nodes),
@@ -65,8 +73,6 @@ class Sydelp(Learning[SydelpNode, SydelpAttacker]):
             if i in honest_agg_idx
         ]
 
-        # The malicious models are always taken because we assume that the
-        # attacker can always finish the train for them before the honest nodes
         self.aggregation_nodes = self.mal_nodes + honest_agg_nodes
 
         bar: MyProgressBar = progress_bar(len(honest_agg_nodes))

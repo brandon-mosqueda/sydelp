@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-import numpy as np
 
 from utils.utils import replicate_model
 
@@ -20,8 +19,8 @@ class SydelpMaliciousNode(SydelpNode, MaliciousNode, ABC):
 
     def clone_parameters(self) -> dict:
         params: dict = {
-            "x": np.array([]),
-            "y": np.array([]),
+            "x": self.x,
+            "y": self.y,
             "weights_shapes": self.weights_shapes,
             "epochs": self.epochs,
             "batch_size": self.batch_size,

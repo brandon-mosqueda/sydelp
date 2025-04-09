@@ -7,12 +7,11 @@ from networkx import Graph, connected_components
 from utils.utils import MyProgressBar
 from utils.typing import IntArray, Float, FloatArray
 from utils.metrics import cos_similarity
-from learning.learning import Learning
+from learning.learning import Learning, AttackerType
 from nodes.mab_node import MabNode
-from attack.attacker import Attacker
 
 
-class Mab(Learning[MabNode, Attacker]):
+class Mab(Learning[MabNode, AttackerType]):
     selected_idx: IntArray
     warm_up_iterations: int
     alpha: float
