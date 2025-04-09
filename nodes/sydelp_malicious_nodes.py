@@ -13,6 +13,10 @@ from nodes.untargeted_label_flipping_node import UntargetedLabelFlippingNode
 
 
 class SydelpMaliciousNode(SydelpNode, MaliciousNode, ABC):
+    def attack(self) -> None:
+        super().attack()
+        self.momentum[:] = self.flat_weights
+
     @abstractmethod
     def add_specific_params(self, base_params: dict) -> dict:
         pass
@@ -39,10 +43,6 @@ class SydelpMaliciousNode(SydelpNode, MaliciousNode, ABC):
         pass
 
 class SydelpRandomNode(SydelpMaliciousNode, RandomNode):
-    def attack(self) -> None:
-        super().attack()
-        self.momentum = self.flat_weights
-
     def add_specific_params(self, base_params: dict) -> dict:
         base_params['mean'] = self.mean
         base_params['sd'] = self.sd
@@ -55,10 +55,6 @@ class SydelpRandomNode(SydelpMaliciousNode, RandomNode):
         return SydelpRandomNode(**params)
 
 class SydelpSignFlippingNode(SydelpMaliciousNode, SignFlippingNode):
-    def attack(self) -> None:
-        super().attack()
-        self.momentum = self.flat_weights
-
     def add_specific_params(self, base_params: dict) -> dict:
         base_params['scale_factor'] = self.scale_factor
 
@@ -71,10 +67,6 @@ class SydelpSignFlippingNode(SydelpMaliciousNode, SignFlippingNode):
 
 
 class SydelpTargetedLabelFlippingNode(SydelpMaliciousNode, TargetedLabelFlippingNode):
-    def attack(self) -> None:
-        super().attack()
-        self.momentum = self.flat_weights
-
     def add_specific_params(self, base_params: dict) -> dict:
         base_params['source'] = self.source
         base_params['target'] = self.target
@@ -88,10 +80,6 @@ class SydelpTargetedLabelFlippingNode(SydelpMaliciousNode, TargetedLabelFlipping
 
 
 class SydelpUntargetedLabelFlippingNode(SydelpMaliciousNode, UntargetedLabelFlippingNode):
-    def attack(self) -> None:
-        super().attack()
-        self.momentum = self.flat_weights
-
     def add_specific_params(self, base_params: dict) -> dict:
         return base_params
 

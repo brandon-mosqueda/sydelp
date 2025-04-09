@@ -48,9 +48,11 @@ class Sydelp(Learning[SydelpNode, SydelpAttacker]):
         metrics['sd_honest_difficulty'] = honest_dificulties.std()
 
         if mal_dificulties.size > 0:
+            metrics['mal_total_difficulty'] = mal_dificulties.sum()
             metrics['mean_mal_difficulty'] = mal_dificulties.mean()
             metrics['sd_mal_difficulty'] = mal_dificulties.std()
         else:
+            metrics['mal_total_difficulty'] = np.nan
             metrics['mean_mal_difficulty'] = np.nan
             metrics['sd_mal_difficulty'] = np.nan
 

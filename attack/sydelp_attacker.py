@@ -86,3 +86,12 @@ class SydelpAttacker(Attacker[SydelpMaliciousNode]):
             bar.finish()
         else:
             super().attack()
+
+            # In the identical attack, the malicious weights are not assigned
+            # to the momentum vector because the identical attack method is
+            # called in the attacker class where normal malicious nodes
+            # (without) momentum are used. In non-identical attack, this does
+            # not occur as each node attacks separately.
+            if self.is_identical_attack:
+                for node in self.nodes:
+                    node.momentum[:] = self.nodes[0].flat_weights
