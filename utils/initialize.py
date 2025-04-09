@@ -329,6 +329,7 @@ def get_attacker(nodes: list[Node], params: dict) -> Union[Attacker, None]:
 
             computing_power=params['computing_power'],
             is_worst_case=params['is_worst_case'],
+            objective_malicious_num=params['expected_malicious_num'] + 1,
         )
     else:
         return Attacker(

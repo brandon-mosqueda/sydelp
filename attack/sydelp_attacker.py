@@ -2,6 +2,7 @@ import numpy as np
 
 from attack.attacker import Attacker
 from nodes.sydelp_malicious_nodes import SydelpMaliciousNode
+from utils.utils import MyProgressBar, progress_bar
 from utils.typing import Float, FloatArray
 from utils.split import Split, balanced_split
 
@@ -9,14 +10,19 @@ from utils.split import Split, balanced_split
 class SydelpAttacker(Attacker[SydelpMaliciousNode]):
     computing_power: int # P
     is_worst_case: bool
+    # This is the number of desired malicious nodes (necessary to break the
+    # security guarantees on aggregation).
+    objective_malicious_num: int
 
     def __init__(self,
                  computing_power: int,
                  is_worst_case: bool,
+                 objective_malicious_num: int,
                  *args,
                  **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
+        self.objective_malicious_num = objective_malicious_num
         self.computing_power = computing_power
         self.is_worst_case = is_worst_case
 
@@ -28,7 +34,7 @@ class SydelpAttacker(Attacker[SydelpMaliciousNode]):
             return
 
         difficulties: FloatArray = np.array([node.compute_difficulty()
-                                              for node in self.nodes],
+                                             for node in self.nodes],
                                              dtype="float")
         total_difficulties: Float = difficulties.sum()
 
@@ -40,17 +46,17 @@ class SydelpAttacker(Attacker[SydelpMaliciousNode]):
             order_diff_idx: list[int] = np.flip(
                 np.argsort(difficulties)
             ).tolist()
-            remove_idx: list[int] = []
+            remove_nodes: list[SydelpMaliciousNode] = []
 
             while total_difficulties > self.computing_power:
                 idx = order_diff_idx.pop()
                 total_difficulties -= difficulties[idx]
-                remove_idx.append(idx)
+                remove_nodes.append(self.nodes[idx])
 
             # We have to remove them like this (by reference) to ensure the
             # reference in Learning.mal_nodes is also updated
-            for idx in remove_idx:
-                del self.nodes[idx]
+            for node in remove_nodes:
+                self.nodes.remove(node)
         else:
             new_nodes_num: int = int(self.computing_power - total_difficulties)
 
@@ -66,3 +72,17 @@ class SydelpAttacker(Attacker[SydelpMaliciousNode]):
 
                 for split, node in zip(splits, self.nodes):
                     node.set_new_dataset(split["X"], split["y"])
+
+    def attack(self) -> None:
+        if (self.is_worst_case
+            and len(self.nodes) < self.objective_malicious_num):
+
+            bar: MyProgressBar = progress_bar(len(self.nodes))
+
+            for node in self.nodes:
+                bar.next()
+                node.train()
+
+            bar.finish()
+        else:
+            super().attack()
