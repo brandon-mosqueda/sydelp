@@ -53,6 +53,8 @@ class SybilwallNode(Node):
     # model should be a copy, not a reference
     def update_own_history(self) -> None:
         self.own_history_weights += self.current_weights
+        # In the paper is defined as sum, but it quickly becomes infinity
+        self.own_history_weights /= 2
 
     # model should be a copy, not a reference
     def replace_in_history(self,
