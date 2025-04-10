@@ -95,7 +95,7 @@ def get_controller_by_protocol(params: dict,
 
     protocol: str = as_name(params['protocol'])
 
-    if protocol in ["dl", "baseline"]:
+    if protocol == "fl":
         return FederatedLearning(**base_params)
     elif protocol == "sydelp":
         return Sydelp(
@@ -221,7 +221,7 @@ def get_nodes_by_protocol(params: dict,
         RandomClass = SybilwallRandomNode
         SignClass = SybilwallSignFlippingNode
         TarLabelClass = SybilwallTargetedLabelFlippingNode
-    elif protocol not in ["dl", "baseline", "sydelp", "gossip"]:
+    elif protocol not in ["fl", "sydelp", "gossip"]:
         raise ValueError(f'Protocol "{params["protocol"]}" not recognized')
 
     malicious_num: int = (

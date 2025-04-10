@@ -163,7 +163,7 @@ class Learning(ABC, Generic[NodeType, AttackerType]):
             metrics_i: dict[str, Float] = self.round_metrics()
             [print("\t\t- %s: %.4f" % item) for item in metrics_i.items()]
 
-            metrics_i['round'] = i
+            metrics_i['round'] = i + 1
             metrics_i['time'] = utils.elapsed_time(start, time())
 
             metrics.append(metrics_i)

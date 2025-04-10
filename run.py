@@ -11,11 +11,20 @@ from attack.attacker import Attacker
 from learning.learning import Learning
 from learning.learning import MetricParams
 from keras.src.models import Model as KerasModel
+from utils.default_values import fill_with_defaults
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
-params_file: str = sys.argv[1]
-params: dict = utils.read_json(params_file)
+dataset_config_file: str = sys.argv[1]
+setup_config_file: str = sys.argv[2]
+
+params: dict = utils.read_json(dataset_config_file)
+setup_params: dict = utils.read_json(setup_config_file)
+
+for key, value in setup_params.items():
+    params[key] = value
+
+params = fill_with_defaults(params)
 print(params)
 
 X_train: NumArray; X_test: NumArray; X_mal: NumArray;
@@ -48,14 +57,14 @@ learning_controller: Learning = init.get_controller_by_protocol(
 learning_controller.start()
 print("Total running time: %.4f minutes" % learning_controller.execution_time)
 
+identical_attack: str = as_name(params.get('is_identical_attack', 'no_attack'))
 results_dir: str = os.path.join(
     params['results_dir'],
     as_name(params['protocol']),
     as_name(params['dataset']),
     as_name(params['attack']),
     as_name(params['seed']),
-    as_name(params.get('weighting_mode', 'uniform')),
-    as_name(params['is_identical_attack']),
+    identical_attack,
 )
 
 metadata = {
@@ -63,7 +72,6 @@ metadata = {
     'Dataset': params['dataset'],
     'Attack': params['attack'],
     'Seed': params['seed'],
-    "WeightingMode": params.get('weighting_mode', 'uniform'),
-    'IdenticalAttack': params['is_identical_attack'],
+    'IdenticalAttack': identical_attack,
 }
 learning_controller.save(results_dir, metadata=metadata)
