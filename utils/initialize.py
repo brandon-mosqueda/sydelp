@@ -1,4 +1,5 @@
 import networkx as nx
+import os
 
 from random import shuffle
 
@@ -343,3 +344,24 @@ def get_attacker(nodes: list[Node], params: dict) -> Union[Attacker, None]:
             nodes=mal_nodes, # type: ignore
             is_identical_attack=params['is_identical_attack']
         )
+
+
+def get_results_dir(params: dict) -> str:
+    additional: str = ""
+
+    if as_name(params['protocol']) == "sydelp":
+        if params['is_worst_case']:
+            additional = os.path.join(str(params['difficulty_alpha']),
+                                      str(params['computing_power']))
+        else:
+            additional = str(params['difficulty_alpha'])
+
+    return os.path.join(
+        params['results_dir'],
+        as_name(params['protocol']),
+        as_name(params['dataset']),
+        as_name(params['attack']),
+        as_name(params['seed']),
+        as_name(params.get('is_identical_attack', 'no_attack')),
+        additional
+    )
