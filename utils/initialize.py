@@ -188,6 +188,7 @@ def get_nodes_by_protocol(params: dict,
     weights_shapes: WeightsShapes = [layer.shape
                                      for layer in models[0].get_weights()]
     protocol = as_name(params['protocol'])
+    attack = as_name(params['attack'])
     base_node_params: dict = {
         'weights_shapes': weights_shapes,
         'epochs': params['local_epochs_num'],
@@ -234,21 +235,27 @@ def get_nodes_by_protocol(params: dict,
     nodes: list[Node] = []
 
     if malicious_num > 0:
-        # Divide the training set for malicious users proportionally
-        X_train, X_mal, y_train, y_mal = train_test_split(
-            X_train,
-            y_train,
-            stratify=y_train,
-            test_size=min(malicious_num/params['nodes_num'], 0.2),
-            random_state=params['seed']
-        )
+        if (attack in ["sign_flipping", "label_flipping"]
+            or (protocol == "sydelp" and params['is_worst_case'])):
+            # Divide the training set for malicious users proportionally
+            X_train, X_mal, y_train, y_mal = train_test_split(
+                X_train,
+                y_train,
+                stratify=y_train,
+                test_size=min(malicious_num/params['nodes_num'], 0.15),
+                random_state=params['seed']
+            )
 
-        mal_splits: list[Split] = balanced_split(
-            X_mal,
-            y_mal,
-            n_splits=malicious_num,
-            seed=params['seed'],
-        )
+            mal_splits: list[Split] = balanced_split(
+                X_mal,
+                y_mal,
+                n_splits=malicious_num,
+                seed=params['seed'],
+            )
+        else:
+            # In this cases, datasets are not required
+            mal_splits: list[Split] = [{'X': array([]), 'y': array([])}
+                                       for _ in range(malicious_num)]
 
         for _ in range(params.get('random_malicious_num', 0)):
             split: Split = mal_splits.pop()

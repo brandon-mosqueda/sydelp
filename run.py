@@ -17,14 +17,16 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 dataset_config_file: str = sys.argv[1]
 setup_config_file: str = sys.argv[2]
+seed: int = int(sys.argv[3])
 
 params: dict = utils.read_json(dataset_config_file)
 setup_params: dict = utils.read_json(setup_config_file)
 
 for key, value in setup_params.items():
-    params[key] = value
+    params[key] = params.get(key, value)
 
 params = fill_with_defaults(params)
+params['seed'] = seed
 print(params)
 
 X_train: NumArray; X_test: NumArray; X_mal: NumArray;
