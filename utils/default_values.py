@@ -46,8 +46,8 @@ def fill_with_defaults(params: dict) -> dict:
         defaults['models_per_iteration'] = 40 if not is_test else 8
         defaults['expected_malicious_num'] = 18 if not is_test else 2
 
-        if attack != "no_attack":
-            defaults['is_worst_case'] = False
+        defaults['is_worst_case'] = False
+        defaults['computing_power'] = 0
     elif protocol == "sybilwall":
         defaults['graph_type'] = "random_regular"
         defaults["degree"] = 8 if not is_test else 4

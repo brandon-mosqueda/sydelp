@@ -33,16 +33,7 @@ class Sydelp(Learning[SydelpNode, SydelpAttacker]):
     def round_metrics(self) -> dict[str, Float]:
         metrics: dict[str, Float] = super().round_metrics()
 
-        metrics['difficulty_alpha'] = self.difficulty_alpha
         metrics['malicious_num'] = len(self.mal_nodes)
-
-        if self.attacker is None:
-            metrics['is_worst_case'] = False
-            metrics['computing_power'] = np.nan
-        else:
-            metrics['is_worst_case'] = self.attacker.is_worst_case
-            metrics['computing_power'] = self.attacker.computing_power
-
         honest_dificulties: FloatArray = np.array([
             node.compute_difficulty()
             for node in self.honest_nodes

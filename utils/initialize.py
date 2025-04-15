@@ -350,11 +350,11 @@ def get_results_dir(params: dict) -> str:
     additional: str = ""
 
     if as_name(params['protocol']) == "sydelp":
-        if params['is_worst_case']:
-            additional = os.path.join(str(params['difficulty_alpha']),
-                                      str(params['computing_power']))
-        else:
-            additional = str(params['difficulty_alpha'])
+        additional = os.path.join(as_name(params['is_worst_case']),
+                                  f"alpha_{params['difficulty_alpha']}",
+                                  as_name(params['expected_malicious_num']),
+                                  as_name(params['models_per_iteration']),
+                                  f"P_{params['computing_power']}")
 
     return os.path.join(
         params['results_dir'],
@@ -365,3 +365,22 @@ def get_results_dir(params: dict) -> str:
         as_name(params.get('is_identical_attack', 'no_attack')),
         additional
     )
+
+def get_metadata(params: dict) -> dict:
+    metadata = {
+        'Protocol': params['protocol'],
+        'Dataset': params['dataset'],
+        'Attack': params['attack'],
+        'Seed': params['seed'],
+        'IdenticalAttack': as_name(params.get('is_identical_attack',
+                                              'no_attack')),
+    }
+
+    if as_name(params['protocol']) == "sydelp":
+        metadata['WorstCase'] = params['is_worst_case']
+        metadata['DifficultyAlpha'] = params['difficulty_alpha']
+        metadata['ExpectedMaliciousNum'] = params['expected_malicious_num']
+        metadata['ModelsPerIteration'] = params['models_per_iteration']
+        metadata['ComputingPower'] = params['computing_power']
+
+    return metadata

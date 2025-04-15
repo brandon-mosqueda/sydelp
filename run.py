@@ -6,7 +6,7 @@ import utils.utils as utils
 
 from typing import Union
 from nodes.node import Node
-from utils.utils import IntArray, as_name, NumArray
+from utils.utils import IntArray, NumArray
 from attack.attacker import Attacker
 from learning.learning import Learning
 from learning.learning import MetricParams
@@ -59,13 +59,7 @@ learning_controller: Learning = init.get_controller_by_protocol(
 learning_controller.start()
 print("Total running time: %.4f minutes" % learning_controller.execution_time)
 
-results_dir: str = init.get_results_dir(params)
-
-metadata = {
-    'Protocol': params['protocol'],
-    'Dataset': params['dataset'],
-    'Attack': params['attack'],
-    'Seed': params['seed'],
-    'IdenticalAttack': as_name(params.get('is_identical_attack', 'no_attack')),
-}
-learning_controller.save(results_dir, metadata=metadata)
+learning_controller.save(
+    init.get_results_dir(params),
+    metadata=init.get_metadata(params)
+)
