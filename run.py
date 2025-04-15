@@ -1,5 +1,8 @@
 import sys
 import os
+import random
+import numpy as np
+import tensorflow as tf
 
 import utils.initialize as init
 import utils.utils as utils
@@ -28,6 +31,12 @@ for key, value in setup_params.items():
 params = fill_with_defaults(params)
 params['seed'] = seed
 print(params)
+
+# Set random seed for Python's built-in random module
+random.seed(params['seed'])
+# This also works for scikit-learn
+np.random.seed(params['seed'])
+tf.random.set_seed(params['seed'])
 
 X_train: NumArray; X_test: NumArray; X_mal: NumArray;
 y_train: IntArray; y_test: IntArray; y_mal: IntArray;
