@@ -42,12 +42,16 @@ def fill_with_defaults(params: dict) -> dict:
 
     if protocol == "sydelp":
         defaults['difficulty_alpha'] = 1
-        defaults['momentum_coeff'] = 0.1
         defaults['models_per_iteration'] = 40 if not is_test else 8
         defaults['expected_malicious_num'] = 18 if not is_test else 2
 
         defaults['is_worst_case'] = False
         defaults['computing_power'] = 0
+
+        if dataset == 'sms_spam':
+            defaults['momentum_coeff'] = 0.05
+        elif dataset == 'mnist':
+            defaults['momentum_coeff'] = 0.1
     elif protocol == "sybilwall":
         defaults['graph_type'] = "random_regular"
         defaults["degree"] = 8 if not is_test else 4

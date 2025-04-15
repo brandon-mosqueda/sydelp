@@ -370,8 +370,7 @@ def get_metadata(params: dict) -> dict:
         'Dataset': params['dataset'],
         'Attack': params['attack'],
         'Seed': params['seed'],
-        'IdenticalAttack': as_name(params.get('is_identical_attack',
-                                              'no_attack')),
+        'IdenticalAttack': params.get('is_identical_attack', 'no_attack'),
     }
 
     if as_name(params['protocol']) == "sydelp":

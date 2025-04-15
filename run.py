@@ -30,7 +30,9 @@ for key, value in setup_params.items():
 
 params = fill_with_defaults(params)
 params['seed'] = seed
-print(params)
+params['final_results_dir'] = init.get_results_dir(params)
+
+_ = [print(f"* {key}: {value}") for key, value in params.items()]
 
 # Set random seed for Python's built-in random module
 random.seed(params['seed'])
@@ -69,6 +71,6 @@ learning_controller.start()
 print("Total running time: %.4f minutes" % learning_controller.execution_time)
 
 learning_controller.save(
-    init.get_results_dir(params),
+    params['final_results_dir'],
     metadata=init.get_metadata(params)
 )
