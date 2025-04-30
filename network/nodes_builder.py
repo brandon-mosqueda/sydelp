@@ -2,7 +2,7 @@
 Author: francesco boldrin francesco.boldrin@studenti.unitn.it
 Date: 2025-01-21 18:41:51
 LastEditors: francesco boldrin francesco.boldrin@studenti.unitn.it
-LastEditTime: 2025-02-05 11:13:44
+LastEditTime: 2025-04-30 16:07:58
 FilePath: network/nodes_builder.py
 Description: 这是默认设置,可以在设置》工具》File Description中进行配置
 """
@@ -24,7 +24,6 @@ DEBUG = False
 
 def nodes_builder() -> list[list[Node], Union[Attacker, None], KerasModel, dict[str, MetricParams], NumArray, IntArray]:
     # we are going to use the same structure as in run.py to get the nodes
-    # TODO roadmap:
     # 1. get the params from the file
     # 2. get the dataset
     # 3. get the model
@@ -32,6 +31,8 @@ def nodes_builder() -> list[list[Node], Union[Attacker, None], KerasModel, dict[
     # 5. build the various nodes in the network
     # 6. get the attacker
     # 7. return the nodes, attacker, global_model, metrics_params
+    
+    # this is the path to the params file, this specific parameters are hyperparameters for the network implementation
     params_file: str = 'params/params/32.sydelp_mnist_random.json'
     params: dict = utils.read_json(params_file)
     
@@ -78,16 +79,16 @@ def test_nodes_builder():
     # assert len(metrics_params) == 3
     # print("All tests passed.")
     
-    print("Nodes:")
-    for node in nodes:
-        print(node)
-    print("Attacker:")
-    print(attacker)
-    print("Global Model:")
-    print(global_model.get_weights())
-    print("Metrics Params:")
-    print(metrics_params)
-    
+    # print("Nodes:")
+    # for node in nodes:
+    #     print(node)
+    # print("Attacker:")
+    # print(attacker)
+    # print("Global Model:")
+    # print(global_model.get_weights())
+    # print("Metrics Params:")
+    # print(metrics_params)
+    # 
     
     
     

@@ -1,0 +1,40 @@
+# defining the requirements for the project
+# This file shows the environment used to run the project in the experimental phase
+# Could be used to reproduce the results but still can be improved
+
+Python version: 3.9
+
+requirements:
+GitPython==3.1.43
+accelerate==1.1.0
+aiohappyeyeballs==2.4.3
+asttokens==2.4.1
+astunparse==1.6.3
+async-timeout==5.0.1
+ipython==8.18.1
+keras==3.7.0
+matplotlib==3.9.2
+matplotlib-inline==0.1.7
+nest-asyncio==1.6.0
+networkx==3.2.1
+numpy==1.26.4
+pandas==2.2.3
+pip==21.2.4
+pptree==3.1
+preshed==3.0.9
+progressbar==2.5
+pykka==4.1.1
+safetensors==0.4.5
+scikit-learn==1.5.2
+scipy==1.11.4
+tensorboard==2.18.0
+tensorboard-data-server==0.7.2
+tensorboardX==2.6.2.2
+tensorflow==2.18.0
+tensorflow-intel==2.18.0
+tensorflow-io-gcs-filesystem==0.31.0
+
+
+
+
+

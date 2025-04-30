@@ -2,7 +2,7 @@
 Author: francesco boldrin francesco.boldrin@studenti.unitn.it
 Date: 2024-12-28 12:37:50
 LastEditors: francesco boldrin francesco.boldrin@studenti.unitn.it
-LastEditTime: 2025-01-31 14:30:33
+LastEditTime: 2025-04-30 16:05:23
 FilePath: actors_nodes/node_actor.py
 Description: 这是默认设置,可以在设置》工具》File Description中进行配置
 """
@@ -17,9 +17,10 @@ class NodeActor(pykka.ThreadingActor):
     
     This class is used to implement the node actor in the network
     
+    As node actor we mean an agent in the network, regardless of its role (trainer, attacker, verifier, etc.).
+    
     It contains the primary functions to handle the messages and the communication between the actors.
     """
-    running: bool
     ID: int
     partners: list
     round: int
@@ -27,20 +28,16 @@ class NodeActor(pykka.ThreadingActor):
 
     def __init__(self, ID: int) -> None:
         super().__init__()
-        
-        print(f"Node {ID} is starting.")
         self.ID = ID
-        self.running = True
         self.partners = []
         self.round = 0     
     
 
     def set_partner(self, partners):
         """Set the partner actor."""
-        # print(f"{self.ID} is setting partners: {partners}\n")
         try:
             self.partners = partners
-            print(f"\n\n{self.ID} set partners: {self.partners}\n\n")
+            # print(f"\n\n{self.ID} set partners: {self.partners}\n\n")
         except Exception as e:
             print(f"{self.ID} failed to set partner: {e}")
             return
@@ -49,14 +46,8 @@ class NodeActor(pykka.ThreadingActor):
         # recheck this function
         self.partners = partners
 
-    
-
     def on_receive(self, message):
-        """Handle incoming messages."""
-
-        # CORNER CASES MESSAGE HANDLING
-        # print(f"\n{self.ID} received a message: {message}\n")
-        
+        """Handle incoming messages."""        
         # if the message is not a dictionary, print an error message
         if not isinstance(message, dict):
             # print(f"\n{self.ID} received an invalid message: {message}\n")
@@ -84,9 +75,6 @@ class NodeActor(pykka.ThreadingActor):
             self.update_partners(message['partners'])
             # print(f"{self.ID} updated partners to {message['partners']}")
             return
-        
-        # 4- If the message is not recognized, print an error message
-        # print(f"\n{self.ID} received an not recognized message: {message['command']}\n")
         
         # NORMAL MESSAGE HANDLING are in the subclasses
         

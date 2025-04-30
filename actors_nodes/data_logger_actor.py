@@ -47,8 +47,6 @@ class DataLoggerActor(NodeActor):
         self.metrics_params = metrics_params
         self.simulation_name = simulation_name
         self.scores_per_round = {}
-        print("X_test: ", X_test)
-        print("y_test: ", y_test)
 
 
         # # Initialize Matplotlib figure
@@ -96,8 +94,10 @@ class DataLoggerActor(NodeActor):
 
         if message.get('command') == 'scores':
             self.scores_per_round[message['round']] = {
-                "attackers_scores": message['attackers_scores'],
-                "honest_scores": message['honest_scores']
+                "avg_att_diff": message['avg_att_diff'],
+                "std_dev_att_diff": message['std_dev_att_diff'],
+                "avg_honest_diff": message['avg_honest_diff'],
+                "std_dev_honest_diff": message['std_dev_honest_diff']
             }
             return
 

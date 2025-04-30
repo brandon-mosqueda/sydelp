@@ -2,7 +2,7 @@
 Author: francesco boldrin francesco.boldrin@studenti.unitn.it
 Date: 2025-01-27 20:24:54
 LastEditors: francesco boldrin francesco.boldrin@studenti.unitn.it
-LastEditTime: 2025-02-05 14:50:43
+LastEditTime: 2025-04-30 16:07:58
 FilePath: actors_nodes/attacker_actor.py
 Description: 这是默认设置,可以在设置》工具》File Description中进行配置
 """
@@ -26,7 +26,7 @@ class AttackerManagerActor(NodeActor):
         self.round = 0
         self.COMPUTING_POWER = max_computing_power
         self.T = T
-        self.debug()
+        # self.debug()
         self.attack_started_flag = False
         self.strategy = strategy
     
@@ -96,34 +96,39 @@ class AttackerManagerActor(NodeActor):
         attackers_id = [i for i in range(self.offset_ids, self.num_active_attackers+self.offset_ids)]
         print(f"Attackers ID: {attackers_id}")
         
+        difficulties = []
+        
         try:
             for i in attackers_id:
-                sum_score += self.compute_difficulty(scores[i])
+                difficulties.append(self.compute_difficulty(scores[i]))
+                sum_score += difficulties[-1]
         except Exception as e:
             print(f"Error in the computation of the scores: {e}")
+            
+        # compute average and standard deviation
+        avg_att_diff = np.mean(difficulties)
+        
+        std_dev_att_diff = np.std(difficulties)
             
         print(f"Sum of the scores attackers: {sum_score}")
 
         # take the sum of the scores of some random honest nodes
-        random_honest_nodes = []
-        choichable_nodes = [i for i in range(4, self.offset_ids)]
-        for i in range(len(attackers_id)):
-            # pick a random honest node in choichable_nodes
-            node = np.random.choice(choichable_nodes)
-            random_honest_nodes.append(node)
-            choichable_nodes.remove(node)
-            
-        sum_score_rand = 0
-        for i in random_honest_nodes:
-            sum_score_rand += self.compute_difficulty(scores[i])
+        honest_nodes_diff = []
         
-        print(f"Sum of the scores honest nodes: {sum_score_rand}")
+        for i in range(4, self.offset_ids):
+            honest_nodes_diff.append(self.compute_difficulty(scores[i]))
+        
+        avg_honest_diff = np.mean(honest_nodes_diff)
+        
+        std_dev_honest_diff = np.std(honest_nodes_diff)
         
         message = {
             "command": "scores",
             "round": self.round,
-            "attackers_scores": sum_score,
-            "honest_scores": sum_score_rand
+            "avg_att_diff": avg_att_diff,
+            "std_dev_att_diff": std_dev_att_diff,
+            "avg_honest_diff": avg_honest_diff,
+            "std_dev_honest_diff": std_dev_honest_diff
         }
         
         self.broadcast(message)
