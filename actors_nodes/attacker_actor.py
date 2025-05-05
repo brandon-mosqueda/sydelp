@@ -2,7 +2,7 @@
 Author: francesco boldrin francesco.boldrin@studenti.unitn.it
 Date: 2025-01-27 20:24:54
 LastEditors: francesco boldrin francesco.boldrin@studenti.unitn.it
-LastEditTime: 2025-04-30 16:07:58
+LastEditTime: 2025-05-05 14:59:38
 FilePath: actors_nodes/attacker_actor.py
 Description: 这是默认设置,可以在设置》工具》File Description中进行配置
 """
@@ -54,10 +54,10 @@ class AttackerManagerActor(NodeActor):
         # print(f"Attacker Manager Actor {self.ID} received a message: {message.get('command')}")
         if message.get("command") == "new_block":
             # HANDLE THE NEW BLOCK 
-            print(f"Attacker Manager Actor {self.ID} received a new block")
+            # print(f"Attacker Manager Actor {self.ID} received a new block")
             self.check_scores(message)
             
-            print(f"Attacker Manager Actor {self.ID} is checking the change of behavior")
+            # print(f"Attacker Manager Actor {self.ID} is checking the change of behavior")
             if not self.attack_started_flag:
                 self.check_change_behavior()
             
@@ -92,9 +92,9 @@ class AttackerManagerActor(NodeActor):
         sum_score = 0
         scores = message.get("scores")
         
-        print(f"Scores (attacker): {scores}")
+        # print(f"Scores (attacker): {scores}")
         attackers_id = [i for i in range(self.offset_ids, self.num_active_attackers+self.offset_ids)]
-        print(f"Attackers ID: {attackers_id}")
+        # print(f"Attackers ID: {attackers_id}")
         
         difficulties = []
         
@@ -110,7 +110,7 @@ class AttackerManagerActor(NodeActor):
         
         std_dev_att_diff = np.std(difficulties)
             
-        print(f"Sum of the scores attackers: {sum_score}")
+        # print(f"Sum of the scores attackers: {sum_score}")
 
         # take the sum of the scores of some random honest nodes
         honest_nodes_diff = []
@@ -137,7 +137,7 @@ class AttackerManagerActor(NodeActor):
         
         while diff > 1:
             # add an attacker
-            print("Adding an attacker")
+            # print("Adding an attacker")
             self.add_attacker()
             diff -= 1
             
@@ -157,7 +157,7 @@ class AttackerManagerActor(NodeActor):
         This function will add a new attacker to the network
         """
         try:
-            print("Trying to add a new attacker to the network")
+            # print("Trying to add a new attacker to the network")
             try:
                 if self.strategy == "independent":
                     new_attacker = ActiveNodeActor.start(self.new_attacker_id, self.attacker[self.num_active_attackers], is_attacker_flag=True, perform_attack=True)
@@ -167,7 +167,7 @@ class AttackerManagerActor(NodeActor):
                 print(f"Error in the creation of the new attacker: {e}")
             self.num_active_attackers += 1
             self.partners.append(new_attacker)
-            print("New attacker added to the network: ", new_attacker)
+            # print("New attacker added to the network: ", new_attacker)
             new_attacker.tell({"command": "set_partners", "partners": self.partners[:2]})
         except IndexError:
             print("The attacker list is empty")

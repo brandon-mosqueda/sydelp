@@ -142,7 +142,7 @@ def run_network_implementation(input_file_path: str):
 
     # setting partners for all the first actors
     # the parterns are reference to other actors
-    # AT HIGH-LEVEL PARTNERS ARE ADRESS TO OTHER ACTORS
+    # AT HIGH-LEVEL PARTNERS ARE ADDRESSES TO OTHER ACTORS
     for i, actor_h in enumerate(actors[:OFFSET]):
         list_of_partners = [actor for actor in actors[1:] if actor != actor_h]
         try:

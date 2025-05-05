@@ -2,7 +2,7 @@
 Author: francesco boldrin francesco.boldrin@studenti.unitn.it
 Date: 2024-12-28 12:37:50
 LastEditors: francesco boldrin francesco.boldrin@studenti.unitn.it
-LastEditTime: 2025-04-30 16:05:23
+LastEditTime: 2025-05-05 15:03:43
 FilePath: actors_nodes/node_actor.py
 Description: 这是默认设置,可以在设置》工具》File Description中进行配置
 """
@@ -86,12 +86,13 @@ class NodeActor(pykka.ThreadingActor):
                 try:
                     partner.tell(message)
                 except pykka.ActorDeadError:
-                    print(f"{self.ID} failed to send message to {partner}, the actor is dead.")
-        else:
+                    pass
+                    # print(f"{self.ID} failed to send message to {partner}, the actor is dead.")
+        else: 
             print(f"{self.ID} has no partners to send the message to.")
             
     def on_stop(self):
         """Clean up when the actor stops."""
-        print(f"{self.ID} is stopping.")
+        # print(f"{self.ID} is stopping.")
 
     

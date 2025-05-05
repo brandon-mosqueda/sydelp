@@ -62,7 +62,7 @@ class VerifierNodeActor(NodeActor):
 
     def init_scores(self):
         # initialize the scores
-        print("sorted models keys: ", sorted(self.models.keys()))
+        # print("sorted models keys: ", sorted(self.models.keys()))
         for node_id in self.models.keys():
             self.scores[node_id] = VerifierNodeActor.MIN_SCORE
 
@@ -98,7 +98,7 @@ class VerifierNodeActor(NodeActor):
 
     def add_node(self, message):
         # add the node to the list of nodes and the list of partners
-        print("Adding a new node: ", message)
+       #  print("Adding a new node: ", message)
 
         self.list_of_nodes.append(message.get('node_id')) # add the node to the list of nodes (the ID of the node)
 
@@ -185,7 +185,7 @@ class VerifierNodeActor(NodeActor):
             "hash": "MockHash",
             "last_block_hash": self.last_block_hash
         }
-        print(f"\nBlock {self.round} created\n")
+        # print(f"\nBlock {self.round} created\n")
 
         return message
 
@@ -201,7 +201,7 @@ class VerifierNodeActor(NodeActor):
     def aggregation(self):
         # updated version of the aggregation function in the sydelp class
         sorted_keys = sorted(self.models.keys())
-        print("Sorted keys: ", sorted_keys)
+        # print("Sorted keys: ", sorted_keys)
         list_of_models = [self.models[id_node] for id_node in sorted_keys]
         self.update_data_sizes()
 
@@ -228,7 +228,7 @@ class VerifierNodeActor(NodeActor):
             print(f"Error in the krum function: {e}")
             return
 
-        print("Best indexes: ", krum_result[1])
+        # print("Best indexes: ", krum_result[1])
         self.update_scores(krum_result[1])
 
         # step 3: get the weights of the model
@@ -280,10 +280,10 @@ class VerifierNodeActor(NodeActor):
         }
 
         message['node'].tell(new_message)
-        print("Message start sent to the new node")
+        # print("Message start sent to the new node")
 
     def update_scores(self, krum_indexes):
-        print("Length of krum indexes: ", len(krum_indexes))
+        # print("Length of krum indexes: ", len(krum_indexes))
         tmp_flag_map = [0] * (len(self.partners) - 2)
 
         for i in range(len(krum_indexes)):

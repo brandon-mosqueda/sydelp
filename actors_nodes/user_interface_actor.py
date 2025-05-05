@@ -2,7 +2,7 @@
 Author: francesco boldrin francesco.boldrin@studenti.unitn.it
 Date: 2024-12-28 12:39:50
 LastEditors: francesco boldrin francesco.boldrin@studenti.unitn.it
-LastEditTime: 2025-04-30 16:10:42
+LastEditTime: 2025-05-05 14:18:49
 FilePath: actors_nodes/user_interface_actor.py
 Description: 这是默认设置,可以在设置》工具》File Description中进行配置
 """
@@ -39,10 +39,11 @@ class UserInterfaceActor(NodeActor):
 
         list_of_commands = ["1 - start process", "2 - stop all nodes", "3 + ID - stop a specific node",
                             "4 - stop the process", 
-                            "6 - print the list of active nodes", "7 - print messages log per round"]
+                            "6 - print the number of active nodes", "7 - print messages log per round"]
 
         while 1:
             time.sleep(1)
+            print("---------------------")
             print("\nList of commands:")
             for command in list_of_commands:
                 print(command+"\n")
@@ -51,6 +52,7 @@ class UserInterfaceActor(NodeActor):
 
             if command == "1":
                 self.broadcast({"command": "start"})
+                print("\nA pop-up alert will appear at the end of the process\nPlease wait\nIf you want to see the current log digit 7")
             elif command == "2":
                 self.broadcast({"command": "stop"})
                 self.stop()

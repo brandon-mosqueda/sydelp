@@ -10,6 +10,8 @@ from pandas import DataFrame
 from actors_nodes.node_actor import NodeActor  # Assuming NodeActor is defined elsewhere
 from nodes.node import Node
 from utils.typing import Float
+import tkinter as tk
+from tkinter import messagebox
 
 
 class DataLoggerActor(NodeActor):
@@ -114,45 +116,45 @@ class DataLoggerActor(NodeActor):
             self.attacker_per_round.append(self.current_num_attacker)
 
 
-    def update_plot(self, frame=None):
-        """Update the plot dynamically."""
-        rounds = list(range(1, len(self.messsages_from_trainers) + 1))
-
-        # Update the first subplot
-        self.line1.set_data(rounds, self.messsages_from_trainers)
-        self.line2.set_data(rounds, self.num_participants)
-        self.line3.set_data(rounds, self.num_malicious_participants)
-
-        self.ax1.relim()
-        self.ax1.autoscale_view()
-        self.ax2.relim()
-        self.ax2.autoscale_view()
-
-        # Update the second subplot
-        self.line4.set_data(rounds, self.quality)
-
-        self.ax3.relim()
-        self.ax3.autoscale_view()
-
-        return self.line1, self.line2, self.line3, self.line4
-
-    def start_animation(self):
-        """Start the dynamic visualization."""
-        plt.ion()  # Enable interactive mode
-        self.ani = FuncAnimation(self.fig, self.update_plot, interval=1000, cache_frame_data=False)
-        self.fig.legend(loc="upper center", ncol=4)
-        plt.tight_layout()
-        plt.draw()  # Draw the plot without blocking
-
-    def background_plot_updates(self):
-        """Background thread to keep the plot responsive."""
-        while True:
-            plt.pause(0.01)  # Allows the GUI event loop to update the plot
-            time.sleep(0.01)  # Prevents excessive CPU usage
+    # def update_plot(self, frame=None):
+    #     """Update the plot dynamically."""
+    #     rounds = list(range(1, len(self.messsages_from_trainers) + 1))
+    #
+    #     # Update the first subplot
+    #     self.line1.set_data(rounds, self.messsages_from_trainers)
+    #     self.line2.set_data(rounds, self.num_participants)
+    #     self.line3.set_data(rounds, self.num_malicious_participants)
+    #
+    #     self.ax1.relim()
+    #     self.ax1.autoscale_view()
+    #     self.ax2.relim()
+    #     self.ax2.autoscale_view()
+    #
+    #     # Update the second subplot
+    #     self.line4.set_data(rounds, self.quality)
+    #
+    #     self.ax3.relim()
+    #     self.ax3.autoscale_view()
+    #
+    #     return self.line1, self.line2, self.line3, self.line4
+    #
+    # def start_animation(self):
+    #     """Start the dynamic visualization."""
+    #     plt.ion()  # Enable interactive mode
+    #     self.ani = FuncAnimation(self.fig, self.update_plot, interval=1000, cache_frame_data=False)
+    #     self.fig.legend(loc="upper center", ncol=4)
+    #     plt.tight_layout()
+    #     plt.draw()  # Draw the plot without blocking
+    #
+    # def background_plot_updates(self):
+    #     """Background thread to keep the plot responsive."""
+    #     while True:
+    #         plt.pause(0.01)  # Allows the GUI event loop to update the plot
+    #         time.sleep(0.01)  # Prevents excessive CPU usage
 
     def write_to_file(self):
         # open "./results/result_network.json" in read mode
-        print("Writing to file")
+        # print("Writing to file")
         try:
             with open("./results/result_network.json", "r") as file:
                 # read the content of the file
@@ -162,17 +164,9 @@ class DataLoggerActor(NodeActor):
         except FileNotFoundError:
             data = {}
             print("File not found, creating a new one.")
-        print(data)
+        # print(data)
 
-        # add the data in this manner
-        """
-        {
-            self.simulation_name: {
-                "quality": self.quality,
-                "attacker_per_round": self.attacker_per_round
-                "honest_participants": self.honest_participants
-            }
-        """
+        # adding the data in the json format
         data[self.simulation_name] = {
             "quality": self.quality,
             "attacker_per_round": self.attacker_per_round,
@@ -180,7 +174,7 @@ class DataLoggerActor(NodeActor):
             "scores_per_round": self.scores_per_round
         }
 
-        print(data)
+        # print(data)
 
         try:
             # open "./results/result_network.json" in write mode
@@ -194,9 +188,29 @@ class DataLoggerActor(NodeActor):
         """Stop the actor."""
         # print the quality of the model
         try:
-            print(f"\n\nQuality of the model: {self.quality}\n\n")
+            pass
+            # print(f"\n\nQuality of the model: {self.quality}\n\n")
         except IndexError:
             print("No model quality recorded.")
+
+        stop_sentence = str(f"The execution of the experiment has reached the final round.\n"
+                            f"The data will be stored in './results/result_network.json' in the section '{self.simulation_name}'")
+        stop_sentence += "\nPlease close this pop-up and enter the command 4 to finish the process"
+
+        # Create the main Tk window
+        window = tk.Tk()
+        window.title("Experiment Completed")
+
+        # Create a label with the message
+        label = tk.Label(window, text=stop_sentence, padx=20, pady=20, justify="left", wraplength=400)
+        label.pack()
+
+        # Create a close button
+        button = tk.Button(window, text="Close", command=window.destroy, padx=10, pady=5)
+        button.pack(pady=(0, 20))
+
+        # Run the Tkinter event loop
+        window.mainloop()
 
         self.write_to_file()
 
@@ -211,7 +225,7 @@ class DataLoggerActor(NodeActor):
 
         # For binary classification
         if preds.shape[1] == 1:
-            print("checkpoint 1.1 binary classification")
+            # print("checkpoint 1.1 binary classification")
             preds = pd.concat([1 - preds[0], preds], axis=1)
             preds.columns = [0, 1]
 
@@ -253,6 +267,6 @@ class DataLoggerActor(NodeActor):
 
         round_metrics['loss'] = loss
 
-        print("round_metrics: ", round_metrics)
+        # print("round_metrics: ", round_metrics)
 
         return round_metrics['accuracy']
