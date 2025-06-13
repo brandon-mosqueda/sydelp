@@ -63,23 +63,22 @@ class Sydelp(Learning[SydelpNode, SydelpAttacker]):
         # To simulate that honest nodes finish after and as they have similar
         # computing capabilities, we take a random sample of them with the
         # remaining models.
-        honest_agg_idx = np.random.choice(
-            np.arange(len(self.honest_nodes)),
-            size=self.models_per_iteration - len(self.mal_nodes),
+        agg_idx = np.random.choice(
+            np.arange(len(self.all_nodes)),
+            size=self.models_per_iteration,
             replace=False
         )
-        honest_agg_nodes: list[SydelpNode] = [
+        self.aggregation_nodes = [
             node
-            for i, node in enumerate(self.honest_nodes)
-            if i in honest_agg_idx
+            for i, node in enumerate(self.all_nodes)
+            if i in agg_idx
         ]
 
-        self.aggregation_nodes = self.mal_nodes + honest_agg_nodes
+        bar: MyProgressBar = progress_bar(self.models_per_iteration)
 
-        bar: MyProgressBar = progress_bar(len(honest_agg_nodes))
-
-        for node in honest_agg_nodes:
-            node.train()
+        for node in self.aggregation_nodes:
+            if not node.is_malicious:
+                node.train()
             bar.next()
 
         bar.finish()
