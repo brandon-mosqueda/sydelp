@@ -9,7 +9,7 @@ from utils.aggregation import fed_avg, krum_selection
 
 
 class Sydelp(Learning[SydelpNode, SydelpAttacker]):
-    expected_malicious_num: int # beta (krum)
+    expected_malicious_num: int  # beta (krum)
     momentum_coeff: Float
     difficulty_alpha: Float
     models_per_iteration: int
@@ -59,26 +59,39 @@ class Sydelp(Learning[SydelpNode, SydelpAttacker]):
 
     def training(self) -> None:
         # The malicious models are always taken because we assume that the
-        # attacker can always finish the train for them before the honest nodes.
-        # To simulate that honest nodes finish after and as they have similar
-        # computing capabilities, we take a random sample of them with the
-        # remaining models.
-        agg_idx = np.random.choice(
-            np.arange(len(self.all_nodes)),
-            size=self.models_per_iteration,
-            replace=False
+        # attacker can always finish the train for them before the honest nodes
+        # (limited to his computing power). To simulate that honest nodes finish
+        # after and as they have similar computing capabilities, we take the
+        # honest nodes with lowest difficulties. In case of a tie, we randomly
+        # choose them.
+        honest_difficulties: FloatArray = np.array(
+            [node.compute_difficulty() for node in self.honest_nodes],
+            dtype="float"
         )
-        self.aggregation_nodes = [
+        ordered_indices: IntArray = np.argsort(honest_difficulties)
+
+        if np.any(honest_difficulties == 1):
+            # In the case where there are several nodes with maximum difficulty,
+            # they will be taken at random.
+            first_one_index = np.argmax(
+                honest_difficulties[ordered_indices] == 1)
+            ordered_indices[first_one_index:] = np.random.permutation(
+                ordered_indices[first_one_index:])
+
+        honest_agg_idx: IntArray = ordered_indices[
+            0:(self.models_per_iteration - len(self.mal_nodes))]
+        honest_agg_nodes: list[SydelpNode] = [
             node
-            for i, node in enumerate(self.all_nodes)
-            if i in agg_idx
+            for i, node in enumerate(self.honest_nodes)
+            if i in honest_agg_idx
         ]
 
-        bar: MyProgressBar = progress_bar(self.models_per_iteration)
+        self.aggregation_nodes = self.mal_nodes + honest_agg_nodes
 
-        for node in self.aggregation_nodes:
-            if not node.is_malicious:
-                node.train()
+        bar: MyProgressBar = progress_bar(len(honest_agg_nodes))
+
+        for node in honest_agg_nodes:
+            node.train()
             bar.next()
 
         bar.finish()

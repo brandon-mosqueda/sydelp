@@ -41,7 +41,7 @@ def fill_with_defaults(params: dict) -> dict:
             params['sign_flip_malicious_num'] = 2
 
     if protocol == "sydelp":
-        defaults['difficulty_alpha'] = 1
+        defaults['difficulty_alpha'] = 2
         defaults['models_per_iteration'] = 40 if not is_test else 8
         defaults['expected_malicious_num'] = 18 if not is_test else 2
 
