@@ -1,0 +1,7 @@
+{
+  "protocol": "MAB-FL",
+  "attack": "Sign flipping",
+
+  "is_identical_attack": true,
+  "sign_flip_malicious_num": 15
+}

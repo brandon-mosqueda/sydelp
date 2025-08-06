@@ -1,6 +1,6 @@
 # Sybil-resistant Decentralized Learning Protocol (SyDeLP)
 
-This repository contains the code for the experiments of the research paper [_Mitigation of Sybil-based Poisoning Attacks in Permissionless Decentralized Learning_](https://hal.science/hal-04892539). We provide the implementation of the following:
+This repository contains the code for the experiments of the research paper [_Sybil-Poisoning Resilience in Decentralized Learning With Verifiable Delay Puzzles_](). We provide the implementation of the following:
 
 **Systems**
 
@@ -37,7 +37,11 @@ This repository contains the code for the experiments of the research paper [_Mi
 You can use the following command to run any of the provided experiments. The json files have all the parameters required to reproduce the results of the paper. You can also try your own parameters, just be sure you use the expected format as in all the provided examples of `params` folder.
 
 ```bash
-python run.py params/<file>.json
+#
+python run.py params/datasets/<dataset>.json params/<attacks>.json <seed>
+
+# For instance
+python run.py params/datasets/mnist.json params/attacks/01.fl_random.json 2
 ```
 
 # Tested dependencies versions
@@ -59,17 +63,7 @@ We noted that using a GPU does not offer a better performance due to the constan
 # Citation
 
 ```bibtex
-@unpublished{mosquedagonzalez:hal-04892539,
-  TITLE = {{Mitigation of Sybil-based Poisoning Attacks in Permissionless Decentralized Learning}},
-  AUTHOR = {Mosqueda Gonz{\'a}lez, Brandon A and Hasan, Omar and Brunie, Lionel},
-  URL = {https://hal.science/hal-04892539},
-  NOTE = {working paper or preprint},
-  YEAR = {2025},
-  MONTH = Jan,
-  KEYWORDS = {Decentralized Learning ; Permissionless ; Blockchain ; Adaptive Difficulty ; Verifiable Delay Function ; Verifiable Delay Puzzle},
-  HAL_ID = {hal-04892539},
-  HAL_VERSION = {v1},
-}
+@unpublished{ }
 ```
 
 # References

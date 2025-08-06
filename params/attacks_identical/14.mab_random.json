@@ -1,0 +1,7 @@
+{
+  "protocol": "MAB-FL",
+  "attack": "Random",
+
+  "is_identical_attack": true,
+  "random_malicious_num": 15
+}

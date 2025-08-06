@@ -1,0 +1,9 @@
+{
+  "protocol": "SyDeLP",
+  "attack": "Label flipping",
+
+  "is_identical_attack": true,
+  "label_flip_malicious_num": 0,
+  "computing_power": 0,
+  "results_dir": "results/label_flipping"
+}

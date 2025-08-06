@@ -1,0 +1,18 @@
+{
+  "dataset": "MNIST",
+
+  "metrics": ["accuracy"],
+
+  "nodes_num": 50,
+  "iterations_num": 50,
+
+  "dense_units": 100,
+  "local_epochs_num": 6,
+  "batch_size": 16,
+  "learning_rate": 0.001,
+
+  "alpha": 1,
+  "split_min_size": 100,
+
+  "results_dir": "results"
+}

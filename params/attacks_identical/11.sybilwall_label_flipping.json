@@ -1,0 +1,7 @@
+{
+  "protocol": "SybilWall",
+  "attack": "Label flipping",
+
+  "is_identical_attack": true,
+  "label_flip_malicious_num": 15
+}

@@ -1,0 +1,12 @@
+{
+  "protocol": "SyDeLP",
+  "attack": "Random",
+
+  "difficulty_alpha": 2,
+  "is_identical_attack": true,
+  "is_worst_case": true,
+  "random_malicious_num": 7,
+  "computing_power": 7,
+
+  "results_dir": "results/worst_case"
+}

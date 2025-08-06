@@ -1,0 +1,23 @@
+{
+  "dataset": "SMS Spam",
+
+  "metrics": ["accuracy", "f1_score"],
+
+  "nodes_num": 50,
+  "iterations_num": 50,
+  "testing_proportion": 0.2,
+
+  "max_sequence_length": 50,
+  "vocabulary_size": 1000,
+  "embedding_dim": 64,
+  "lstm_units": 64,
+
+  "local_epochs_num": 8,
+  "batch_size": 8,
+  "learning_rate": 0.001,
+
+  "alpha": 1,
+  "split_min_size": 10,
+
+  "results_dir": "results"
+}

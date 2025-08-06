@@ -1,0 +1,7 @@
+{
+  "protocol": "FL",
+  "attack": "Sign flipping",
+
+  "is_identical_attack": false,
+  "sign_flip_malicious_num": 15
+}

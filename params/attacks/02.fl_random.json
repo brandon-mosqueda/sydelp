@@ -1,0 +1,7 @@
+{
+  "protocol": "FL",
+  "attack": "Random",
+
+  "is_identical_attack": false,
+  "random_malicious_num": 15
+}

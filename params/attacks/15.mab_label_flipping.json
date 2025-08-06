@@ -1,0 +1,7 @@
+{
+  "protocol": "MAB-FL",
+  "attack": "Label flipping",
+
+  "is_identical_attack": false,
+  "label_flip_malicious_num": 15
+}
